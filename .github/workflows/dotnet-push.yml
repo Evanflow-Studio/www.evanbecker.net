@@ -3,11 +3,11 @@ name: .NET
 on:
   push:
     branches: [ "main" ]
-  pull_request:
+  pull_request: #TODO: Comment this part out
     branches: [ "main" ]
 
 jobs:
-  build:
+  build-test-and-publish:
     runs-on: self-hosted
     env:
       working-directory: ./evanbecker-api

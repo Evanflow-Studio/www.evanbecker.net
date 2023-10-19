@@ -1,0 +1,85 @@
+services:
+  proxy:
+    image: traefik:latest
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # TODO: Test if 5430 is valid for postgresql
+      - "--entrypoints.postgres.address=:5430"
+      - "--entrypoints.web.address=:3000"
+      - "--entrypoints.websecure.address=:3001"
+      - "--entrypoints.api.address=:5002"
+      - "--entrypoints.apisecure.address=:5003"
+    ports:
+      - "6969:8080" # Traefik dashboard
+      - "5430:5432" # PostgreSQL port
+      - "5002"
+      - "5003"
+      - "3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  evanbecker-db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    volumes:
+      - ./appdata/postgres:/var/lib/postgresql/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.postgres.rule=HostSNI(`db-test.evanbecker.net`)"
+      - "traefik.tcp.routers.postgres.entryPoints=postgres"
+      - "traefik.tcp.routers.postgres.service=postgres"
+      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+
+  evanbecker:
+    container_name: evanbecker-server
+    build:
+      context: .
+      dockerfile: evanbecker-api/Dockerfile
+    image: ${DOCKER_REGISTRY-}evanbecker
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      # TODO: Grab cert from server paths
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=123
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    ports:
+      - "5002:80"
+      - "5003:443"
+    depends_on:
+      - evanbecker-db
+    volumes:
+      - ~/.aspnet/https:/https:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.aspnetapp.rule=Host(`api-test.evanbecker.net`)"
+      - "traefik.http.routers.aspnetapp.entrypoints=api"    
+      - "traefik.http.routers.aspnetapp.entrypoints=apisecure"   
+      
+  evanbecker-client:
+    container_name: evanbecker-client
+    build:
+      context: .
+      dockerfile: evanbecker-client/Dockerfile
+    image: ${DOCKER_REGISTRY-}evanbecker-client
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT} #EXAMPLE
+    depends_on:
+      - evanbecker-db
+      - evanbecker
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - ~/.aspnet/https:/https:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.client.entrypoints=web,websecure"
+      - "traefik.http.routers.client.rule=Host(`test.evanbecker.net`)"
+      - "traefik.http.services.client.loadbalancer.server.port=3000" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
+      - "traefik.port=80"
