@@ -261,6 +261,6 @@ export function Comment({user, seedComment, parentComment, parentId, isChild, se
     )
 }
 
-function classNames(...classes) {
+function classNames(...classes: any[]) {
     return classes.filter(Boolean).join(' ')
 }
