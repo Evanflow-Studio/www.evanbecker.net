@@ -242,7 +242,7 @@ export default function AccountSettings() {
                                             <option value="Central Pacific Standard Time">(GMT+11:00) Magadan, Solomon Is., New Caledonia</option>
                                             <option value="New Zealand Standard Time">(GMT+12:00) Auckland, Wellington</option>
                                             <option value="Fiji Standard Time">(GMT+12:00) Fiji, Kamchatka, Marshall Is.</option>
-                                            <option value="Tonga Standard Time">(GMT+13:00) Nuku'alofa</option>
+                                            <option value="Tonga Standard Time">(GMT+13:00) Nuku&apos;alofa</option>
                                             <option value="Azores Standard Time">(GMT-01:00) Azores</option>
                                             <option value="Cape Verde Standard Time">(GMT-01:00) Cape Verde Is.</option>
                                             <option value="Mid-Atlantic Standard Time">(GMT-02:00) Mid-Atlantic</option>
