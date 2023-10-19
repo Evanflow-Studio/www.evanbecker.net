@@ -7,23 +7,39 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-test-and-publish:
-    runs-on: self-hosted
-    env:
-      working-directory: ./evanbecker-api
+  build_and_push:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    ### Can skip with self-hosted
-    #- name: Setup .NET
-    #  uses: actions/setup-dotnet@v3
-    #  with:
-    #    dotnet-version: 7.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-      working-directory: ${{env.working-directory}}
-    - name: Build
-      run: dotnet build --no-restore
-      working-directory: ${{env.working-directory}}
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
-      working-directory: ${{env.working-directory}}
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        
+      - name: Create env file
+        run: |
+          touch .env
+          echo "${{ secrets.SERVER_ENV_PROD }}" > .env
+          cat .env
+          
+      - name: Build image
+        run: docker compose -f docker-compose.prod.yml build
+        
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          
+      - name: Log in to DO Container Registry
+        run: doctl registry login --expiry-seconds 600
+        
+      - name: Push image to DO Container Registry
+        run: docker compose -f docker-compose.prod.yml push
+        
+      - name: Deploy Stack
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.GL_SSH_HOST }}
+          username: ${{ secrets.GL_SSH_USERNAME }}
+          key: ${{ secrets.GL_SSH_SECRET }}
+          port: ${{ secrets.GL_SSH_PORT }}
+          script: |
+            cd /PATH/TO/DIRECTORY/WHERE/COMPOSE/FILE/IS
+            ./init.sh
