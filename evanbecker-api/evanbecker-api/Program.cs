@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Configuration.AddJsonFile("./secrets/appsettings.Secrets.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddEnvironmentVariables();
 
 var environmentName = builder.Environment.EnvironmentName;
 Console.WriteLine($"Starting API with Environment: {environmentName}");

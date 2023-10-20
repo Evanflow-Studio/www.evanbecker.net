@@ -43,11 +43,17 @@ services:
       dockerfile: evanbecker-api/Dockerfile
     image: ${DOCKER_REGISTRY-}evanbecker
     environment:
+      - Auth0__Domain=${Auth0_Domain}
+      - Auth0__Audience=${Auth0_Audience}
+      - Auth0__ClientId=${Auth0_ClientId}
+      - Auth0__ClientSecret=${Auth0_ClientSecret}
+      - Auth0__Url=${Auth0_Url}
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:443;http://+:80
       # TODO: Grab cert from server paths
       - ASPNETCORE_Kestrel__Certificates__Default__Password=123
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+
     ports:
       - "5002:80"
       - "5003:443"
@@ -68,7 +74,11 @@ services:
       dockerfile: evanbecker-client/Dockerfile
     image: ${DOCKER_REGISTRY-}evanbecker-client
     environment:
-      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT} #EXAMPLE
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+      - NEXT_PUBLIC_AUTH0_DOMAIN=${NEXT_PUBLIC_AUTH0_DOMAIN}
+      - NEXT_PUBLIC_AUTH0_CLIENT_ID=${NEXT_PUBLIC_AUTH0_CLIENT_ID}
+      - NEXT_PUBLIC_AUTH0_AUDIENCE=${NEXT_PUBLIC_AUTH0_AUDIENCE}
+      - NEXT_PUBLIC_AUTH0_REDIRECT_URI=${NEXT_PUBLIC_AUTH0_REDIRECT_URI}
     depends_on:
       - evanbecker-db
       - evanbecker
