@@ -1,6 +1,6 @@
 import {Bars3Icon, MagnifyingGlassIcon} from "@heroicons/react/20/solid";
 
-export function AccountSearch({setSidebarOpen}: {setSidebarOpen: (boolean)=>void})
+export function AccountSearch({setSidebarOpen})
 {
     return (
         <>

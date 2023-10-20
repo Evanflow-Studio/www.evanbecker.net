@@ -39,12 +39,12 @@ const navigation = [
 
 
 
-function classNames(...classes: any[]) {
+function classNames(...classes) {
     return classes.filter(Boolean).join(' ')
 }
 
-export function AccountSidebar({sidebarOpen, setSidebarOpen}: {boolean, setSidebarOpen: (boolean)=>void}) {
-    const [user, setUser] = useState(null as User);
+export function AccountSidebar({sidebarOpen, setSidebarOpen}) {
+    const [user, setUser] = useState(null);
     const pathname = usePathname();
     const { getAccessTokenSilently } = useAuth0();
 

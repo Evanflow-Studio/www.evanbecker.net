@@ -3,12 +3,11 @@
 import { AccountTab } from "@/components/Account/AccountTab";
 import { AccountLayout } from "@/components/Account/AccountLayout";
 import { useEffect, useRef, useState } from "react";
-import { User } from "@/data/Comment";
 import { useAuth0 } from "@auth0/auth0-react";
 
 export default function AccountSettings() {
 
-    const [user, setUser] = useState(null as User);
+    const [user, setUser] = useState(null);
     const [image, setImage] = useState(null);
     const [base64Image, setBase64Image] = useState("");
     const inputFile = useRef(null);
@@ -42,7 +41,7 @@ export default function AccountSettings() {
         {
             let reader = new FileReader();
             reader.readAsDataURL(image);
-            reader.onload = () => setBase64Image(reader.result as string);
+            reader.onload = () => setBase64Image(reader.result);
         }
     }, [image])
 

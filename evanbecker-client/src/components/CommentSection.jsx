@@ -7,8 +7,8 @@ import LoadingSpinnerLarge from "@/components/LoadingSpinnerLarge";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 export function CommentSection() {
-    const [comments, setComments] = useState(null as any[]);
-    const [user, setUser] = useState(null as User);
+    const [comments, setComments] = useState(null);
+    const [user, setUser] = useState(null);
     const [commentText, setCommentText] = useState("");
 
     const pathname = usePathname();
@@ -29,7 +29,7 @@ export function CommentSection() {
                 }),
                 mode: "cors",
             });
-            let userComment = await call.json() as UserComment;
+            let userComment = await call.json();
             setComments([...comments, userComment]);
             setCommentText("");
         } catch (e) {
@@ -105,7 +105,7 @@ export function CommentSection() {
                             <Comment user={user} seedComment={x} key={x.id}/>
                         )
                     })}
-                    {!comments ! && (<LoadingSpinnerLarge/>)}
+                    {!comments && (<LoadingSpinnerLarge/>)}
                 </div>
             </section>
         </>)

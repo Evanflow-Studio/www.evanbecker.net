@@ -8,15 +8,8 @@ import { AccountSidebar } from "@/components/Account/AccountSidebar";
 import {AccountSearch} from "@/components/Account/AccountSearch";
 import {AccountTab} from "@/components/Account/AccountTab";
 
-
-
-
-
-
 export function AccountLayout({
     children,
-}: {
-    children: React.ReactNode
 }) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
