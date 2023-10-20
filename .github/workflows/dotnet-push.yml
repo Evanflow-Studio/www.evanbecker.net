@@ -13,11 +13,18 @@ jobs:
       - name: Checkout the repo
         uses: actions/checkout@v2
         
-      - name: Create env file
+      - name: Create env files
         run: |
           touch .env
           echo "${{ secrets.SERVER_ENV_PROD }}" > .env
           cat .env
+          touch .env.test
+          echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}\n" >> .env.test
+          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.NEXT_PUBLIC_AUTH0_DOMAIN }}\n" >> .env.test
+          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.NEXT_PUBLIC_AUTH0_CLIENT_ID }}\n" >> .env.test
+          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.NEXT_PUBLIC_AUTH0_AUDIENCE }}\n" >> .env.test
+          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.NEXT_PUBLIC_AUTH0_REDIRECT_URI }}\n" >> .env.test
+          mv .env.test evanbecker-client/.env.test
           
       - name: Build image
         run: docker compose -f docker-compose.test.yaml build
