@@ -12,6 +12,7 @@ RUN npm install
 
 # Copying and building our app to production
 COPY ./evanbecker-client/ /app/
+RUN ./evanbecker-client/transform-env.sh
 RUN npm run build
 
 # Finally, exposing and running our app inside our container
