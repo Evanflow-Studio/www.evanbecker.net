@@ -16,7 +16,6 @@ jobs:
       - name: Create env files
         run: |
           touch .env
-
           echo "Client Secrets"
           echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> .env
           echo -e "AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> .env
