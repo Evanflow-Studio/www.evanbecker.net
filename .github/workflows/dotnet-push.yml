@@ -19,10 +19,10 @@ jobs:
 
           echo "Client Secrets"
           echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> .env
-          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.NEXT_PUBLIC_AUTH0_DOMAIN }}" >> .env
-          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.NEXT_PUBLIC_AUTH0_CLIENT_ID }}" >> .env
-          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.NEXT_PUBLIC_AUTH0_AUDIENCE }}" >> .env
-          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.NEXT_PUBLIC_AUTH0_REDIRECT_URI }}" >> .env
+          echo -e "AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> .env
+          echo -e "AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
+          echo -e "AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> .env
+          echo -e "AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> .env
 
           echo "API Secrets"
           echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
