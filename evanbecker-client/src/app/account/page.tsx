@@ -69,7 +69,7 @@ const activityItems = [
     // More items...
 ]
 
-function classNames(...classes: any[]) {
+function classNames(...classes: any[]) : string{
     return classes.filter(Boolean).join(' ')
 }
 
@@ -426,7 +426,7 @@ export default function Example() {
                                                 <time className="text-gray-400 sm:hidden" dateTime={item.dateTime}>
                                                     {item.date}
                                                 </time>
-                                                <div className={classNames(statuses[item.status], 'flex-none rounded-full p-1')}>
+                                                <div className={classNames(item.status == "Completed" ? statuses.Completed : statuses.Error, 'flex-none rounded-full p-1')}>
                                                     <div className="h-1.5 w-1.5 rounded-full bg-current" />
                                                 </div>
                                                 <div className="hidden text-white sm:block">{item.status}</div>
