@@ -16,29 +16,28 @@ jobs:
       - name: Create env files
         run: |
           touch .env
-          echo -e "${{ secrets.SERVER_ENV_PROD }}\n" > .env
 
           echo "Client Secrets"
-          echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}\n" >> .env
-          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.NEXT_PUBLIC_AUTH0_DOMAIN }}\n" >> .env
-          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.NEXT_PUBLIC_AUTH0_CLIENT_ID }}\n" >> .env
-          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.NEXT_PUBLIC_AUTH0_AUDIENCE }}\n" >> .env
-          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.NEXT_PUBLIC_AUTH0_REDIRECT_URI }}\n" >> .env
+          echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> .env
+          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.NEXT_PUBLIC_AUTH0_DOMAIN }}" >> .env
+          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.NEXT_PUBLIC_AUTH0_CLIENT_ID }}" >> .env
+          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.NEXT_PUBLIC_AUTH0_AUDIENCE }}" >> .env
+          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.NEXT_PUBLIC_AUTH0_REDIRECT_URI }}" >> .env
 
           echo "API Secrets"
-          echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}\n" >> .env
-          echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}\n" >> .env
-          echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}\n" >> .env
-          echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}\n" >> .env
-          echo -e "Auth0_Url=${{ secrets.Auth0_Url }}\n" >> .env
-          echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}\n" >> .env
+          echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
+          echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}" >> .env
+          echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}" >> .env
+          echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
+          echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
+          echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
 
           echo "Docker Secrets"
-          echo -e "DB_NAME=${{ secrets.DB_NAME }}\n" >> .env
-          echo -e "DB_USER=${{ secrets.DB_USER }}\n" >> .env
-          echo -e "DB_PASS=${{ secrets.DB_PASS }}\n" >> .env
-          echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}\n" >> .env
-          
+          echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo -e "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+          echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
+
           cat .env
 
       - name: Build image
