@@ -1,5 +1,7 @@
 FROM node:16-alpine
 
+RUN env
+
 ENV PORT 3000
 
 # Creating the app folder and setting up as WORKDIR
