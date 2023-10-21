@@ -39,8 +39,12 @@ jobs:
 
           cat .env
 
+          pwd
+
+          ls
+
       - name: Build image
-        run: docker compose -f docker-compose.test.yaml build
+        run: docker compose -f docker-compose.test.yaml build --no-cache
         
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
