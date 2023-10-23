@@ -2,13 +2,8 @@ touch .env.local
 echo "here's current env:"
 env
 echo "Trying to push to .env.local"
-echo -e "NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}" >> .env.local
-echo -e "AUTH0_DOMAIN=${AUTH0_DOMAIN}" >> .env.local
-echo -e "AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}" >> .env.local
-echo -e "AUTH0_AUDIENCE=${AUTH0_AUDIENCE}" >> .env.local
-echo -e "AUTH0_REDIRECT_URI=${AUTH0_REDIRECT_URI}" >> .env.local
+echo -e "NEXT_PUBLIC_SITE_URL=${SITE_URL}" >> .env.local
 echo "printing .env.local"
 cat .env.local
-echo "####"
 pwd
 ls -la
