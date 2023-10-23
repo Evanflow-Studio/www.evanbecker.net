@@ -47,18 +47,28 @@ jobs:
           key: ${{ secrets.GL_SSH_SECRET }}
           port: 22
           script: |
+            echo "Starting Test Deploy:"
+            echo ">>Current Directory:"
+            pwd
+            echo ">>ls"
+            ls
             cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
-
-            echo "Refreshing Secrets..."
-            rm .env
-            touch ./.env
-            echo "Client Secrets"
+            echo ">>Current Directory:"
+            pwd
+            echo ">>ls"
+            ls
+            echo "0. Refreshing Secrets..."
+            echo "> Deleting previous .env"
+            [ ! -e .env ] || rm .env
+            echo "> Creating new .env"
+            touch .env
+            echo "> Appending Client Secrets"
             echo -e "AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> .env
             echo -e "AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
             echo -e "AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> .env
             echo -e "AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> .env
 
-            echo "API Secrets"
+            echo "> Appending API Secrets"
             echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
             echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}" >> .env
             echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}" >> .env
@@ -66,13 +76,17 @@ jobs:
             echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
             echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
 
-            echo "Docker Secrets"
+            echo "> Appending Docker Secrets"
             echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
             echo -e "DB_USER=${{ secrets.DB_USER }}" >> .env
             echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
             echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
 
+            echo "> Secrets Refreshed. Printing..."
             cat .env
+            echo ">>Current Directory:"
             pwd
+            echo ">>ls"
             ls
-            docker compose -f docker-compose.yml --build up
+            echo ">>Starting docker-compose..."
+            docker compose -f docker-compose.test.yaml --build up
