@@ -7,18 +7,25 @@ services:
       - "--providers.docker.exposedbydefault=false"
       # TODO: Test if 5430 is valid for postgresql
       - "--entrypoints.postgres.address=:5430"
-      - "--entrypoints.web.address=:3000"
-      - "--entrypoints.websecure.address=:3001"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
       - "--entrypoints.api.address=:5002"
       - "--entrypoints.apisecure.address=:5003"
+      - "--api.dashboard=true"
     ports:
       - "6969:8080" # Traefik dashboard
-      - "5430:5432" # PostgreSQL port
+      - "5432:5432" # PostgreSQL port
       - "5002"
       - "5003"
-      - "3000"
+      - "80"
+      - "443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.routers.api.rule=Host(`traefik-test.evanbecker.net`)"
+      - "traefik.http.routers.api.service=api@internal"
 
   evanbecker-db:
     image: postgres
@@ -38,8 +45,7 @@ services:
 
   evanbecker:
     container_name: evanbecker-server
-    build:
-      context: .
+    pull_policy: always
     image: registry.digitalocean.com/evanbecker/evanbecker-server
     environment:
       - Auth0__Domain=${Auth0_Domain}
@@ -68,8 +74,7 @@ services:
       
   evanbecker-client:
     container_name: evanbecker-client
-    build:
-      context: .
+    pull_policy: always
     image: registry.digitalocean.com/evanbecker/evanbecker-client
     environment:
       - AUTH0_DOMAIN=${AUTH0_DOMAIN}
@@ -80,8 +85,8 @@ services:
       - evanbecker-db
       - evanbecker
     ports:
-      - "3000:3000"
-      - "3001:3001"
+      - "80:3000"
+      - "443:3001"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.client.entrypoints=web,websecure"
