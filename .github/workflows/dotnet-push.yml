@@ -15,35 +15,9 @@ jobs:
         
       - name: Create env files
         run: |
-          touch ./.env
           touch ./evanbecker-client/.env.local
-          echo "Client Secrets"
+          echo "Client Build Variables"
           echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> ./evanbecker-client/.env.local
-
-          echo -e "AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> .env
-          echo -e "AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
-          echo -e "AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> .env
-          echo -e "AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> .env
-
-          echo "API Secrets"
-          echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
-          echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}" >> .env
-          echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}" >> .env
-          echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
-          echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
-          echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
-
-          echo "Docker Secrets"
-          echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo -e "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
-          echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
-
-          cat .env
-
-          pwd
-
-          ls
 
       - name: Update Docker settings
         run: |
@@ -59,7 +33,7 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           
       - name: Log in to DO Container Registry
-        run: doctl registry login --expiry-seconds 600
+        run: doctl registry login
         
       - name: Push image to DO Container Registry
         run: docker compose -f docker-compose.test.yaml push
@@ -70,7 +44,34 @@ jobs:
           host: ${{ secrets.GL_SSH_HOST }}
           username: ${{ secrets.GL_SSH_USERNAME }}
           key: ${{ secrets.GL_SSH_SECRET }}
-          port: ${{ secrets.GL_SSH_PORT }}
+          port: 22
           script: |
-            cd /PATH/TO/DIRECTORY/WHERE/COMPOSE/FILE/IS
-            ./init.sh
+            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
+
+            echo "Refreshing Secrets..."
+            rm .env
+            touch ./.env
+            echo "Client Secrets"
+            echo -e "AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> .env
+            echo -e "AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
+            echo -e "AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> .env
+            echo -e "AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> .env
+
+            echo "API Secrets"
+            echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
+            echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}" >> .env
+            echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}" >> .env
+            echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
+            echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
+            echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
+
+            echo "Docker Secrets"
+            echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo -e "DB_USER=${{ secrets.DB_USER }}" >> .env
+            echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+            echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
+
+            cat .env
+            pwd
+            ls
+            docker compose -f docker-compose.yml -d --build
