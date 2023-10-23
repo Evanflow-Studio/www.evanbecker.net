@@ -21,6 +21,7 @@ services:
       - "443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /certs:/certs
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.entrypoints=web"
@@ -87,12 +88,12 @@ services:
       - evanbecker
     ports:
       - "3000:3000"
-      - "3001:3001"
     volumes:
       - /certs:/certs
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.client.entrypoints=web,websecure"
       - "traefik.http.routers.client.rule=Host(`test.evanbecker.net`)"
+      - "traefik.http.routers.client.tls=true"
       - "traefik.http.services.client.loadbalancer.server.port=3000" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
-      - "traefik.port=80"
+      - "traefik.port=443"
