@@ -15,7 +15,7 @@ jobs:
         
       - name: Create env files
         run: |
-          touch .env
+          touch ./.env
           touch ./evanbecker-client/.env.local
           echo "Client Secrets"
           echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> ./evanbecker-client/.env.local
@@ -44,6 +44,11 @@ jobs:
           pwd
 
           ls
+
+      - name: Update Docker settings
+        run: |
+          sudo sed -i 's/ }/, \"max-concurrent-uploads\": 2 }/' /etc/docker/daemon.json
+          sudo systemctl restart docker
 
       - name: Build image
         run: docker compose -f docker-compose.test.yaml build --no-cache
