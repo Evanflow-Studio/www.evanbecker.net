@@ -66,6 +66,7 @@ services:
       - evanbecker-db
     volumes:
       - ~/.aspnet/https:/https:ro
+      - /certs:/certs
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.aspnetapp.rule=Host(`api-test.evanbecker.net`)"
@@ -87,6 +88,8 @@ services:
     ports:
       - "80:3000"
       - "443:3001"
+    volumes:
+      - /certs:/certs
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.client.entrypoints=web,websecure"
