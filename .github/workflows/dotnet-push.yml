@@ -48,16 +48,8 @@ jobs:
           port: 22
           script: |
             echo "Starting Test Deploy:"
-            echo ">>Current Directory:"
-            pwd
-            echo ">>ls"
-            ls
             cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
-            echo ">>Current Directory:"
-            pwd
-            echo ">>ls"
-            ls
-            echo "0. Refreshing Secrets..."
+            echo "Refreshing Secrets..."
             echo "> Deleting previous .env"
             [ ! -e .env ] || rm .env
             echo "> Creating new .env"
@@ -82,11 +74,10 @@ jobs:
             echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
             echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
 
-            echo "> Secrets Refreshed. Printing..."
-            cat .env
-            echo ">>Current Directory:"
-            pwd
-            echo ">>ls"
-            ls
-            echo ">>Starting docker-compose..."
-            docker compose -f docker-compose.test.yaml --build up
+            echo "> Secrets Refreshed..."
+
+            echo "Logging into doctl registry..."
+            doctl registry login
+
+            echo "Starting docker-compose..."
+            docker compose -f docker-compose.test.yaml up --build
