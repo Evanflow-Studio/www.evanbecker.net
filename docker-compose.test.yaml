@@ -72,8 +72,8 @@ services:
     build:
       context: .
       dockerfile: evanbecker-client/Dockerfile
-      args:
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+      #args:
+      #  NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     image: ${DOCKER_REGISTRY-}evanbecker-client
     environment:
       - AUTH0_DOMAIN=${AUTH0_DOMAIN}
