@@ -43,6 +43,7 @@ jobs:
         with:
           host: ${{ secrets.GL_SSH_HOST }}
           username: ${{ secrets.GL_SSH_USERNAME }}
+          passphrase: ${{ secrets.GL_SSH_PASSPHRASE }}
           key: ${{ secrets.GL_SSH_SECRET }}
           port: 22
           script: |
