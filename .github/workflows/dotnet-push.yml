@@ -73,6 +73,7 @@ jobs:
             echo -e "DB_USER=${{ secrets.DB_USER }}" >> .env
             echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
             echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
+            echo -e "CERT_PASSWORD=${{ secrets.CERT_PASSWORD }}" >> .env
 
             echo "> Secrets Refreshed..."
 
