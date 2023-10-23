@@ -41,7 +41,7 @@ services:
     build:
       context: .
       dockerfile: evanbecker-api/Dockerfile
-    image: ${DOCKER_REGISTRY-}evanbecker
+    image: registry.digitalocean.com/evanbecker/evanbecker-server
     environment:
       - Auth0__Domain=${Auth0_Domain}
       - Auth0__Audience=${Auth0_Audience}
@@ -74,7 +74,7 @@ services:
       dockerfile: evanbecker-client/Dockerfile
       #args:
       #  NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
-    image: ${DOCKER_REGISTRY-}evanbecker-client
+    image: registry.digitalocean.com/evanbecker/evanbecker-client
     environment:
       - AUTH0_DOMAIN=${AUTH0_DOMAIN}
       - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
