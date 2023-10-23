@@ -1,0 +1,9 @@
+tls:
+  certificates:
+    - certFile: /certs/evanbecker.net.crt
+      keyFile: /certs/evanbecker.net.key
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/evanbecker.net.crt
+        keyFile: /certs/evanbecker.net.key
