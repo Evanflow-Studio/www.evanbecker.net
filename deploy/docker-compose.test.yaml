@@ -38,7 +38,7 @@ services:
       - /certs/evanbecker.net.crt:/certs/server.cert
       - /certs/evanbecker.net.key:/certs/server.key
     ports:
-      - 5050:443
+      - 5543:443
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com #TODO: Add to secrets
       PGADMIN_DEFAULT_PASSWORD: 123456 #TODO: Add to secrets
