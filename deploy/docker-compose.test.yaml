@@ -77,27 +77,18 @@ services:
       - Auth0__ClientSecret=${Auth0_ClientSecret}
       - Auth0__Url=${Auth0_Url}
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
-      #- ASPNETCORE_URLS=https://+:443;http://+:80
-      - ASPNETCORE_URLS=http://+:80
-      # TODO: Grab cert from server paths
-#      - ASPNETCORE_Kestrel__Certificates__Default__Password=${CERT_PASSWORD}
-#      - ASPNETCORE_Kestrel__Certificates__Default__Path=/certs/evanbecker.net.pfx
-
+      - ASPNETCORE_URLS=http://+:5000
     ports:
-#      - 5002:80
-#      - 5003:443
-      - 5000:80
+      - 5000:5000
     depends_on:
       - evanbecker-db
-    volumes:
-      - ~/.aspnet/https:/https:ro
-      - /certs:/certs
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.aspnetapp.entrypoints=websecure"
       - "traefik.http.routers.aspnetapp.rule=Host(`api-test.evanbecker.net`)"      
       - "traefik.http.routers.aspnetapp.tls=true"
       - "traefik.http.services.aspnetapp.loadbalancer.server.port=5000"
+      - "traefik.port=443"
       
   evanbecker-client:
     container_name: evanbecker-client
@@ -113,8 +104,6 @@ services:
       - evanbecker
     ports:
       - 3000:3000
-    volumes:
-      - /certs:/certs
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.client.entrypoints=websecure"
