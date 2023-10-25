@@ -13,9 +13,9 @@ services:
       - "--entrypoints.apisecure.address=:5003"
       - "--api.dashboard=true"
     ports:
-      - "6969:8080" # Traefik dashboard
-      - "80:80"
-      - "443:443"
+      - 6969:8080
+      - 80:80
+      - 443:443
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /certs/:/certs/
@@ -52,7 +52,7 @@ services:
     image: postgres
     restart: always
     ports:
-      - "5432:5432"
+      - 5432:5432
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
@@ -83,8 +83,8 @@ services:
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/certs/evanbecker.net.pfx
 
     ports:
-      - "5002:80"
-      - "5003:443"
+      - 5002:80
+      - 5003:443
     depends_on:
       - evanbecker-db
     volumes:
@@ -109,7 +109,7 @@ services:
       - evanbecker-db
       - evanbecker
     ports:
-      - "3000:3000"
+      - 3000:3000
     volumes:
       - /certs:/certs
     labels:
