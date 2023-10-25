@@ -1,4 +1,4 @@
-name: .NET
+name: Deploy Test
 
 on:
   push:
@@ -84,4 +84,4 @@ jobs:
             doctl registry login
 
             echo "Starting docker-compose..."
-            docker compose -f docker-compose.test.yaml -d up --build
+            docker compose -f docker-compose.test.yaml up -d --build
