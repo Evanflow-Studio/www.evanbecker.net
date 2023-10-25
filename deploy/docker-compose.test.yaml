@@ -35,18 +35,20 @@ services:
       - evanbecker-db
     volumes:
       - ./pgadmin-data:/var/lib/pgadmin
-      - /opt/deploy_tools/_traefik/conf/ssl/cert.crt:/certs/server.cert
-      - /opt/deploy_tools/_traefik/conf/ssl/cert.key:/certs/server.key
+      - /opt/deploy_tools/_traefik/conf/ssl/cert.crt:/certs/evanbecker.net.cert
+      - /opt/deploy_tools/_traefik/conf/ssl/cert.key:/certs/evanbecker.net.key
     ports:
       - 5050:443
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com #TODO: Add to secrets
       PGADMIN_DEFAULT_PASSWORD: 123456 #TODO: Add to secrets
+      PGADMIN_ENABLE_TLS: 1
+      PGADMIN_LISTEN_PORT: 443
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pgadmin4.entrypoints=websecure"
-      - "traefik.http.routers.pgadmin4.rule=Host(`db-test.evanbecker.net`)"
       - "traefik.http.routers.pgadmin4.tls=true"
+      - "traefik.http.routers.pgadmin4.rule=Host(`db-test.evanbecker.net`)"
       - "traefik.http.services.pgadmin4-https.loadbalancer.server.port=443"
 
   evanbecker-db:
