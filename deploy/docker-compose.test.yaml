@@ -47,7 +47,6 @@ services:
       - "traefik.http.routers.pgadmin4.entrypoints=websecure"
       - "traefik.http.routers.pgadmin4.rule=Host(`db-test.evanbecker.net`)"
       - "traefik.http.routers.pgadmin4.tls=true"
-      - "traefik.http.routers.pgadmin4.tls.certresolver=myresolver"
       - "traefik.http.services.pgadmin4-https.loadbalancer.server.port=443"
 
   evanbecker-db:
