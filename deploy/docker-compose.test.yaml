@@ -35,8 +35,7 @@ services:
       - evanbecker-db
     volumes:
       - ./pgadmin-data:/var/lib/pgadmin
-      - /opt/deploy_tools/_traefik/conf/ssl/cert.crt:/certs/evanbecker.net.cert
-      - /opt/deploy_tools/_traefik/conf/ssl/cert.key:/certs/evanbecker.net.key
+      - /certs/:/certs/
     ports:
       - 5050:443
     environment:
