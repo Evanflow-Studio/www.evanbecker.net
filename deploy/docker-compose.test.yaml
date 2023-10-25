@@ -9,8 +9,6 @@ services:
       - "--entrypoints.postgres.address=:5432"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-#      - "--entrypoints.api.address=:5002"
-#      - "--entrypoints.apisecure.address=:5003"
       - "--api.dashboard=true"
     ports:
       - 6969:8080
@@ -76,6 +74,7 @@ services:
       - Auth0__ClientId=${Auth0_ClientId}
       - Auth0__ClientSecret=${Auth0_ClientSecret}
       - Auth0__Url=${Auth0_Url}
+      - ConnectionStrings__Database=${CONNECTION_STRING}
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:5000
     ports:

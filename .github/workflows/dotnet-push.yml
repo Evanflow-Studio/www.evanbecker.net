@@ -37,6 +37,8 @@ jobs:
         
       - name: Push image to DO Container Registry
         run: docker compose -f docker-compose.test.yaml push
+
+        # TODO: Run migrations
         
       - name: Deploy Stack
         uses: appleboy/ssh-action@master
@@ -74,6 +76,7 @@ jobs:
             echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
             echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
             echo -e "CERT_PASSWORD=${{ secrets.CERT_PASSWORD }}" >> .env
+            echo -e "CONNECTION_STRING=Host=${{ secrets.DB_NAME }};Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
 
             echo "> Secrets Refreshed..."
 
