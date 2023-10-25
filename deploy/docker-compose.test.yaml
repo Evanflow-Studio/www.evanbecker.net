@@ -38,7 +38,7 @@ services:
       - /opt/deploy_tools/_traefik/conf/ssl/cert.crt:/certs/server.cert
       - /opt/deploy_tools/_traefik/conf/ssl/cert.key:/certs/server.key
     ports:
-      - 5050:80
+      - 5050:443
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com #TODO: Add to secrets
       PGADMIN_DEFAULT_PASSWORD: 123456 #TODO: Add to secrets
