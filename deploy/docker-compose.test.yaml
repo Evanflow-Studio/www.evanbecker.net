@@ -35,8 +35,7 @@ services:
       - evanbecker-db
     volumes:
       - ./pgadmin-data:/var/lib/pgadmin
-      - /certs/evanbecker.net.crt:/certs/server.crt
-      - /certs/evanbecker.net.key:/certs/server.key
+      - /certs/:/certs/
     ports:
       - 5050:443
     environment:
