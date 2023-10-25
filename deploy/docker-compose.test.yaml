@@ -13,7 +13,6 @@ services:
       - "--api.dashboard=true"
     ports:
       - "6969:8080" # Traefik dashboard
-      - "5432:5432" # PostgreSQL port
       - "5002:5002"
       - "5003:5003"
       - "80:80"
