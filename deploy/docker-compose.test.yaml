@@ -107,6 +107,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.client.entrypoints=websecure"
       - "traefik.http.routers.client.rule=Host(`test.evanbecker.net`)"
+      - "traefik.http.middlewares.client-web-secure.redirectscheme.scheme=https"
+      - "traefik.http.routers.client.middlewares=client-web-secure"
       - "traefik.http.routers.client.tls=true"
       - "traefik.http.services.client.loadbalancer.server.port=3000" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
       - "traefik.port=443"
