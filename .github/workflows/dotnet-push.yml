@@ -24,21 +24,20 @@ jobs:
           sudo sed -i 's/ }/, \"max-concurrent-uploads\": 2 }/' /etc/docker/daemon.json
           sudo systemctl restart docker
 
-      # - name: Build image
-      #   run: docker compose -f docker-compose.test.yaml build --no-cache
+      - name: Build image
+        run: docker compose -f docker-compose.test.yaml build --no-cache
         
-      # - name: Install doctl
-      #   uses: digitalocean/action-doctl@v2
-      #   with:
-      #     token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           
-      # - name: Log in to DO Container Registry
-      #   run: doctl registry login
+      - name: Log in to DO Container Registry
+        run: doctl registry login
         
-      # - name: Push image to DO Container Registry
-      #   run: docker compose -f docker-compose.test.yaml push
+      - name: Push image to DO Container Registry
+        run: docker compose -f docker-compose.test.yaml push
 
-        # TODO: Run migrations
       - name: Run Entity Framework Migrations
         run: |
           echo "Creating appsettings.secrets.json..."
