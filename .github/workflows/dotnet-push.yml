@@ -18,6 +18,10 @@ jobs:
           touch ./evanbecker-client/.env.local
           echo "Client Build Variables"
           echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> ./evanbecker-client/.env.local
 
       - name: Update Docker settings
         run: |
@@ -71,11 +75,6 @@ jobs:
             [ ! -e .env ] || rm .env
             echo "> Creating new .env"
             touch .env
-            echo "> Appending Client Secrets"
-            echo -e "AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> .env
-            echo -e "AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
-            echo -e "AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> .env
-            echo -e "AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> .env
 
             echo "> Appending API Secrets"
             echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
@@ -84,14 +83,13 @@ jobs:
             echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
             echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
             echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
+            echo -e "CONNECTION_STRING=Host=${{ secrets.DB_NAME }};Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
 
-            echo "> Appending Docker Secrets"
+            echo "> Appending DB Secrets"
             echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
             echo -e "DB_USER=${{ secrets.DB_USER }}" >> .env
             echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
-            echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env
-            echo -e "CERT_PASSWORD=${{ secrets.CERT_PASSWORD }}" >> .env
-            echo -e "CONNECTION_STRING=Host=${{ secrets.DB_NAME }};Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
+            echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env            
 
             echo "> Secrets Refreshed..."
 
