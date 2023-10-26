@@ -52,9 +52,9 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Applicatio
 
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile(secretsPath, true)
             .AddJsonFile(defaultPath, false)
             .AddJsonFile(appSettingsPath, true)
-            .AddJsonFile(secretsPath, true)
             .Build();
         
         var builder = new DbContextOptionsBuilder<ApplicationContext>();
