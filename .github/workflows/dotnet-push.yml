@@ -47,6 +47,8 @@ jobs:
           chmod 777 ./evanbecker-api/evanbecker-api/secrets/
           touch ./evanbecker-api/evanbecker-api/secrets/appsettings.Secrets.json
           echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db-test.evanbecker.net;Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.Secrets.json #TODO: Change with 0th DB_NAME->DB_HOST
+          pwd
+          cat ./evanbecker-api/evanbecker-api/secrets/appsettings.Secrets.json
           echo "Ensuring dotnet-ef is installed..."
           dotnet tool install --global dotnet-ef
           dotnet tool restore
