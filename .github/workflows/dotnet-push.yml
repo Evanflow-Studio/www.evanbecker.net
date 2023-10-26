@@ -41,14 +41,14 @@ jobs:
         # TODO: Run migrations
       - name: Run Entity Framework Migrations
         run: |
-          echo "Creating appsettings.Secrets.json..."
-          [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.Secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.Secrets.json
+          echo "Creating appsettings.secrets.json..."
+          [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           mkdir ./evanbecker-api/evanbecker-api/secrets/
           chmod 777 ./evanbecker-api/evanbecker-api/secrets/
-          touch ./evanbecker-api/evanbecker-api/secrets/appsettings.Secrets.json
-          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db-test.evanbecker.net;Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.Secrets.json #TODO: Change with 0th DB_NAME->DB_HOST
+          touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db-test.evanbecker.net;Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json #TODO: Change with 0th DB_NAME->DB_HOST
           pwd
-          cat ./evanbecker-api/evanbecker-api/secrets/appsettings.Secrets.json
+          cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           echo "Ensuring dotnet-ef is installed..."
           dotnet tool install --global dotnet-ef
           dotnet tool restore
