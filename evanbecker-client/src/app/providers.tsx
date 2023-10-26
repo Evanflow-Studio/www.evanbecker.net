@@ -50,11 +50,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{ previousPathname }}>
       <Auth0Provider
-          domain={process.env.AUTH0_DOMAIN || "ENV not configured"}
-          clientId={process.env.AUTH0_CLIENT_ID || "ENV not configured"}
+          domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN || "ENV not configured"}
+          clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || "ENV not configured"}
           authorizationParams={{
-            audience: process.env.AUTH0_AUDIENCE || "ENV not configured",
-            redirect_uri: process.env.AUTH0_REDIRECT_URI || "ENV not configured",
+            audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || "ENV not configured",
+            redirect_uri: process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI || "ENV not configured",
             scope: "openid profile email offline_access"
           }}
           useRefreshTokens

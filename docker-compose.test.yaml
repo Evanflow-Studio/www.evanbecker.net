@@ -49,6 +49,7 @@ services:
       - Auth0__ClientId=${Auth0_ClientId}
       - Auth0__ClientSecret=${Auth0_ClientSecret}
       - Auth0__Url=${Auth0_Url}
+      - ConnectionStrings__Database=${CONNECTION_STRING}
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:443;http://+:80
       # TODO: Grab cert from server paths
@@ -81,7 +82,6 @@ services:
       - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
       - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
       - AUTH0_REDIRECT_URI=${AUTH0_REDIRECT_URI}
-      - ConnectionStrings__Database=${CONNECTION_STRING}
     depends_on:
       - evanbecker-db
       - evanbecker
