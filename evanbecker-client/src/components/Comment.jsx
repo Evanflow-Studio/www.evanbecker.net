@@ -45,7 +45,7 @@ function ReplyBox(
             const accessToken = await getAccessTokenSilently();
             const splitUrl = pathname.split('/');
             const targetLocation = splitUrl[splitUrl.length-1];
-            const call = await fetch(`https://localhost:5003/api/v1/comment/${targetLocation}/reply/${id}`, {
+            const call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/comment/${targetLocation}/reply/${id}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -104,7 +104,7 @@ export function Comment({user, seedComment, parentComment, parentId, isChild, se
         try {
             const accessToken = await getAccessTokenSilently();
 
-            const call = await fetch(`https://localhost:5003/api/v1/comment/${comment.id}`, {
+            const call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/comment/${comment.id}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
