@@ -51,7 +51,7 @@ export function AccountSidebar({sidebarOpen, setSidebarOpen}) {
     const getUser = async () => {
         try {
             const accessToken = await getAccessTokenSilently();
-            var call = await fetch(`https://localhost:5003/api/v1/user`, {
+            var call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/user`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,

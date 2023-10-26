@@ -6,10 +6,11 @@ import "./style.css";
 import {AccountLayout} from "@/components/Account/AccountLayout";
 
 export default function Documentation() {
+    const swaggerUrl = `${process.env.NEXT_PUBLIC_API_URL}swagger/v1/swagger.json`
     return (
         <>
             <AccountLayout>
-                <SwaggerUI url="https://localhost:5003/swagger/v1/swagger.json" withCredentials/>
+                <SwaggerUI url={swaggerUrl} withCredentials/>
             </AccountLayout>
         </>
     );

@@ -18,7 +18,7 @@ export function CommentSection() {
             const accessToken = await getAccessTokenSilently();
             const splitUrl = pathname.split('/');
             const targetLocation = splitUrl[splitUrl.length-1];
-            var call = await fetch(`https://localhost:5003/api/v1/comment/${targetLocation}`, {
+            var call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/comment/${targetLocation}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -42,7 +42,7 @@ export function CommentSection() {
             const accessToken = await getAccessTokenSilently();
             const splitUrl = pathname.split('/');
             const targetLocation = splitUrl[splitUrl.length-1];
-            var call = await fetch(`https://localhost:5003/api/v1/comment/${targetLocation}`, {
+            var call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/comment/${targetLocation}`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -59,7 +59,7 @@ export function CommentSection() {
     const getUser = async () => {
         try {
             const accessToken = await getAccessTokenSilently();
-            var call = await fetch(`https://localhost:5003/api/v1/user`, {
+            var call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/user`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
