@@ -37,6 +37,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  console.log("from root:", process.env);
   return (
     <html
       lang="en"
