@@ -3,17 +3,17 @@
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 import "./style.css";
-import {Header} from "@/components/Header";
-import {Footer} from "@/components/Footer";
-import {Container} from "@/components/Container";
-import {AccountTab} from "@/components/Account/AccountTab";
 import {AccountLayout} from "@/components/Account/AccountLayout";
 
 export default function Documentation() {
+    const swaggerUrl = `${process.env.NEXT_PUBLIC_API_URL}swagger/v1/swagger.json`
     return (
         <>
             <AccountLayout>
-                <SwaggerUI url="https://localhost:5003/swagger/v1/swagger.json" withCredentials/>
+                <div className="text-slate-200">
+                    <SwaggerUI url={swaggerUrl} withCredentials/>
+                </div>
+
             </AccountLayout>
         </>
     );

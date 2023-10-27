@@ -1,0 +1,46 @@
+name: Build and Test
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'evanbecker-api/**'
+
+jobs:
+  build-and-test-api:
+    runs-on: self-hosted
+    env:
+      working-directory: ./evanbecker-api
+    steps:
+    - uses: actions/checkout@v3
+    ### Can skip with self-hosted
+    #- name: Setup .NET
+    #  uses: actions/setup-dotnet@v3
+    #  with:
+    #    dotnet-version: 7.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ${{env.working-directory}}
+    - name: Build
+      run: dotnet build --no-restore
+      working-directory: ${{env.working-directory}}
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+      working-directory: ${{env.working-directory}}
+  build-and-test-client:
+    runs-on: self-hosted
+    env:
+      working-directory: ./evanbecker-client
+    steps:
+    - uses: actions/checkout@v3
+    - name: Restore dependencies
+      run: npm install
+      working-directory: ${{env.working-directory}}
+    - name: Create env files
+      run: |
+          touch ./evanbecker-client/.env.local
+          echo "Client Build Variables"
+          echo -e "NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/" >> ./evanbecker-client/.env.local
+    - name: Build
+      run: npm run build
+      working-directory: ${{env.working-directory}}

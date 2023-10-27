@@ -60,13 +60,29 @@ function classNames(...classes: any[]) {
 }
 
 export default function ProjectList() {
+
+    var getDeploymentStatusClass = (status: string) => {
+        switch (status)
+        {
+            case 'offline':
+                return statuses.offline;
+                break;
+            case 'online':
+                return statuses.online;
+                break;
+            case 'error':
+                return statuses.error;
+                break;
+        }
+    }
+
     return (
         <ul role="list" className="divide-y divide-white/5">
             {deployments.map((deployment) => (
                 <li key={deployment.id} className="relative flex items-center space-x-4 py-4">
                     <div className="min-w-0 flex-auto">
                         <div className="flex items-center gap-x-3">
-                            <div className={classNames(statuses[deployment.status], 'flex-none rounded-full p-1')}>
+                            <div className={classNames(getDeploymentStatusClass(deployment.status), 'flex-none rounded-full p-1')}>
                                 <div className="h-2 w-2 rounded-full bg-current" />
                             </div>
                             <h2 className="min-w-0 text-sm font-semibold leading-6 text-white">
@@ -89,7 +105,7 @@ export default function ProjectList() {
                     <div
                         className={classNames(
                             environments[deployment.environment],
-                            'rounded-full flex-none py-1 px-2 text-xs font-medium ring-1 ring-inset'
+                            'rounded-full flex-none py-1 px-2 text-xs font-medium ring-1 ring-inset text-slate-200'
                         )}
                     >
                         {deployment.environment}

@@ -21,7 +21,7 @@ export default function Test() {
         try {
             const accessToken = await getAccessTokenSilently();
             console.log("token:", accessToken);
-            var call = await fetch("https://localhost:5003/auth/getdata", {
+            var call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}auth/getdata`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -39,7 +39,7 @@ export default function Test() {
             const accessToken = await getAccessTokenSilently();
             console.log("token:", accessToken);
             console.log("token length", accessToken.length);
-            var call = await fetch("https://localhost:5003/auth/getusers", {
+            var call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}auth/getusers`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,

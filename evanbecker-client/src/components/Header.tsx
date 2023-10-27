@@ -126,10 +126,10 @@ export function Header() {
   
   return (
     <header className={clsx(
-      'sticky top-0 z-50 bg-white px-4 shadow-md shadow-slate-900/5 transition duration-500 dark:shadow-none sm:px-6 lg:px-8',
+      'sticky top-0 z-50 px-4 transition duration-500 shadow-none sm:px-6 lg:px-8',
       isScrolled
-        ? 'dark:bg-slate-900/95 dark:backdrop-blur dark:[@supports(backdrop-filter:blur(0))]:bg-slate-900/75'
-        : 'dark:bg-transparent',
+        ? 'bg-slate-900/95 backdrop-blur [@supports(backdrop-filter:blur(0))]:bg-slate-900/75'
+        : 'bg-transparent',
     )}>
       <Container>
         <nav className="relative z-50 flex justify-between">
