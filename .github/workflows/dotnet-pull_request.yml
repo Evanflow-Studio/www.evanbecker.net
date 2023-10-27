@@ -36,6 +36,11 @@ jobs:
     - name: Restore dependencies
       run: npm install
       working-directory: ${{env.working-directory}}
+    - name: Create env files
+      run: |
+          touch ./evanbecker-client/.env.local
+          echo "Client Build Variables"
+          echo -e "NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/" >> ./evanbecker-client/.env.local
     - name: Build
       run: npm run build
       working-directory: ${{env.working-directory}}
