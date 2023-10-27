@@ -15,10 +15,13 @@ public class AuthController : ControllerBase
 {
 
     public IOptions<Auth0Configuration> _auth0Configuration;
+    private readonly IOptions<GitHubConfiguration> _gitHubConfiguration;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IOptions<Auth0Configuration> auth0Configuration)
+    public AuthController(IOptions<Auth0Configuration> auth0Configuration, IOptions<GitHubConfiguration> gitHubConfiguration)
     {
         _auth0Configuration = auth0Configuration;
+        _gitHubConfiguration = gitHubConfiguration;
     }
 
     [Authorize]
@@ -41,8 +44,13 @@ public class AuthController : ControllerBase
 
     // wip FOR PROJECTS
     [HttpGet]
-    public void Test()
+    public async Task Test()
     {
-        var client = new GitHubClient(new ProductHeaderValue("my-cool-app"));
+        var client = new GitHubClient(new ProductHeaderValue(_gitHubConfiguration.Value.Organization));
+        var tokenAuth = new Credentials(_gitHubConfiguration.Value.Pat); // This can be a PAT or an OAuth token.
+        client.Credentials = tokenAuth;
+        var myList = await client.Actions.Workflows.Runs.List(_gitHubConfiguration.Value.Organization, "www.evanbecker.net");
+        var myList2 = await client.Repository.Commit.GetAll(_gitHubConfiguration.Value.Organization, "www.evanbecker.net");
+        var myList3 = await client.Actions.SelfHostedRunners.ListAllRunnersForOrganization(_gitHubConfiguration.Value.Organization);
     }
 }
