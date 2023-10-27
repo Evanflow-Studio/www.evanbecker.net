@@ -54,6 +54,7 @@ export default function AccountSettings() {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': "*",
                 },
                 mode: "cors",
             });

@@ -10,7 +10,10 @@ export default function Documentation() {
     return (
         <>
             <AccountLayout>
-                <SwaggerUI url={swaggerUrl} withCredentials/>
+                <div className="text-slate-200">
+                    <SwaggerUI url={swaggerUrl} withCredentials/>
+                </div>
+
             </AccountLayout>
         </>
     );

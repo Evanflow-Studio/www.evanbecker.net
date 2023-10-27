@@ -105,7 +105,7 @@ export default function ProjectList() {
                     <div
                         className={classNames(
                             environments[deployment.environment],
-                            'rounded-full flex-none py-1 px-2 text-xs font-medium ring-1 ring-inset'
+                            'rounded-full flex-none py-1 px-2 text-xs font-medium ring-1 ring-inset text-slate-200'
                         )}
                     >
                         {deployment.environment}

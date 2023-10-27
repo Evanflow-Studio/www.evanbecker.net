@@ -32,15 +32,15 @@ export default function AboutMe() {
                                     src={portraitImage}
                                     alt=""
                                     sizes="(min-width: 1024px) 32rem, 20rem"
-                                    className="aspect-square animate-jump rotate-2 rounded-2xl bg-slate-100 object-cover dark:bg-slate-800 "
+                                    className="aspect-square animate-jump rotate-2 rounded-2xl bg-slate-100 object-cover bg-slate-800 "
                                 />
                             </div>
                         </div>
                         <div className="lg:order-first lg:row-span-2">
-                            <h1 className="text-4xl font-bold tracking-tight text-light sm:text-5xl">
+                            <h1 className="text-4xl font-bold tracking-tight text-light sm:text-5xl text-slate-200">
                                 I&apos;m Evan Becker, a software architect living in MKE, dealing with the -ilities.
                             </h1>
-                            <div className="mt-6 space-y-7 text-base text-slate-600 dark:text-slate-300">
+                            <div className="mt-6 space-y-7 text-base text-slate-300">
                                 <p>
                                     I am experienced in helping enterprises design scalable and consumable
                                     systems that bring real value. I am employed as a Technical Architect at nvisia,
@@ -68,7 +68,7 @@ export default function AboutMe() {
                                     environments, I have fun with the challenges.
                                 </p>
                             </div>
-                            <h1 className="text-2xl font-bold tracking-tight text-light sm:text-3xl mt-20 mb-4">
+                            <h1 className="text-2xl font-bold tracking-tight text-light sm:text-3xl mt-20 mb-4 text-slate-200">
                                 Most Recent Changes
                             </h1>
                             <ProjectList/>
@@ -121,7 +121,7 @@ function Newsletter() {
                 <MailIcon className="h-6 w-6 flex-none fill-slate-400" />
                 <span className="ml-3">Stay up to date</span>
             </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-2 text-sm text-slate-300">
                 Get notified when I publish something new, and unsubscribe at any time.
             </p>
             <div className="mt-6 flex">
@@ -159,21 +159,21 @@ function Role({ role }: { role: Role }) {
 
     return (
         <li className="flex gap-4">
-            <div className="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-full shadow-md shadow-slate-800/5 ring-1 ring-slate-900/5 dark:border dark:border-slate-700/50 dark:bg-slate-800 dark:ring-0">
+            <div className="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-full shadow-md shadow-slate-800/5 ring-1 ring-slate-900/5 border border-slate-700/50 bg-slate-800 ring-0">
                 <Image src={role.logo} alt="" className="h-7 w-7" unoptimized />
             </div>
             <dl className="flex flex-auto flex-wrap gap-x-2">
                 <dt className="sr-only">Company</dt>
-                <dd className="w-full flex-none text-sm font-medium text-slate-900 dark:text-slate-100">
+                <dd className="w-full flex-none text-sm font-medium text-slate-100">
                     {role.company}
                 </dd>
                 <dt className="sr-only">Role</dt>
-                <dd className="text-xs text-slate-500 dark:text-slate-400">
+                <dd className="text-xs text-slate-400">
                     {role.title}
                 </dd>
                 <dt className="sr-only">Date</dt>
                 <dd
-                    className="ml-auto text-xs text-slate-400 dark:text-slate-500"
+                    className="ml-auto text-xs text-slate-400"
                     aria-label={`${startLabel} until ${endLabel}`}
                 >
                     <time dateTime={startDate}>{startLabel}</time>{' '}
@@ -265,7 +265,7 @@ function SocialLink({
         <li className={clsx(className, 'flex')}>
             <Link
                 href={href}
-                className="group flex text-sm font-medium text-slate-800 transition hover:text-tertiary dark:text-slate-200"
+                className="group flex text-sm font-medium transition hover:text-tertiary text-slate-200"
             >
                 <Icon className="h-6 w-6 flex-none fill-slate-400 transition group-hover:fill-tertiary" />
                 <span className="ml-4">{children}</span>
