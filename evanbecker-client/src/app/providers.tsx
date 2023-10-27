@@ -45,13 +45,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   let previousPathname = usePrevious(pathname)
 
-
-
-  console.log(process.env.NEXT_PUBLIC_AUTH0_DOMAIN);
-  console.log(process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID);
-  console.log(process.env.NEXT_PUBLIC_AUTH0_AUDIENCE);
-  console.log(process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI);
-
   return (
     <AppContext.Provider value={{ previousPathname }}>
       <Auth0Provider

@@ -43,19 +43,20 @@ function classNames(...classes) {
     return classes.filter(Boolean).join(' ')
 }
 
-export function AccountSidebar({sidebarOpen, setSidebarOpen}: {boolean, setSidebarOpen: (boolean)=>void}) {
-    const [user, setUser] = useState(null as User);
+export function AccountSidebar({sidebarOpen, setSidebarOpen}) {
+    const [user, setUser] = useState(null);
     const pathname = usePathname();
     const { getAccessTokenSilently } = useAuth0();
 
     const getUser = async () => {
         try {
             const accessToken = await getAccessTokenSilently();
-            var call = await fetch(`https://localhost:5003/api/v1/user`, {
+            var call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/user`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': "*",
                 },
                 mode: "cors",
             });

@@ -8,7 +8,7 @@ import {EllipsisVerticalIcon} from "@heroicons/react/24/solid";
 import {Reply, User, UserComment} from "@/data/Comment";
 
 // todo: Change to TYPE
-function IndentLevel(level: number)
+function IndentLevel(level)
 {
     let mlSize = 0;
 
@@ -34,13 +34,7 @@ function ReplyBox(
         isChild,
         handleParentReply,
         setComment
-    }: {
-        comment: any,
-        parentComment: any,
-        id: string,
-        isChild: boolean,
-        handleParentReply: (comment: unknown) => void,
-        setComment: (comment: unknown) => void}
+    }
 ) {
     const [commentText, setCommentText] = useState(isChild ? `@${comment.author.firstName} ` : '');
 
@@ -51,7 +45,7 @@ function ReplyBox(
             const accessToken = await getAccessTokenSilently();
             const splitUrl = pathname.split('/');
             const targetLocation = splitUrl[splitUrl.length-1];
-            const call = await fetch(`https://localhost:5003/api/v1/comment/${targetLocation}/reply/${id}`, {
+            const call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/comment/${targetLocation}/reply/${id}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -62,7 +56,7 @@ function ReplyBox(
                 }),
                 mode: "cors",
             });
-            let userReply = await call.json() as Reply;
+            let userReply = await call.json();
 
             if (isChild) {
                 parentComment.replies.push(userReply);
@@ -100,7 +94,7 @@ function ReplyBox(
     )
 }
 
-export function Comment({user, seedComment, parentComment, parentId, isChild, setParentReply}: {user: User, comment: any, parentComment: any, parentId: string, isChild: boolean, setParentReply: (comment: any) => void}) {
+export function Comment({user, seedComment, parentComment, parentId, isChild, setParentReply}) {
 
     const [clickToggled, setClickToggled] = useState(false);
     const [comment, setComment] = useState(seedComment);
@@ -110,7 +104,7 @@ export function Comment({user, seedComment, parentComment, parentId, isChild, se
         try {
             const accessToken = await getAccessTokenSilently();
 
-            const call = await fetch(`https://localhost:5003/api/v1/comment/${comment.id}`, {
+            const call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/comment/${comment.id}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -119,7 +113,7 @@ export function Comment({user, seedComment, parentComment, parentId, isChild, se
                 mode: "cors",
             });
 
-            let deletedComment = await call.json() as Reply;
+            let deletedComment = await call.json();
 
             if (isChild) {
                 parentComment.replies = parentComment.replies.filter(x => x.id != deletedComment.id);

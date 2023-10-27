@@ -1,0 +1,104 @@
+name: Build & Deploy Test
+
+on:
+  push:
+    branches: [ "main" ]
+  #pull_request: #Uncomment this for testing purposes
+  #  branches: [ "main" ]
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+        
+      - name: Create env files
+        run: |
+          touch ./evanbecker-client/.env.local
+          echo "Client Build Variables"
+          echo -e "NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_API_URL=https://api-test.evanbecker.net/" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> ./evanbecker-client/.env.local
+
+      - name: Update Docker settings
+        run: |
+          sudo sed -i 's/ }/, \"max-concurrent-uploads\": 2 }/' /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: Build image
+        run: docker compose -f docker-compose.test.yaml build --no-cache
+        
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          
+      - name: Log in to DO Container Registry
+        run: doctl registry login
+        
+      - name: Push image to DO Container Registry
+        run: docker compose -f docker-compose.test.yaml push
+
+      - name: Run Entity Framework Migrations
+        run: |
+          echo "Creating appsettings.secrets.json..."
+          [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          mkdir ./evanbecker-api/evanbecker-api/secrets/
+          chmod 777 ./evanbecker-api/evanbecker-api/secrets/
+          touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db-test.evanbecker.net;Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json #TODO: Change with 0th DB_NAME->DB_HOST
+          pwd
+          cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          echo "Ensuring dotnet-ef is installed..."
+          dotnet tool install --global dotnet-ef
+          dotnet tool restore
+          cd ./evanbecker-api/evanbecker-domain/
+          echo "Updating Database..."
+          dotnet ef database update
+        
+      - name: Deploy Stack
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.GL_SSH_HOST }}
+          username: ${{ secrets.GL_SSH_USERNAME }}
+          passphrase: ${{ secrets.GL_SSH_PASSPHRASE }}
+          key: ${{ secrets.GL_SSH_SECRET }}
+          port: 22
+          script: |
+            echo "Starting Test Deploy:"
+            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
+            echo "Refreshing Secrets..."
+            echo "> Deleting previous .env"
+            [ ! -e .env ] || rm .env
+            echo "> Creating new .env"
+            touch .env
+
+            echo "> Appending API Secrets"
+            echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
+            echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}" >> .env
+            echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}" >> .env
+            echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
+            echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
+            echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
+            echo -e "CONNECTION_STRING=Host=${{ secrets.DB_NAME }};Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
+
+            echo "> Appending DB Secrets"
+            echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo -e "DB_USER=${{ secrets.DB_USER }}" >> .env
+            echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+            echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env            
+
+            echo "> Secrets Refreshed..."
+
+            echo "Logging into doctl registry..."
+            doctl registry login
+
+            echo "Pulling latest changes..."
+            git pull
+
+            echo "Starting docker-compose..."
+            docker compose -f docker-compose.test.yaml up -d --build

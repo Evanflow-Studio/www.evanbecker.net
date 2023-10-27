@@ -12,7 +12,7 @@ const withMDX = nextMDX({
     options: {
         remarkPlugins: [remarkGfm],
         rehypePlugins: [rehypePrism],
-    },
-})
+    }
+});
 
 export default withMDX(nextConfig)

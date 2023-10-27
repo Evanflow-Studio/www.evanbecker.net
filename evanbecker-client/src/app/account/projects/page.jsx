@@ -47,6 +47,21 @@ const activityItems = [
 ]
 
 export default function AccountProjects() {
+    var getDeploymentStatusClass = (status) => {
+        switch (status)
+        {
+            case 'offline':
+                return statuses.offline;
+                break;
+            case 'online':
+                return statuses.online;
+                break;
+            case 'error':
+                return statuses.error;
+                break;
+        }
+    }
+
     return (
         <>
             <AccountLayout> {/* lg:right-0 lg:top-16 w-full xl:w-1/3 */}
@@ -120,7 +135,7 @@ export default function AccountProjects() {
                             <li key={deployment.id} className="relative flex items-center space-x-4 px-4 py-4 sm:px-6 lg:px-8">
                                 <div className="min-w-0 flex-auto">
                                     <div className="flex items-center gap-x-3">
-                                        <div className={classNames(statuses[deployment.status], 'flex-none rounded-full p-1')}>
+                                        <div className={classNames(getDeploymentStatusClass(deployment.status), 'flex-none rounded-full p-1')}>
                                             <div className="h-2 w-2 rounded-full bg-current" />
                                         </div>
                                         <h2 className="min-w-0 text-sm font-semibold leading-6 text-white">

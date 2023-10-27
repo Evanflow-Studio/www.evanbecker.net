@@ -76,10 +76,10 @@ export default function Resources() {
             <Header/>
 
             <Container className="mt-8 sm:mt-16 w-full">
-                <h1 className="text-4xl font-bold tracking-tight text-light sm:text-5xl">
+                <h1 className="text-4xl font-bold tracking-tight text-light sm:text-5xl text-slate-200">
                     Resources
                 </h1>
-                <div className="mt-6 space-y-7 text-base text-slate-600 dark:text-slate-300">
+                <div className="mt-6 space-y-7 text-base text-slate-300">
                     <p>
                         A tagged list of (randomly assorted) resources that I&apos;ve found
                         useful, fun, or interesting.
@@ -96,13 +96,13 @@ export default function Resources() {
                                         <p
                                             className={classNames(
                                                 statuses[project.status],
-                                                'rounded-md whitespace-nowrap mt-0.5 px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset'
+                                                'rounded-md whitespace-nowrap mt-0.5 px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset text-slate-300'
                                             )}
                                         >
                                             {project.status}
                                         </p>
                                     </div>
-                                    <div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-slate-500">
+                                    <div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-slate-400">
                                         <p className="whitespace-nowrap">
                                             Created <time dateTime={project.dueDateTime}>{project.dueDate}</time>
                                         </p>
