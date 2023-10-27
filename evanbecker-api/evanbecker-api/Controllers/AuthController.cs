@@ -40,6 +40,7 @@ public class AuthController : ControllerBase
     }
 
     // wip FOR PROJECTS
+    [HttpGet]
     public void Test()
     {
         var client = new GitHubClient(new ProductHeaderValue("my-cool-app"));

@@ -56,6 +56,7 @@ export function AccountSidebar({sidebarOpen, setSidebarOpen}) {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': "*",
                 },
                 mode: "cors",
             });
