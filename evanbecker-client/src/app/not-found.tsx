@@ -15,7 +15,7 @@ export default function NotFound() {
               <div className="text-center">
                   <p className="text-base font-semibold text-primary">404</p>
                   <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-200 sm:text-5xl">Page not found</h1>
-                  <p className="mt-6 text-base leading-7 text-slate-400">Sorry, we couldn’t find the page you’re looking for. Maybe you don't have enough permissions 🤷‍♂️.</p>
+                  <p className="mt-6 text-base leading-7 text-slate-400">Sorry, we couldn&apos;t find the page you’re looking for. Maybe you don&apos;t have enough permissions 🤷‍♂️.</p>
                   <div className="mt-10 flex items-center justify-center gap-x-6">
                       <a
                           href="/"

@@ -4,39 +4,8 @@ import {useEffect, useState} from 'react'
 import {AccountLayout} from "@/components/Account/AccountLayout";
 import LoadingSpinnerLarge from "../../components/LoadingSpinnerLarge";
 
-
-const secondaryNavigation = [
-
-
-    { name: 'Overview', href: '#', current: true },
-]
-const stats = [
-
-
-    { name: 'Number of pipeline runs', value: '405', unit: null },
-    { name: 'Average pipeline time', value: '3.65', unit: 'mins' },
-    { name: 'Number of domains', value: '3', unit: null },
-    { name: 'Pipeline success rate', value: '98.5%', unit: null },
-]
+const secondaryNavigation = [{ name: 'Overview', href: '#', current: true }]
 const statuses = { Completed: 'text-green-400 bg-green-400/10', Error: 'text-rose-400 bg-rose-400/10' }
-const activityItems = [
-
-
-    {
-        user: {
-            name: 'Michael Foster',
-            imageUrl:
-                'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-        },
-        commit: '2d89f0c8',
-        branch: 'main',
-        status: 'Completed',
-        duration: '25s',
-        date: '45 minutes ago',
-        dateTime: '2023-01-23T11:00',
-    },
-    // More items...
-]
 
 function classNames(...classes){
     return classes.filter(Boolean).join(' ')
@@ -149,7 +118,7 @@ export default function Dashboard() {
                             {isDashboardLoading && <LoadingSpinnerLarge/>}
 
                             {dashboardItems?.dashboardCards?.map(card => (
-                                <div className="border-b border-slate-500/75">
+                                <div key={card.projectName} className="border-b border-slate-500/75">
                                     <div className="flex flex-col items-start justify-between gap-x-8 gap-y-4 bg-gray-700/10 px-4 py-4 sm:flex-row sm:items-center sm:px-6 lg:px-8">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-x-3">
@@ -165,7 +134,7 @@ export default function Dashboard() {
                                             <p className="mt-2 text-xs leading-6 text-gray-400">Deploys from GitHub via `main` branch</p>
                                         </div>
 
-                                        {card.environmentNames?.map(environmentTag)}
+                                        {card.environmentNames?.map((env) => (<div key={env}>{environmentTag(env)}</div>))}
 
                                     </div>
 

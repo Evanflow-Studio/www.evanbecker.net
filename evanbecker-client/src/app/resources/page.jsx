@@ -3,7 +3,7 @@ import {Container} from "@/components/Container";
 import {Footer} from "@/components/Footer";
 import {Button} from "@/components/Button";
 
-const tags: any = {
+const tags = {
     Electronics: 'inline-flex items-center rounded-md bg-slate-400/10 px-2 py-1 text-xs font-medium text-slate-200 ring-1 ring-inset ring-slate-400/20',
     Math: 'inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-400/20',
     Fiction: 'inline-flex items-center rounded-md bg-yellow-600/10 px-2 py-1 text-xs font-medium text-yellow-500 ring-1 ring-inset ring-yellow-400/20',
@@ -17,7 +17,7 @@ const tags: any = {
     Astronomy: 'inline-flex items-center rounded-md bg-teal-600/10 px-2 py-1 text-xs font-medium text-teal-400 ring-1 ring-inset ring-teal-400/20',
     Music: 'inline-flex items-center rounded-md bg-emerald-700/10 px-2 py-1 text-xs font-medium text-emerald-400 ring-1 ring-inset ring-emerald-400/20',
 };
-const resources: any[] = [
+const resources = [
     {
         id: 1,
         type: 'Book',
@@ -516,7 +516,7 @@ const resources: any[] = [
     },
 ]
 
-function classNames(...classes: any[]) {
+function classNames(...classes) {
     return classes.filter(Boolean).join(' ')
 }
 
@@ -558,9 +558,6 @@ export default function Resources() {
                                                 </div>
                                             );
                                         })}
-
-
-
 
                                     </div>
                                     <div className="mt-1 flex items-center gap-x-2 text-xs leading-5 text-slate-400">

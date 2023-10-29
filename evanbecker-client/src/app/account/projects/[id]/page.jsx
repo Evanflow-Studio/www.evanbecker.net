@@ -46,7 +46,7 @@ function ProjectNotFound() {
                 <div className="text-center">
                     <p className="text-base font-semibold text-primary">404</p>
                     <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-200 sm:text-5xl">Project not found</h1>
-                    <p className="mt-6 text-base leading-7 text-slate-400">Sorry, we couldn’t find the project you’re looking for. Maybe you don't have enough permissions 🤷‍♂️.</p>
+                    <p className="mt-6 text-base leading-7 text-slate-400">Sorry, we couldn&apos;t find the project you’re looking for. Maybe you don&apos;t have enough permissions 🤷‍♂️.</p>
                     <div className="mt-10 flex items-center justify-center gap-x-6">
                         <a
                             href="/account/projects"
@@ -643,7 +643,7 @@ function EditProject({currentProject}) {
                 <div className="border-b border-white/10 pb-12">
                     <h2 className="text-base font-semibold leading-7 text-white">Notifications</h2>
                     <p className="mt-1 text-sm leading-6 text-gray-400">
-                        We'll always let you know about important changes, but you pick what else you want to hear about.
+                        We&apos;ll always let you know about important changes, but you pick what else you want to hear about.
                     </p>
 
                     <div className="mt-10 space-y-10">

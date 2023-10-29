@@ -91,11 +91,11 @@ export default function Contact() {
                         <div>
                             <h3 className="text-base font-semibold leading-7 text-gray-300">Contact Form</h3>
                             <p className="mt-2 leading-7 text-slate-400">
-                                Fill out the form at the bottom of the screen. I'll get back to you as soon as I can!
+                                Fill out the form at the bottom of the screen. I&apos;ll get back to you as soon as I can!
                             </p>
                             <div className="mt-4">
                                 <a href="#Lazy" className="text-sm font-semibold leading-6 text-primary">
-                                    I literally can't scroll<span aria-hidden="true">&rarr;</span>
+                                    I literally can&apos;t scroll<span aria-hidden="true">&rarr;</span>
                                 </a>
                             </div>
                         </div>
