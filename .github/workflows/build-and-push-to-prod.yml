@@ -79,7 +79,7 @@ jobs:
             echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
             echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
 
-            echo -"ENVIRONMENT=prod" >> .env            
+            echo "ENVIRONMENT=prod" >> .env            
 
             echo "> Secrets Refreshed..."
 
@@ -109,6 +109,8 @@ jobs:
           key: ${{ secrets.GL_SSH_SECRET }}
           port: 22
           script: |
+            cd ~/prod/www.evanbecker.net/deploy/
+
             echo "Just double checking we're actually logged into doctl registry..."
             doctl registry login
 
