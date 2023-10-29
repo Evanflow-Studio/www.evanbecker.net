@@ -69,7 +69,7 @@ jobs:
           key: ${{ secrets.GL_SSH_SECRET }}
           port: 22
           script: |
-            echo "Starting Test Deploy:"
+            echo "Starting Prod Deploy:"
             cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
             echo "Refreshing Secrets..."
             echo "> Deleting previous .env"
