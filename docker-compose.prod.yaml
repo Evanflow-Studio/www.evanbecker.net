@@ -6,14 +6,14 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       # TODO: Test if 5430 is valid for postgresql
-      - "--entrypoints.postgres.address=:5430"
+      - "--entrypoints.postgres.address=:5431"
       - "--entrypoints.web.address=:3000"
       - "--entrypoints.websecure.address=:3001"
       - "--entrypoints.api.address=:5002"
       - "--entrypoints.apisecure.address=:5003"
     ports:
       - "6969:8080" # Traefik dashboard
-      - "5430:5432" # PostgreSQL port
+      - "5431:5432" # PostgreSQL port
       - "5002"
       - "5003"
       - "3000"
@@ -35,7 +35,7 @@ services:
       - "traefik.tcp.routers.postgres.rule=HostSNI(`db.evanbecker.net`)"
       - "traefik.tcp.routers.postgres.entryPoints=postgres"
       - "traefik.tcp.routers.postgres.service=postgres"
-      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+      - "traefik.tcp.services.postgres.loadbalancer.server.port=5431"
 
   evanbecker:
     container_name: evanbecker-server-prod

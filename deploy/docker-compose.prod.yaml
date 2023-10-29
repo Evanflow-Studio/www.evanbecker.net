@@ -6,7 +6,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.file.directory=/etc/traefik/dynamic"
-      - "--entrypoints.postgres.address=:5432"
+      - "--entrypoints.postgres.address=:5431"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--api.dashboard=true"
@@ -50,7 +50,7 @@ services:
     image: postgres
     restart: always
     ports:
-      - 5432:5432
+      - 5431:5432
     environment:
       - POSTGRES_DB=${Prod_DB_DATABASE}
       - POSTGRES_USER=${Prod_DB_USER}
@@ -62,7 +62,7 @@ services:
       - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.postgres.entryPoints=postgres"
       - "traefik.tcp.routers.postgres.service=postgres"
-      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+      - "traefik.tcp.services.postgres.loadbalancer.server.port=5431"
 
   evanbecker:
     container_name: evanbecker-server-prod
