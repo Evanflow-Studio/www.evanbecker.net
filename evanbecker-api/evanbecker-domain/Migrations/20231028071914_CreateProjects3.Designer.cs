@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using evanbecker_domain;
@@ -11,9 +12,11 @@ using evanbecker_domain;
 namespace evanbeckerdomain.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20231028071914_CreateProjects3")]
+    partial class CreateProjects3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -121,35 +124,6 @@ namespace evanbeckerdomain.Migrations
                     b.ToTable("Commit");
                 });
 
-            modelBuilder.Entity("evanbecker_domain.Entities.ContactMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("Created")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
-                    b.Property<string>("FirstName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("LastName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ContactMessages");
-                });
-
             modelBuilder.Entity("evanbecker_domain.Entities.Deployment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -193,26 +167,6 @@ namespace evanbeckerdomain.Migrations
                     b.HasIndex("ProjectId");
 
                     b.ToTable("Deployment");
-                });
-
-            modelBuilder.Entity("evanbecker_domain.Entities.EmailSubscriber", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("EmailAddress")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("ProjectId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProjectId");
-
-                    b.ToTable("EmailSubscriber");
                 });
 
             modelBuilder.Entity("evanbecker_domain.Entities.Environment", b =>
@@ -452,13 +406,6 @@ namespace evanbeckerdomain.Migrations
                         .HasForeignKey("ProjectId");
                 });
 
-            modelBuilder.Entity("evanbecker_domain.Entities.EmailSubscriber", b =>
-                {
-                    b.HasOne("evanbecker_domain.Entities.Project", null)
-                        .WithMany("EmailSubscribers")
-                        .HasForeignKey("ProjectId");
-                });
-
             modelBuilder.Entity("evanbecker_domain.Entities.Environment", b =>
                 {
                     b.HasOne("evanbecker_domain.Entities.Project", null)
@@ -512,8 +459,6 @@ namespace evanbeckerdomain.Migrations
                     b.Navigation("Commits");
 
                     b.Navigation("Deployments");
-
-                    b.Navigation("EmailSubscribers");
 
                     b.Navigation("EnvironmentUrls");
 
