@@ -93,14 +93,16 @@ public class AuthController : ControllerBase
                 })
                 .ToList();
 
-            var projectCommits = commits.Select(commit => new Commit
+            var projectCommits = commits?
+                .Where(x => x != null)
+                .Select(commit => new Commit
             {
-                UserUrl = commit.Author.HtmlUrl,
-                UserAvatar = commit.Author.AvatarUrl,
-                UserLogin = commit.Author.Login,
-                Message = commit.Commit.Message,
-                Sha = commit.Sha,
-                Created = commit.Commit.Author.Date.UtcDateTime
+                UserUrl = commit?.Author?.HtmlUrl ?? "#",
+                UserAvatar = commit?.Author?.AvatarUrl ?? string.Empty,
+                UserLogin = commit?.Author?.Login ?? string.Empty,
+                Message = commit?.Commit?.Message ?? string.Empty,
+                Sha = commit?.Sha ?? string.Empty,
+                Created = commit?.Commit?.Author?.Date.UtcDateTime ?? DateTime.MinValue
             }).ToList();
 
             await _projectService.SyncProjectDeploymentsAndCommitsAsync(project.Id, deployments, projectCommits);
