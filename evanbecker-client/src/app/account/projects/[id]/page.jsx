@@ -325,6 +325,10 @@ function EditProject({currentProject}) {
     }
 
     useEffect(() => {
+        getUser().then()
+    }, [])
+
+    useEffect(() => {
         setEnvironmentsList(project?.environments)
 
         let mappedEnvironments = project?.environments.map(x => {
