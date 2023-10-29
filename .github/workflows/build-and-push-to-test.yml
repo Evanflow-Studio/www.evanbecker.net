@@ -78,6 +78,7 @@ jobs:
             touch .env
 
             echo "> Appending API Secrets"
+            echo -e "GitHubConfiguration_Pat=${{ secrets.GitHubConfiguration_Pat }}" >> .env
             echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
             echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}" >> .env
             echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}" >> .env

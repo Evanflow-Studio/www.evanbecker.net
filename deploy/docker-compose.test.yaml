@@ -70,6 +70,7 @@ services:
     image: registry.digitalocean.com/evanbecker/evanbecker-server
     environment:
       - Auth0__Domain=${Auth0_Domain}
+      - GitHubConfiguration__Pat=${GitHubConfiguration_Pat}
       - Auth0__Audience=${Auth0_Audience}
       - Auth0__ClientId=${Auth0_ClientId}
       - Auth0__ClientSecret=${Auth0_ClientSecret}
