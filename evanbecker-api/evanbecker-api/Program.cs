@@ -75,11 +75,8 @@ app.Use((context, next) =>
     return next.Invoke();
 });
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors();
 
