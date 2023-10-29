@@ -86,7 +86,7 @@ public class AuthController : ControllerBase
                         WorkflowRunConclusion.ActionRequired => "ActionRequired",
                         WorkflowRunConclusion.StartupFailure => "StartupFailure",
                         WorkflowRunConclusion.TimedOut => "TimedOut",
-                        _ => throw new ArgumentOutOfRangeException()
+                        _ => "Running..."
                     },
                     Duration = (run.UpdatedAt - run.RunStartedAt).Duration().ToString(),
                     Created = run.RunStartedAt.UtcDateTime
