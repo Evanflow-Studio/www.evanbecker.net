@@ -15,16 +15,8 @@ import mitutoyoLogo from '@/images/logos/mitutoyorda_logo.jpg'
 import stack41Logo from '@/images/logos/Stack41.png'
 import uwMilwaukeeLogo from '@/images/logos/uwm_logo.jpg'
 import {useEffect, useState} from "react";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import {ChevronRightIcon} from "@heroicons/react/20/solid";
 import LoadingSpinnerLarge from "../../components/LoadingSpinnerLarge";
-
-
-export const metadata = {
-    title: 'About',
-    description:
-        'I’m Spencer Sharp. I live in New York City, where I design the future.',
-}
 
 const statuses = {
     Unavailable: 'text-gray-500 bg-gray-100/10',
