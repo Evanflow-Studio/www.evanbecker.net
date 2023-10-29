@@ -65,6 +65,7 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("CommentText")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
@@ -74,6 +75,7 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TargetLocation")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -359,6 +361,7 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("CommentText")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
@@ -368,6 +371,7 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TargetLocation")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -386,15 +390,19 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Auth0Id")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Avatar")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsAdmin")
@@ -404,6 +412,7 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid?>("ProjectId")
