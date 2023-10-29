@@ -23,9 +23,7 @@ public class ProjectController : ControllerBase
     public async Task<IActionResult> GetAllProjects()
     {
         var projects = await _projectService.GetAllProjectsAsync();
-        if (projects.Any())
-            return Ok(projects);
-        return NotFound();
+        return Ok(projects);
     }
 
     [HttpGet("{projectId:guid}")]
