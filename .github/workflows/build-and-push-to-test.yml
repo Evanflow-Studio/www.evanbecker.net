@@ -102,4 +102,4 @@ jobs:
             git pull
 
             echo "Starting docker-compose..."
-            docker compose -f docker-compose.test.yaml up -d --build
+            docker compose -f docker-compose.test.yaml -p test up -d --build
