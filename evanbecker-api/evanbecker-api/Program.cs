@@ -24,8 +24,14 @@ var auth0Settings = new Auth0Configuration();
 auth0Section.Bind(auth0Settings);
 builder.Services.Configure<Auth0Configuration>(auth0Section);
 
+var gitHubSection = builder.Configuration.GetSection("GitHub");
+var gitHubSettings = new GitHubConfiguration();
+gitHubSection.Bind(gitHubSettings);
+builder.Services.Configure<GitHubConfiguration>(gitHubSection);
+
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 builder.Services.AddEndpointsApiExplorer(); 
 builder.Services.AddSwaggerGen(o =>

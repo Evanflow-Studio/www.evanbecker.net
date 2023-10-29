@@ -16,7 +16,7 @@ export function AccountSearch({setSidebarOpen})
                         <label htmlFor="search-field" className="sr-only">
                             Search
                         </label>
-                        <div className="relative w-full">
+                        <div className="relative w-full z-10">
                             <MagnifyingGlassIcon
                                 className="pointer-events-none absolute inset-y-0 left-0 h-full w-5 text-gray-500"
                                 aria-hidden="true"

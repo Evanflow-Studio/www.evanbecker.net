@@ -1,9 +1,46 @@
-import { BuildingOffice2Icon, EnvelopeIcon, PhoneIcon } from '@heroicons/react/24/outline'
+"use client"
+
 import {Header} from "@/components/Header";
 import {Footer} from "@/components/Footer";
-import { BugAntIcon, ChatBubbleLeftRightIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline'
+import { useState } from "react";
+import { ChatBubbleLeftRightIcon, ComputerDesktopIcon, BuildingOffice2Icon, EnvelopeIcon, PhoneIcon } from '@heroicons/react/24/outline'
 
 export default function Contact() {
+    const [firstNameText, setFirstNameText] = useState('');
+    const [lastNameText, setLastNameText] = useState('');
+    const [emailText, setEmailText] = useState('');
+    const [phoneNumberText, setPhoneNumberText] = useState('');
+    const [messageText, setMessageText] = useState('');
+    const [loading, setLoading] = useState(false)
+
+    const addContactMessage = async () => {
+        setLoading(true);
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/contact`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    firstName: firstNameText,
+                    lastName: lastNameText,
+                    email: emailText,
+                    phoneNumber: phoneNumberText,
+                    message: messageText
+                }),
+                mode: "cors",
+            });
+        } catch (e) {
+            console.error("Something didn't work", e);
+        }
+        setLoading(false);
+        setFirstNameText('');
+        setLastNameText('');
+        setEmailText('');
+        setPhoneNumberText('');
+        setMessageText('');
+    }
+
     return (
         <>
             <Header/>
@@ -16,61 +53,57 @@ export default function Contact() {
                 </div>
                 <div className="mx-auto mt-20 max-w-lg space-y-16">
                     <div className="flex gap-x-6">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary">
                             <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" aria-hidden="true" />
                         </div>
                         <div>
-                            <h3 className="text-base font-semibold leading-7 text-gray-300">Sales support</h3>
-                            <p className="mt-2 leading-7 text-gray-400">
-                                Ut cursus est ut amet. Lobortis eget egestas leo vitae eget porttitor risus blandit. Nunc a in lorem vel
-                                iaculis porttitor.
+                            <h3 className="text-base font-semibold leading-7 text-slate-300">Leave Comment</h3>
+                            <p className="mt-2 leading-7 text-slate-400">
+                                Register and login using Auth0. Once logged in, you can leave comments on Blog Posts and Projects.
                             </p>
-                            <p className="mt-4">
-                                <a href="#" className="text-sm font-semibold leading-6 text-indigo-500">
-                                    Contact us <span aria-hidden="true">&rarr;</span>
+                            <div className="mt-4">
+                                <a href="/account/projects" className="text-sm font-semibold leading-6 text-primary">
+                                    Projects <span aria-hidden="true">&rarr;</span>
                                 </a>
-                            </p>
+                            </div>
                         </div>
                     </div>
                     <div className="flex gap-x-6">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500">
-                            <BugAntIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary">
+                            <EnvelopeIcon className="h-6 w-6 text-white" aria-hidden="true" />
                         </div>
                         <div>
-                            <h3 className="text-base font-semibold leading-7 text-gray-300">Bug reports</h3>
-                            <p className="mt-2 leading-7 text-gray-400">
-                                Expedita qui non ut quia ipsum voluptatum ipsam pariatur. Culpa vitae ipsum minus eius vero quo quibusdam.
+                            <h3 className="text-base font-semibold leading-7 text-gray-300">Send Email</h3>
+                            <p className="mt-2 leading-7 text-slate-400">
+                                I check my email at me@evanbecker.net quite frequently. Feel free to send me an email whenever!
                             </p>
-                            <p className="mt-4">
-                                <a href="#" className="text-sm font-semibold leading-6 text-indigo-500">
-                                    Report a bug <span aria-hidden="true">&rarr;</span>
+                            <div className="mt-4">
+                                <a href="mailto:me@evanbecker.net" className="text-sm font-semibold leading-6 text-primary">
+                                    Send an email <span aria-hidden="true">&rarr;</span>
                                 </a>
-                            </p>
+                            </div>
                         </div>
                     </div>
                     <div className="flex gap-x-6">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary">
                             <ComputerDesktopIcon className="h-6 w-6 text-white" aria-hidden="true" />
                         </div>
                         <div>
-                            <h3 className="text-base font-semibold leading-7 text-gray-300">Technical support</h3>
-                            <p className="mt-2 leading-7 text-gray-400">
-                                Sint aut modi porro consequatur architecto commodi qui consequatur. Dignissimos adipisci minima.
+                            <h3 className="text-base font-semibold leading-7 text-gray-300">Contact Form</h3>
+                            <p className="mt-2 leading-7 text-slate-400">
+                                Fill out the form at the bottom of the screen. I&apos;ll get back to you as soon as I can!
                             </p>
-                            <p className="mt-4">
-                                <a href="#" className="text-sm font-semibold leading-6 text-indigo-500">
-                                    Join our Discord <span aria-hidden="true">&rarr;</span>
+                            <div className="mt-4">
+                                <a href="#Lazy" className="text-sm font-semibold leading-6 text-primary">
+                                    I literally can&apos;t scroll<span aria-hidden="true">&rarr;</span>
                                 </a>
-                            </p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-
-
             <div className="relative isolate">
-                <div className="mx-auto grid max-w-7xl grid-cols-1 lg:grid-cols-2">
+                <div className="mx-auto grid max-w-7xl grid-cols-1 lg:grid-cols-2" id="Lazy">
                     <div className="relative px-6 pb-20 pt-24 sm:pt-32 lg:static lg:px-8 lg:py-48">
                         <div className="mx-auto max-w-xl lg:mx-0 lg:max-w-lg">
                             <div className="absolute inset-y-0 left-32 -z-10 w-full overflow-hidden ring-1 ring-white/5 lg:w-5/12 ">
@@ -105,13 +138,13 @@ export default function Contact() {
                                             clipPath:
                                                 'polygon(74.1% 56.1%, 100% 38.6%, 97.5% 73.3%, 85.5% 100%, 80.7% 98.2%, 72.5% 67.7%, 60.2% 37.8%, 52.4% 32.2%, 47.5% 41.9%, 45.2% 65.8%, 27.5% 23.5%, 0.1% 35.4%, 17.9% 0.1%, 27.6% 23.5%, 76.1% 2.6%, 74.1% 56.1%)',
                                         }}
-                                    />
+                                    >
+                                    </div>
                                 </div>
                             </div>
-                            <h2 className="text-3xl font-bold tracking-tight text-white">Get in touch</h2>
+                            <h2 className="text-3xl font-bold tracking-tight text-white" >Get in touch</h2>
                             <p className="mt-6 text-lg leading-8 text-gray-300">
-                                Proin volutpat consequat porttitor cras nullam gravida at. Orci molestie a eu arcu. Sed ut tincidunt
-                                integer elementum id sem. Arcu sed malesuada et magna.
+                                Below are my different contact methods. I look forward to hearing from you!
                             </p>
                             <dl className="mt-10 space-y-4 text-base leading-7 text-gray-300">
                                 <div className="flex gap-x-4">
@@ -120,9 +153,7 @@ export default function Contact() {
                                         <BuildingOffice2Icon className="h-7 w-6 text-gray-400" aria-hidden="true" />
                                     </dt>
                                     <dd>
-                                        545 Mavis Island
-                                        <br />
-                                        Chicago, IL 99191
+                                        Wauwatosa, WI, 53226
                                     </dd>
                                 </div>
                                 <div className="flex gap-x-4">
@@ -131,8 +162,8 @@ export default function Contact() {
                                         <PhoneIcon className="h-7 w-6 text-gray-400" aria-hidden="true" />
                                     </dt>
                                     <dd>
-                                        <a className="hover:text-white" href="tel:+1 (555) 234-5678">
-                                            +1 (555) 234-5678
+                                        <a className="hover:text-white" href="tel:+1 (262) 794-2959">
+                                            +1 (262) 794-2959
                                         </a>
                                     </dd>
                                 </div>
@@ -142,15 +173,15 @@ export default function Contact() {
                                         <EnvelopeIcon className="h-7 w-6 text-gray-400" aria-hidden="true" />
                                     </dt>
                                     <dd>
-                                        <a className="hover:text-white" href="mailto:hello@example.com">
-                                            hello@example.com
+                                        <a className="hover:text-white" href="me@evanbecker.net">
+                                            me@evanbecker.net
                                         </a>
                                     </dd>
                                 </div>
                             </dl>
                         </div>
                     </div>
-                    <form action="#" method="POST" className="px-6 pb-24 pt-20 sm:pb-32 lg:px-8 lg:py-48">
+                    <form className="px-6 pb-24 pt-20 sm:pb-32 lg:px-8 lg:py-48">
                         <div className="mx-auto max-w-xl lg:mr-0 lg:max-w-lg">
                             <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
                                 <div>
@@ -161,9 +192,11 @@ export default function Contact() {
                                         <input
                                             type="text"
                                             name="first-name"
+                                            value={firstNameText || ""}
+                                            onChange={(e) => setFirstNameText(e.target.value)}
                                             id="first-name"
                                             autoComplete="given-name"
-                                            className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                                            className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
                                         />
                                     </div>
                                 </div>
@@ -175,9 +208,11 @@ export default function Contact() {
                                         <input
                                             type="text"
                                             name="last-name"
+                                            value={lastNameText || ""}
+                                            onChange={(e) => setLastNameText(e.target.value)}
                                             id="last-name"
                                             autoComplete="family-name"
-                                            className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                                            className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
                                         />
                                     </div>
                                 </div>
@@ -189,9 +224,11 @@ export default function Contact() {
                                         <input
                                             type="email"
                                             name="email"
+                                            value={emailText || ""}
+                                            onChange={(e) => setEmailText(e.target.value)}
                                             id="email"
                                             autoComplete="email"
-                                            className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                                            className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
                                         />
                                     </div>
                                 </div>
@@ -203,9 +240,11 @@ export default function Contact() {
                                         <input
                                             type="tel"
                                             name="phone-number"
+                                            value={phoneNumberText || ""}
+                                            onChange={(e) => setPhoneNumberText(e.target.value)}
                                             id="phone-number"
                                             autoComplete="tel"
-                                            className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                                            className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
                                         />
                                     </div>
                                 </div>
@@ -217,8 +256,10 @@ export default function Contact() {
                   <textarea
                       name="message"
                       id="message"
+                      value={messageText || ""}
+                      onChange={(e) => setMessageText(e.target.value)}
                       rows={4}
-                      className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                      className="block w-full rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
                       defaultValue={''}
                   />
                                     </div>
@@ -226,8 +267,9 @@ export default function Contact() {
                             </div>
                             <div className="mt-8 flex justify-end">
                                 <button
-                                    type="submit"
-                                    className="rounded-md bg-indigo-500 px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                                    type="button"
+                                    onClick={() => addContactMessage()}
+                                    className="rounded-md bg-tertiary px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-sm hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                                 >
                                     Send message
                                 </button>
@@ -236,12 +278,6 @@ export default function Contact() {
                     </form>
                 </div>
             </div>
-
-
-
-
-
-
             <Footer/>
         </>
 

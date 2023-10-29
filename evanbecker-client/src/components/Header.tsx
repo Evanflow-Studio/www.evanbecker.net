@@ -134,7 +134,7 @@ export function Header() {
       <Container>
         <nav className="relative z-50 flex justify-between">
           <div className="flex items-center md:gap-x-12">
-            <Link href="#" aria-label="Home" className="pt-6">
+            <Link href="/" aria-label="Home" className="pt-6">
               <Logo className="h-20 w-auto"/>
             </Link>
             <div className="hidden md:flex md:gap-x-6 pt-6">
@@ -147,7 +147,7 @@ export function Header() {
           </div>
           <div className="flex items-center gap-x-5 md:gap-x-8 pt-8">
             <div className="hidden md:block">
-              <NavLink href="/login">Server Status</NavLink>
+              <NavLink href="/account/projects">My Projects</NavLink>
             </div>
             {!isLoading && isAuthenticated && (
                 <Menu as="div" className="relative ml-3">
@@ -171,22 +171,22 @@ export function Header() {
                       leaveFrom="transform opacity-100 scale-100"
                       leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-slate-950 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                       <Menu.Item>
                         {({ active }) => (
                             <a
-                                href="#"
-                                className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}
+                                href="/account"
+                                className={classNames(active ? 'bg-slate-800' : '', 'block px-4 py-2 text-sm text-slate-200')}
                             >
-                              Your Profile
+                              Dashboard
                             </a>
                         )}
                       </Menu.Item>
                       <Menu.Item>
                         {({ active }) => (
                             <a
-                                href="#"
-                                className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}
+                                href="/account/settings"
+                                className={classNames(active ? 'bg-slate-800' : '', 'block px-4 py-2 text-sm text-slate-200')}
                             >
                               Settings
                             </a>
@@ -197,7 +197,7 @@ export function Header() {
                             <a
                                 href="#"
                                 onClick={() => logout()}
-                                className={classNames(active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700')}
+                                className={classNames(active ? 'bg-slate-800' : '', 'block px-4 py-2 text-sm text-slate-200')}
                             >
                               Sign out
                             </a>

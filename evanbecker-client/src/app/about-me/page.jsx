@@ -1,25 +1,75 @@
-import { type Metadata } from 'next'
+"use client"
+
 import {Header} from "@/components/Header";
 import {Footer} from "@/components/Footer";
 import portraitImage from '@/images/custom/evan-becker.png';
 import {Container} from "@/components/Container";
-import Image, { type ImageProps } from 'next/image'
+import Image from 'next/image'
 import {Button} from "@/components/Button";
 import { BriefcaseIcon, ArrowDownIcon} from "@heroicons/react/24/solid";
 import clsx from "clsx";
 import Link from "next/link";
 import {GitHubIcon, GitLabIcon, LinkedInIcon} from "@/components/SocialIcons";
-import ProjectList from "@/components/ProjectList";
-import {SimpleLink} from "@/components/SimpleLink";
+import nvisiaLogo from '@/images/logos/nvisia_logo.jpg'
+import mitutoyoLogo from '@/images/logos/mitutoyorda_logo.jpg'
+import stack41Logo from '@/images/logos/Stack41.png'
+import uwMilwaukeeLogo from '@/images/logos/uwm_logo.jpg'
+import {useEffect, useState} from "react";
+import {ChevronRightIcon} from "@heroicons/react/20/solid";
+import LoadingSpinnerLarge from "../../components/LoadingSpinnerLarge";
 
+const statuses = {
+    Unavailable: 'text-gray-500 bg-gray-100/10',
+    Success: 'text-green-400 bg-green-400/10',
+    Failure: 'text-rose-400 bg-rose-400/10',
+}
 
-export const metadata: Metadata = {
-    title: 'About',
-    description:
-        'I’m Spencer Sharp. I live in New York City, where I design the future.',
+const environments = {
+    Test: 'text-yellow-400 bg-yellow-400/10 ring-yellow-400/20',
+    test: 'text-yellow-400 bg-yellow-400/10 ring-yellow-400/20',
+    UAT: 'text-gray-400 bg-gray-400/10 ring-gray-400/20',
+    Uat: 'text-gray-400 bg-gray-400/10 ring-gray-400/20',
+    uat: 'text-gray-400 bg-gray-400/10 ring-gray-400/20',
+    Stage: 'text-gray-400 bg-gray-400/10 ring-gray-400/20',
+    stage: 'text-gray-400 bg-gray-400/10 ring-gray-400/20',
+    prod: 'text-tertiary bg-tertiary/10 ring-tertiary/30',
+    Prod: 'text-tertiary bg-tertiary/10 ring-tertiary/30',
+    production: 'text-tertiary bg-tertiary/10 ring-tertiary/30',
+    Production: 'text-tertiary bg-tertiary/10 ring-tertiary/30',
+}
+
+function classNames(...classes){
+    return classes.filter(Boolean).join(' ')
 }
 
 export default function AboutMe() {
+    const [isHealthCheckLoading, setIsHealthCheckLoading] = useState(false);
+    const [healthCheckItems, setHealthCheckItems] = useState([]);
+
+    const getServiceHealthCheck = async () => {
+        setIsHealthCheckLoading(true);
+        try {
+            const call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/project/healthcheck`, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                mode: "cors",
+            });
+            let healthCheckItems = await call.json();
+            setHealthCheckItems(healthCheckItems)
+
+        } catch (e) {
+            console.error("Something didn't work", e);
+        }
+
+        setIsHealthCheckLoading(false);
+    }
+
+    useEffect(() => {
+        getServiceHealthCheck().then()
+    }, [])
+
     return (
         <>
             <Header />
@@ -69,31 +119,76 @@ export default function AboutMe() {
                                 </p>
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight text-light sm:text-3xl mt-20 mb-4 text-slate-200">
-                                Most Recent Changes
+                                Service Health
                             </h1>
-                            <ProjectList/>
+                            {isHealthCheckLoading && <LoadingSpinnerLarge/>}
+                            {!isHealthCheckLoading && (
+                                <>
+                                    <ul role="list" className="divide-y divide-white/5">
+                                        {healthCheckItems?.map((healthCheck, index) => (
+                                            <li key={index} className="relative flex items-center space-x-4 py-4">
+                                                <div className="min-w-0 flex-auto">
+                                                    <div className="flex items-center gap-x-3">
+                                                        <div className={classNames(statuses[healthCheck.status], 'flex-none rounded-full p-1')}>
+                                                            <div className="h-2 w-2 rounded-full bg-current" />
+                                                        </div>
+                                                        <h2 className="min-w-0 text-sm font-semibold leading-6 text-white">
+                                                            <a href={"https://"+healthCheck.url} className="flex gap-x-2">
+                                                                <span className="truncate">{healthCheck.name}</span>
+                                                                <span className="text-gray-400">/</span>
+                                                                <span className="whitespace-nowrap">{healthCheck.url}</span>
+                                                                <span className="absolute inset-0" />
+                                                            </a>
+                                                        </h2>
+                                                    </div>
+                                                    <div className="mt-3 flex items-center gap-x-2.5 text-xs leading-5 text-gray-400">
+                                                        <p className="truncate">Deployed from GitHub</p>
+                                                        <svg viewBox="0 0 2 2" className="h-0.5 w-0.5 flex-none fill-gray-300">
+                                                            <circle cx={1} cy={1} r={1} />
+                                                        </svg>
+                                                        <p className="whitespace-nowrap">Created {new Date(healthCheck.created).toLocaleDateString('en-US', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            year: 'numeric',
+                                                        })}</p>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    className={classNames(
+                                                        environments[healthCheck.environment],
+                                                        'rounded-full flex-none py-1 px-2 text-xs font-medium ring-1 ring-inset'
+                                                    )}
+                                                >
+                                                    {healthCheck.environment}
+                                                </div>
+                                                <ChevronRightIcon className="h-5 w-5 flex-none text-gray-400" aria-hidden="true" />
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
                             <div>
-                                <Button type="submit" variant="outline" color="white" className="w-full mt-6">
+                                <Button href="/account/projects" type="button" variant="outline" color="white" className="w-full mt-6">
                                     View All Projects
                                 </Button>
                             </div>
                         </div>
                         <div className="lg:pl-20">
                             <ul role="list">
-                                <SocialLink href="#" icon={LinkedInIcon} className="mt-4">
-                                    Follow on GitHub
+                                <SocialLink href="https://www.linkedin.com/in/evanbeckerdotnet/" icon={LinkedInIcon} className="mt-4">
+                                    Follow on LinkedIn
                                 </SocialLink>
-                                <SocialLink href="#" icon={GitLabIcon} className="mt-4">
+                                <SocialLink href="https://gitlab.com/evanbecker" icon={GitLabIcon} className="mt-4">
                                     Follow on GitLab
                                 </SocialLink>
-                                <SocialLink href="#" icon={GitHubIcon} className="mt-4">
+                                <SocialLink href="https://github.com/evanjbecker" icon={GitHubIcon} className="mt-4">
                                     Follow on GitHub
                                 </SocialLink>
 
                                 <SocialLink
                                     href="mailto:me@evanbecker.net"
                                     icon={MailIcon}
-                                    className="mt-8 border-t border-slate-100 pt-8 dark:border-slate-700/40"
+                                    className="pt-6 mt-6 border-t border-slate-300/50"
                                 >
                                     me@evanbecker.net
                                 </SocialLink>
@@ -115,9 +210,9 @@ function Newsletter() {
     return (
         <form
             action="/thank-you"
-            className="rounded-2xl border border-slate-100 p-6 dark:border-slate-700/40"
+            className="rounded-2xl border p-6 border-slate-700/40"
         >
-            <h2 className="flex text-sm font-semibold text-slate-300 dark:text-slate-100">
+            <h2 className="flex text-sm font-semibold text-slate-100">
                 <MailIcon className="h-6 w-6 flex-none fill-slate-400" />
                 <span className="ml-3">Stay up to date</span>
             </h2>
@@ -130,7 +225,7 @@ function Newsletter() {
                     placeholder="Email address"
                     aria-label="Email address"
                     required
-                    className="min-w-0 flex-auto appearance-none rounded-md border border-slate-900/10 bg-white px-3 py-[calc(theme(spacing.2)-1px)] shadow-md shadow-slate-800/5 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-4 focus:ring-teal-500/10 dark:border-slate-700 dark:bg-slate-700/[0.15] dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-teal-400 dark:focus:ring-teal-400/10 sm:text-sm"
+                    className="min-w-0 flex-auto appearance-none rounded-md border border-slate-900/10 bg-slate-800 px-3 py-[calc(theme(spacing.2)-1px)] shadow-md shadow-slate-800/5 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-4 focus:ring-teal-500/10 border-slate-700 bg-slate-700/[0.15] text-slate-200 placeholder:text-slate-500 focus:border-teal-400 focus:ring-teal-400/10 sm:text-sm"
                 />
                 <Button type="submit" variant="solid" color="blue" className="ml-4 flex-none">
                     Join
@@ -140,15 +235,7 @@ function Newsletter() {
     )
 }
 
-interface Role {
-    company: string
-    title: string
-    logo: ImageProps['src']
-    start: string | { label: string; dateTime: string }
-    end: string | { label: string; dateTime: string }
-}
-
-function Role({ role }: { role: Role }) {
+function Role({ role }) {
     let startLabel =
         typeof role.start === 'string' ? role.start : role.start.label
     let startDate =
@@ -159,8 +246,8 @@ function Role({ role }: { role: Role }) {
 
     return (
         <li className="flex gap-4">
-            <div className="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-full shadow-md shadow-slate-800/5 ring-1 ring-slate-900/5 border border-slate-700/50 bg-slate-800 ring-0">
-                <Image src={role.logo} alt="" className="h-7 w-7" unoptimized />
+            <div className="relative mt-1 flex h-12 w-12 flex-none items-center justify-center rounded-full shadow-md shadow-slate-800/5 ring-1 ring-slate-900/5 border border-slate-700/50 bg-slate-800 ring-0">
+                <Image src={role.logo} alt="" className="h-9 w-9 rounded-full bg-white p-1" unoptimized />
             </div>
             <dl className="flex flex-auto flex-wrap gap-x-2">
                 <dt className="sr-only">Company</dt>
@@ -186,11 +273,11 @@ function Role({ role }: { role: Role }) {
 }
 
 function Resume() {
-    let resume: Array<Role> = [
+    let resume = [
         {
             company: 'nvisia',
             title: 'Technical Architect',
-            //logo: logoPlanetaria,
+            logo: nvisiaLogo,
             start: '2019',
             end: {
                 label: 'Present',
@@ -200,29 +287,29 @@ function Resume() {
         {
             company: 'Mitutoyo-RDA',
             title: 'Software Engineer',
-            //logo: logoAirbnb,
+            logo: mitutoyoLogo,
             start: '2014',
             end: '2019',
         },
         {
             company: 'Stack41',
             title: 'Software Engineer',
-            //logo: logoFacebook,
+            logo: stack41Logo,
             start: '2011',
             end: '2014',
         },
         {
             company: 'UW-Milwaukee',
             title: 'Software Engineer',
-            //logo: logoStarbucks,
+            logo: uwMilwaukeeLogo,
             start: '2008',
             end: '2011',
         },
-    ] as Array<Role>;
+    ];
 
     return (
-        <div className="rounded-2xl border border-slate-100 p-6 dark:border-slate-700/40">
-            <h2 className="flex text-sm font-semibold text-slate-900 dark:text-slate-100">
+        <div className="rounded-2xl border p-6 border-slate-700/40">
+            <h2 className="flex text-sm font-semibold text-slate-100">
                 <BriefcaseIcon className="h-6 w-6 flex-none fill-slate-400" />
                 <span className="ml-3">Work</span>
             </h2>
@@ -233,13 +320,13 @@ function Resume() {
             </ol>
             <Button href="#" variant="solid" color="blue"  className="group mt-6 w-full">
                 Download Resume
-                <ArrowDownIcon className="h-4 w-4 stroke-slate-400 transition group-active:stroke-slate-600 dark:group-hover:stroke-slate-50 dark:group-active:stroke-slate-50" />
+                <ArrowDownIcon className="h-4 w-4 stroke-slate-400 transition group-hover:stroke-slate-50 group-active:stroke-slate-50" />
             </Button>
         </div>
     )
 }
 
-function MailIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
+function MailIcon(props) {
     return (
         <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
             <path
@@ -255,12 +342,8 @@ function SocialLink({
                         href,
                         children,
                         icon: Icon,
-                    }: {
-    className?: string
-    href: string
-    icon: React.ComponentType<{ className?: string }>
-    children: React.ReactNode
-}) {
+                    })
+{
     return (
         <li className={clsx(className, 'flex')}>
             <Link

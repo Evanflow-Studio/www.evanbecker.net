@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using evanbecker_domain;
@@ -11,9 +12,11 @@ using evanbecker_domain;
 namespace evanbeckerdomain.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20231029051104_CreateContactMessages1")]
+    partial class CreateContactMessages1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,7 +68,6 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("CommentText")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
@@ -75,7 +77,6 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TargetLocation")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -361,7 +362,6 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("CommentText")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
@@ -371,7 +371,6 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TargetLocation")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -390,19 +389,15 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Auth0Id")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Avatar")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("FirstName")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsAdmin")
@@ -412,7 +407,6 @@ namespace evanbeckerdomain.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("LastName")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid?>("ProjectId")

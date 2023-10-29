@@ -12,3 +12,9 @@ public class Auth0Configuration
     
     public string? Url { get; set; }
 }
+
+public class GitHubConfiguration
+{
+    public string? Pat { get; set; }
+    public string? Organization { get; set; }
+}

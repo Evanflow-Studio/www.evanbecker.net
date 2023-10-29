@@ -14,6 +14,8 @@ public class ApplicationContext : DbContext
     public DbSet<Comment> Comments { get; set; }
     public DbSet<Reply> Replies { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Project> Projects { get; set; }
+    public DbSet<ContactMessage> ContactMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

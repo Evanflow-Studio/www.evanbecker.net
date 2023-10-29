@@ -3,10 +3,15 @@ using Auth0.AuthenticationApi.Models;
 using Auth0.ManagementApi;
 using Auth0.ManagementApi.Paging;
 using evanbecker_api.Configuration;
+using evanbecker_api.Services.Interfaces;
+using evanbecker_domain;
+using evanbecker_domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Octokit;
+using Commit = evanbecker_domain.Entities.Commit;
+using Deployment = evanbecker_domain.Entities.Deployment;
 
 namespace evanbecker_api.Controllers;
 
@@ -15,10 +20,17 @@ public class AuthController : ControllerBase
 {
 
     public IOptions<Auth0Configuration> _auth0Configuration;
+    private readonly IOptions<GitHubConfiguration> _gitHubConfiguration;
+    private readonly IProjectService _projectService;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IOptions<Auth0Configuration> auth0Configuration)
+    public AuthController(IOptions<Auth0Configuration> auth0Configuration,
+        IOptions<GitHubConfiguration> gitHubConfiguration,
+        IProjectService projectService)
     {
         _auth0Configuration = auth0Configuration;
+        _gitHubConfiguration = gitHubConfiguration;
+        _projectService = projectService;
     }
 
     [Authorize]
@@ -41,8 +53,57 @@ public class AuthController : ControllerBase
 
     // wip FOR PROJECTS
     [HttpGet]
-    public void Test()
+    public async Task Test()
     {
-        var client = new GitHubClient(new ProductHeaderValue("my-cool-app"));
+        var client = new GitHubClient(new ProductHeaderValue(_gitHubConfiguration.Value.Organization));
+        var tokenAuth = new Credentials(_gitHubConfiguration.Value.Pat); // This can be a PAT or an OAuth token.
+        client.Credentials = tokenAuth;
+
+        var projects = await _projectService.GetAllProjectsAsync();
+
+        foreach (var project in projects)
+        {
+            if (project.Repository == null)
+                continue;
+            var workflows = await client.Actions.Workflows.Runs.List(_gitHubConfiguration.Value.Organization, project.Repository);
+            var commits = await client.Repository.Commit.GetAll(_gitHubConfiguration.Value.Organization, project.Repository);
+
+            var deployments = workflows.WorkflowRuns.Select(run => new Deployment
+                {
+                    UserUrl = run.Actor.HtmlUrl,
+                    UserAvatar = run.Actor.AvatarUrl,
+                    UserLogin = run.Actor.Login,
+                    Sha = run.HeadSha,
+                    Branch = run.HeadBranch,
+                    Conclusion = run.Conclusion?.Value switch
+                    {
+                        WorkflowRunConclusion.Cancelled => "Cancelled",
+                        WorkflowRunConclusion.Failure => "Failure",
+                        WorkflowRunConclusion.Success => "Success",
+                        WorkflowRunConclusion.Neutral => "Neutral",
+                        WorkflowRunConclusion.Skipped => "Skipped",
+                        WorkflowRunConclusion.Stale => "Stale",
+                        WorkflowRunConclusion.ActionRequired => "ActionRequired",
+                        WorkflowRunConclusion.StartupFailure => "StartupFailure",
+                        WorkflowRunConclusion.TimedOut => "TimedOut",
+                        _ => throw new ArgumentOutOfRangeException()
+                    },
+                    Duration = (run.UpdatedAt - run.RunStartedAt).Duration().ToString(),
+                    Created = run.RunStartedAt.UtcDateTime
+                })
+                .ToList();
+
+            var projectCommits = commits.Select(commit => new Commit
+            {
+                UserUrl = commit.Author.HtmlUrl,
+                UserAvatar = commit.Author.AvatarUrl,
+                UserLogin = commit.Author.Login,
+                Message = commit.Commit.Message,
+                Sha = commit.Sha,
+                Created = commit.Commit.Author.Date.UtcDateTime
+            }).ToList();
+
+            await _projectService.SyncProjectDeploymentsAndCommitsAsync(project.Id, deployments, projectCommits);
+        }
     }
 }
