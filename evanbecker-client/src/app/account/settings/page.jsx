@@ -1,6 +1,6 @@
 "use client";
 
-import { AccountTab } from "@/components/Account/AccountTab";
+import { AccountSettingsTab } from "@/components/Account/AccountSettingsTab";
 import { AccountLayout } from "@/components/Account/AccountLayout";
 import { useEffect, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -27,7 +27,6 @@ export default function AccountSettings() {
     };
 
     useEffect(() => {
-        console.log("in useEffect! ", user, inputFile)
         if (user && !inputFile.current.value)
         {
             console.log("new image:", user.avatar);
@@ -70,7 +69,7 @@ export default function AccountSettings() {
 
     return (
             <AccountLayout>
-                <AccountTab/>
+                <AccountSettingsTab/>
 
                 {/* Settings forms */}
                 {user && (<div className="divide-y divide-white/5">

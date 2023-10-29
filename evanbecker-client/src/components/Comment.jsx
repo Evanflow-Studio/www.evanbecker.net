@@ -78,14 +78,14 @@ function ReplyBox(
     return (
             <div className={className}>
                 <div
-                    className="py-2 px-4 mb-4 bg-white rounded-lg rounded-t-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                    className="py-2 px-4 mb-4 rounded-lg rounded-t-lg border border-gray-200 bg-slate-800 border-slate-700">
                     <label htmlFor="comment" className="sr-only">Your comment</label>
                     <textarea id="reply" rows={6} value={commentText}
-                              className="px-0 w-full text-sm text-gray-900 border-0 focus:ring-0 focus:outline-none dark:text-white dark:placeholder-gray-400 dark:bg-gray-800"
+                              className="px-0 w-full text-sm border-0 focus:ring-0 focus:outline-none text-slate-200 placeholder-slate-400 bg-slate-800"
                               onChange={(e) => setCommentText(e.target.value)}
                               placeholder="Write a comment..."  required></textarea>
                 </div>
-                <button className="inline-flex items-center py-2.5 px-4 text-xs font-medium text-center text-white bg-primary-700 rounded-lg focus:ring-4 focus:ring-primary-200 dark:focus:ring-primary-900 hover:bg-primary-800"
+                <button className="inline-flex items-center py-2.5 px-4 text-xs font-medium text-center text-white bg-primary-700 rounded-lg focus:ring-4 focus:ring-primary-200 focus:ring-primary-900 hover:bg-primary-800"
                         type="button"
                         onClick={async () => await addReply()}>
                     Post comment
@@ -142,14 +142,14 @@ export function Comment({user, seedComment, parentComment, parentId, isChild, se
                         : "text-base rounded-lg p-4"}>
                         <footer className="flex justify-between items-center mb-2">
                             <div className="flex items-center">
-                                <p className="inline-flex items-center mr-3 text-sm text-gray-900 dark:text-white font-semibold">
+                                <p className="inline-flex items-center mr-3 text-sm text-gray-900 text-slate-200 font-semibold">
                                     <img
                                         className="mr-2 w-6 h-6 rounded-full"
                                         src={comment.author.avatar}
                                         alt={comment.author.name}/>{comment.author.firstName + " " + comment.author.lastName}
 
                                 </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <p className="text-sm text-slate-400">
                                     <time dateTime="2022-02-08"
                                           title="February 8th, 2022">Feb. 8, 2022
                                     </time>
@@ -218,10 +218,10 @@ export function Comment({user, seedComment, parentComment, parentId, isChild, se
                                 </Menu>
                             )}
                         </footer>
-                        <p className="text-gray-500 dark:text-gray-400">{comment.commentText}</p>
+                        <p className="text-slate-400">{comment.commentText}</p>
                         <div className="flex items-center mt-4 space-x-4">
                             <button type="button"
-                                    className="flex items-center text-sm text-gray-500 hover:underline dark:text-gray-400 font-medium"
+                                    className="flex items-center text-sm hover:underline text-slate-400 font-medium"
                                     onClick={() => {
                                         setClickToggled(!clickToggled)
                                     }}>

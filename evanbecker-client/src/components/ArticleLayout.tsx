@@ -51,14 +51,14 @@ export function ArticleLayout({
                                         router.push('/');
                                 }}
                                 aria-label="Go back to articles"
-                                className="group mb-8 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md shadow-slate-800/5 ring-1 ring-slate-900/5 transition dark:border dark:border-slate-700/50 dark:bg-slate-800 dark:ring-0 dark:ring-white/10 dark:hover:border-slate-700 dark:hover:ring-white/20 lg:absolute lg:-left-5 lg:-mt-2 lg:mb-0 xl:-top-1.5 xl:left-0 xl:mt-0"
+                                className="group mb-8 flex h-10 w-10 items-center justify-center rounded-full shadow-md transition border border-slate-700/50 bg-slate-800 ring-0 hover:border-slate-700 hover:ring-white/20 lg:absolute lg:-left-5 lg:-mt-2 lg:mb-0 xl:-top-1.5 xl:left-0 xl:mt-0"
                             >
-                                <ArrowLeftIcon className="h-4 w-4 stroke-slate-500 transition group-hover:stroke-slate-700 dark:stroke-slate-300 dark:group-hover:stroke-slate-400" />
+                                <ArrowLeftIcon className="h-4 w-4 stroke-slate-500 transition group-hover:stroke-slate-700 stroke-slate-300 group-hover:stroke-slate-100" />
                             </button>
                         )}
                         <article>
                             <header className="flex flex-col">
-                                <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-800 dark:text-slate-100 sm:text-5xl">
+                                <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-100 sm:text-5xl">
                                     {article.title}
                                 </h1>
                                 <time
@@ -69,7 +69,7 @@ export function ArticleLayout({
                                     <span className="ml-3">{formatDate(article.date)}</span>
                                 </time>
                             </header>
-                            <Prose className="mt-8" data-mdx-content>
+                            <Prose className="mt-8 text-slate-300" data-mdx-content>
                                 {children}
                             </Prose>
                         </article>

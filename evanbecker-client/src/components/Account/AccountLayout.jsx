@@ -6,7 +6,7 @@ import { Bars3Icon, MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 
 import { AccountSidebar } from "@/components/Account/AccountSidebar";
 import {AccountSearch} from "@/components/Account/AccountSearch";
-import {AccountTab} from "@/components/Account/AccountTab";
+import {AccountSettingsTab} from "@/components/Account/AccountSettingsTab";
 
 export function AccountLayout({
     children,
