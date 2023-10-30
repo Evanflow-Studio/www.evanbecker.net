@@ -63,8 +63,8 @@ builder.Services.AddAuthentication(options =>
 }).AddJwtBearer(options =>
 {
     // TODO: MOVE TO AppSettings
-    options.Authority = "https://dev-m3uiopcp.us.auth0.com/";
-    options.Audience = "evanbecker.api";
+    options.Authority = $"{auth0Settings.Domain}/";
+    options.Audience = auth0Settings.Audience;
 });
 
 var app = builder.Build();
