@@ -91,3 +91,8 @@ services:
       - "traefik.http.routers.client.rule=Host(`www.evanbecker.net`)"
       - "traefik.http.services.client.loadbalancer.server.port=3000" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
       - "traefik.port=80"
+
+networks:
+  default:
+    name: traefik_proxy
+    external: true
