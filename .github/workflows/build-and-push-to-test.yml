@@ -87,12 +87,12 @@ jobs:
             echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
             echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
             echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
-            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
+            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
 
             echo "> Appending DB Secrets"
             echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-            echo -e "DB_USER=${{ secrets.Prod_DB_USER }}" >> .env
-            echo -e "DB_PASS=${{ secrets.Prod_DB_PASSWORD }}" >> .env
+            echo -e "Prod_DB_USER=${{ secrets.Prod_DB_USER }}" >> .env
+            echo -e "Prod_DB_PASSWORD=${{ secrets.Prod_DB_PASSWORD }}" >> .env
             echo "ENVIRONMENT=test" >> .env
 
             echo "> Appending PG Admin Secrets"

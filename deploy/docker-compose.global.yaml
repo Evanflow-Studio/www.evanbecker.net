@@ -31,8 +31,8 @@ services:
     ports:
       - 5432:5432
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_USER=${Prod_DB_USER}
+      - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
     volumes:
       - ./appdata/postgres:/var/lib/postgresql/data
     labels:
