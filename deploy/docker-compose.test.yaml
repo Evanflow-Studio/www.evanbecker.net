@@ -7,7 +7,7 @@ services:
     volumes:
       - ./pgadmin-data:/var/lib/pgadmin
     ports:
-      - 5050:80
+      - 5051:80
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com #TODO: Add to secrets
       PGADMIN_DEFAULT_PASSWORD: 123456 #TODO: Add to secrets
@@ -52,7 +52,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=http://+:5000
     ports:
-      - 5000:5000
+      - 5001:5000
     depends_on:
       - evanbecker-db
     labels:
@@ -60,7 +60,7 @@ services:
       - "traefik.http.routers.aspnetapp.entrypoints=websecure"
       - "traefik.http.routers.aspnetapp.rule=Host(`api-test.evanbecker.net`)"      
       - "traefik.http.routers.aspnetapp.tls=true"
-      - "traefik.http.services.aspnetapp.loadbalancer.server.port=5000"
+      - "traefik.http.services.aspnetapp.loadbalancer.server.port=5001"
       - "traefik.port=443"
       
   evanbecker-client:
@@ -71,7 +71,7 @@ services:
       - evanbecker-db
       - evanbecker
     ports:
-      - 3000:3000
+      - 3001:3000
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.client.entrypoints=websecure"
@@ -79,7 +79,7 @@ services:
       - "traefik.http.middlewares.client-web-secure.redirectscheme.scheme=https"
       - "traefik.http.routers.client.middlewares=client-web-secure"
       - "traefik.http.routers.client.tls=true"
-      - "traefik.http.services.client.loadbalancer.server.port=3000" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
+      - "traefik.http.services.client.loadbalancer.server.port=3001" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
       - "traefik.port=443"
 
 networks:
