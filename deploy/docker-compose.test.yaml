@@ -60,7 +60,7 @@ services:
       - "traefik.http.routers.aspnetapp-test.entrypoints=websecure"
       - "traefik.http.routers.aspnetapp-test.rule=Host(`api-test.evanbecker.net`)"      
       - "traefik.http.routers.aspnetapp-test.tls=true"
-      - "traefik.http.services.aspnetapp-test.loadbalancer.server.port=5001"
+      - "traefik.http.services.aspnetapp-test.loadbalancer.server.port=5000"
       - "traefik.port=443"
       
   evanbecker-client:
