@@ -24,12 +24,17 @@ services:
   evanbecker-db-prod:
     image: postgres
     restart: always
+    ports:
+      - 5431:5431
+    expose:
+      - 5431
     environment:
       - POSTGRES_DB=${Prod_DB_DATABASE}
       - POSTGRES_USER=${Prod_DB_USER}
       - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
     volumes:
       - ./appdata/postgres:/var/lib/postgresql/data
+    command: -p 5431
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.postgres.rule=HostSNI(`db.evanbecker.net`)"
