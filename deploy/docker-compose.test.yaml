@@ -28,7 +28,7 @@ services:
     pull_policy: always
     image: registry.digitalocean.com/evanbecker/evanbecker-client
     depends_on:
-      - evanbecker
+      - evanbecker-test
     ports:
       - 3001:3000
     labels:
