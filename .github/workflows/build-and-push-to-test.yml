@@ -5,6 +5,8 @@ on:
     branches: [ "main" ]
   #pull_request: #Uncomment this for testing purposes
   #  branches: [ "main" ]
+  pull_request: #Uncomment this for testing purposes
+    branches: [ "release" ]
 
 jobs:
   build_and_push:
@@ -50,7 +52,7 @@ jobs:
           mkdir ./evanbecker-api/evanbecker-api/secrets/
           chmod 777 ./evanbecker-api/evanbecker-api/secrets/
           touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db-test.evanbecker.net;Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json #TODO: Change with 0th DB_NAME->DB_HOST
+          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           pwd
           cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           echo "Ensuring dotnet-ef is installed..."
@@ -85,13 +87,17 @@ jobs:
             echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
             echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
             echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
-            echo -e "CONNECTION_STRING=Host=${{ secrets.DB_NAME }};Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
+            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.DB_USER }};Password=${{ secrets.DB_PASS }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
 
             echo "> Appending DB Secrets"
             echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-            echo -e "DB_USER=${{ secrets.DB_USER }}" >> .env
-            echo -e "DB_PASS=${{ secrets.DB_PASS }}" >> .env
-            echo -e "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" >> .env            
+            echo -e "DB_USER=${{ secrets.Prod_DB_USER }}" >> .env
+            echo -e "DB_PASS=${{ secrets.Prod_DB_PASSWORD }}" >> .env
+            echo "ENVIRONMENT=test" >> .env
+
+            echo "> Appending PG Admin Secrets"
+            echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
+            echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
 
             echo "> Secrets Refreshed..."
 
@@ -101,8 +107,8 @@ jobs:
             echo "Pulling latest changes..."
             git pull
 
-            echo "Starting traefik"
-            docker compose -f docker-compose.traefik.yaml up -d --build
+            echo "Starting global"
+            docker compose -f docker-compose.global.yaml up -d --build
 
             echo "Starting docker-compose..."
             docker compose -f docker-compose.test.yaml -p test up -d --build

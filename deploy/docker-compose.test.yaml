@@ -1,43 +1,5 @@
 services:
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: always
-    depends_on:
-      - evanbecker-db
-    volumes:
-      - ./pgadmin-data:/var/lib/pgadmin
-    ports:
-      - 5051:80
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com #TODO: Add to secrets
-      PGADMIN_DEFAULT_PASSWORD: 123456 #TODO: Add to secrets
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pgadmin-test.entrypoints=websecure"
-      - "traefik.http.routers.pgadmin-test.tls=true"
-      - "traefik.http.routers.pgadmin-test.service=pgadmin-test"
-      - "traefik.http.routers.pgadmin-test.rule=Host(`db-test.evanbecker.net`)"
-      - "traefik.http.services.pgadmin-test.loadbalancer.server.port=80"
-
-  evanbecker-db:
-    image: postgres
-    restart: always
-    ports:
-      - 5432:5432
-    environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
-    volumes:
-      - ./appdata/postgres:/var/lib/postgresql/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.tcp.routers.postgres-test.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.postgres-test.entryPoints=postgres"
-      - "traefik.tcp.routers.postgres-test.service=postgres-test"
-      - "traefik.tcp.services.postgres-test.loadbalancer.server.port=5432"
-
-  evanbecker:
+  evanbecker-test:
     container_name: evanbecker-server
     pull_policy: always
     image: registry.digitalocean.com/evanbecker/evanbecker-server
@@ -63,7 +25,7 @@ services:
       - "traefik.http.services.aspnetapp-test.loadbalancer.server.port=5000"
       - "traefik.port=443"
       
-  evanbecker-client:
+  evanbecker-client-test:
     container_name: evanbecker-client
     pull_policy: always
     image: registry.digitalocean.com/evanbecker/evanbecker-client

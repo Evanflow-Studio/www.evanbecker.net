@@ -67,8 +67,8 @@ jobs:
             echo -e "Prod_API_Auth0_ClientId=${{ secrets.Prod_API_Auth0_ClientId }}" >> .env
             echo -e "Prod_API_Auth0_ClientSecret=${{ secrets.Prod_API_Auth0_ClientSecret }}" >> .env
             echo -e "Prod_API_Auth0_Url=${{ secrets.Prod_API_Auth0_Url }}" >> .env
-            echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
-            echo -e "CONNECTION_STRING=Host=${{ secrets.Prod_DB_DATABASE }};Port=5431;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}" >> .env
+
+            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}" >> .env
 
             echo "> Appending DB Secrets"
             echo -e "Prod_DB_DATABASE=${{ secrets.Prod_DB_DATABASE }}" >> .env
@@ -90,7 +90,7 @@ jobs:
           mkdir ./evanbecker-api/evanbecker-api/secrets/
           chmod 777 ./evanbecker-api/evanbecker-api/secrets/
           touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Port=5431;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           pwd
           cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           echo "Ensuring dotnet-ef is installed..."
@@ -111,14 +111,14 @@ jobs:
           script: |
             cd ~/prod/www.evanbecker.net/deploy/
 
-            echo "Just double checking we're actually logged into doctl registry..."
+            echo "Ensuring we're logged into doctl registry..."
             doctl registry login
 
             echo "Pulling latest changes..."
             git pull
 
-            echo "Starting traefik"
-            docker compose -f docker-compose.traefik.yaml up -d --build
+            echo "Ensuring global resources started"
+            docker compose -f docker-compose.global.yaml up -d --build
 
-            echo "Starting docker-compose..."
+            echo "Starting prod"
             docker compose -f docker-compose.prod.yaml -p prod up -d --build
