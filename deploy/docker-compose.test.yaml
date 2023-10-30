@@ -13,11 +13,11 @@ services:
       PGADMIN_DEFAULT_PASSWORD: 123456 #TODO: Add to secrets
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.pgadmin.entrypoints=websecure"
-      - "traefik.http.routers.pgadmin.tls=true"
-      - "traefik.http.routers.pgadmin.service=pgadmin"
-      - "traefik.http.routers.pgadmin.rule=Host(`db-test.evanbecker.net`)"
-      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+      - "traefik.http.routers.pgadmin-test.entrypoints=websecure"
+      - "traefik.http.routers.pgadmin-test.tls=true"
+      - "traefik.http.routers.pgadmin-test.service=pgadmin-test"
+      - "traefik.http.routers.pgadmin-test.rule=Host(`db-test.evanbecker.net`)"
+      - "traefik.http.services.pgadmin-test.loadbalancer.server.port=80"
 
   evanbecker-db:
     image: postgres
@@ -32,10 +32,10 @@ services:
       - ./appdata/postgres:/var/lib/postgresql/data
     labels:
       - "traefik.enable=true"
-      - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.postgres.entryPoints=postgres"
-      - "traefik.tcp.routers.postgres.service=postgres"
-      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+      - "traefik.tcp.routers.postgres-test.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.postgres-test.entryPoints=postgres"
+      - "traefik.tcp.routers.postgres-test.service=postgres-test"
+      - "traefik.tcp.services.postgres-test.loadbalancer.server.port=5432"
 
   evanbecker:
     container_name: evanbecker-server
@@ -57,10 +57,10 @@ services:
       - evanbecker-db
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.aspnetapp.entrypoints=websecure"
-      - "traefik.http.routers.aspnetapp.rule=Host(`api-test.evanbecker.net`)"      
-      - "traefik.http.routers.aspnetapp.tls=true"
-      - "traefik.http.services.aspnetapp.loadbalancer.server.port=5001"
+      - "traefik.http.routers.aspnetapp-test.entrypoints=websecure"
+      - "traefik.http.routers.aspnetapp-test.rule=Host(`api-test.evanbecker.net`)"      
+      - "traefik.http.routers.aspnetapp-test.tls=true"
+      - "traefik.http.services.aspnetapp-test.loadbalancer.server.port=5001"
       - "traefik.port=443"
       
   evanbecker-client:
@@ -74,12 +74,12 @@ services:
       - 3001:3000
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.client.entrypoints=websecure"
-      - "traefik.http.routers.client.rule=Host(`test.evanbecker.net`)"
-      - "traefik.http.middlewares.client-web-secure.redirectscheme.scheme=https"
-      - "traefik.http.routers.client.middlewares=client-web-secure"
-      - "traefik.http.routers.client.tls=true"
-      - "traefik.http.services.client.loadbalancer.server.port=3001" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
+      - "traefik.http.routers.client-test.entrypoints=websecure"
+      - "traefik.http.routers.client-test.rule=Host(`test.evanbecker.net`)"
+      - "traefik.http.middlewares.client-web-secure-test.redirectscheme.scheme=https"
+      - "traefik.http.routers.client-test.middlewares=client-web-secure-test"
+      - "traefik.http.routers.client-test.tls=true"
+      - "traefik.http.services.client-test.loadbalancer.server.port=3001" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
       - "traefik.port=443"
 
 networks:
