@@ -33,7 +33,7 @@ services:
     environment:
       - POSTGRES_USER=${Prod_DB_USER}
       - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
-      - POSTGRES_DB=pgdefault
+      - POSTGRES_DB=defaultdb
     volumes:
       - ./appdata/postgres:/var/lib/postgresql/data
     labels:
