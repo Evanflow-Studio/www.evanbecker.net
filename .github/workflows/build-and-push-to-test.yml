@@ -107,8 +107,10 @@ jobs:
             echo "Pulling latest changes..."
             git pull
 
-            echo "Starting global"
+            echo "Ensuring prod global is started"
+            cd ~/prod/www.evanbecker.net/deploy
             docker compose -f docker-compose.global.yaml up -d --build
+            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
 
             echo "Starting docker-compose..."
             docker compose -f docker-compose.test.yaml -p test up -d --build
