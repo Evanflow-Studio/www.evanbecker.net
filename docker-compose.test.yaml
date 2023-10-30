@@ -79,7 +79,6 @@ services:
       #  NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     image: registry.digitalocean.com/evanbecker/evanbecker-client
     depends_on:
-      - evanbecker-db
       - evanbecker
     ports:
       - "3000:3000"

@@ -15,8 +15,6 @@ services:
       - ASPNETCORE_URLS=http://+:5000
     ports:
       - 5000:5000
-    depends_on:
-      - evanbecker-db
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.aspnetapp.entrypoints=websecure"
@@ -30,7 +28,6 @@ services:
     pull_policy: always
     image: registry.digitalocean.com/evanbecker/evanbecker-client-prod
     depends_on:
-      - evanbecker-db
       - evanbecker
     ports:
       - 3000:3000
