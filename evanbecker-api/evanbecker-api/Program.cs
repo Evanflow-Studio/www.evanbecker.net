@@ -62,9 +62,9 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-    // TODO: MOVE TO AppSettings
     options.Authority = $"{auth0Settings.Domain}/";
     options.Audience = auth0Settings.Audience;
+    options.RequireHttpsMetadata = false; // Traefik handles Https for us
 });
 
 var app = builder.Build();
