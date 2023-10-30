@@ -45,24 +45,7 @@ jobs:
       - name: Push image to DO Container Registry
         run: docker compose -f docker-compose.test.yaml push
 
-      - name: Run Entity Framework Migrations
-        run: |
-          echo "Creating appsettings.secrets.json..."
-          [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          mkdir ./evanbecker-api/evanbecker-api/secrets/
-          chmod 777 ./evanbecker-api/evanbecker-api/secrets/
-          touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          pwd
-          cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo "Ensuring dotnet-ef is installed..."
-          dotnet tool install --global dotnet-ef
-          dotnet tool restore
-          cd ./evanbecker-api/evanbecker-domain/
-          echo "Updating Database..."
-          dotnet ef database update
-        
-      - name: Deploy Stack
+      - name: Deploy Secrets to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.GL_SSH_HOST }}
@@ -87,7 +70,7 @@ jobs:
             echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
             echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
             echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
-            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}" >> .env #TODO: Change with 0th DB_NAME->DB_HOST
+            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}" >> .env
 
             echo "> Appending DB Secrets"
             echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
@@ -100,6 +83,34 @@ jobs:
             echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
 
             echo "> Secrets Refreshed..."
+
+      - name: Run Entity Framework Migrations on Database
+        run: |
+          echo "Creating appsettings.secrets.json..."
+          [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          mkdir ./evanbecker-api/evanbecker-api/secrets/
+          chmod 777 ./evanbecker-api/evanbecker-api/secrets/
+          touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          pwd
+          cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          echo "Ensuring dotnet-ef is installed..."
+          dotnet tool install --global dotnet-ef
+          dotnet tool restore
+          cd ./evanbecker-api/evanbecker-domain/
+          echo "Updating Database..."
+          dotnet ef database update
+
+      - name: Deploy Container to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.GL_SSH_HOST }}
+          username: ${{ secrets.GL_SSH_USERNAME }}
+          passphrase: ${{ secrets.GL_SSH_PASSPHRASE }}
+          key: ${{ secrets.GL_SSH_SECRET }}
+          port: 22
+          script: |
+            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
 
             echo "Logging into doctl registry..."
             doctl registry login
