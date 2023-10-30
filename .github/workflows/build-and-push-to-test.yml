@@ -101,5 +101,8 @@ jobs:
             echo "Pulling latest changes..."
             git pull
 
+            echo "Starting traefik"
+            docker compose -f docker-compose.traefik.yaml up -d --build
+
             echo "Starting docker-compose..."
             docker compose -f docker-compose.test.yaml -p test up -d --build
