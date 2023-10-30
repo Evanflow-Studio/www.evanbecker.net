@@ -79,7 +79,7 @@ services:
       - "traefik.http.middlewares.client-web-secure-test.redirectscheme.scheme=https"
       - "traefik.http.routers.client-test.middlewares=client-web-secure-test"
       - "traefik.http.routers.client-test.tls=true"
-      - "traefik.http.services.client-test.loadbalancer.server.port=3001" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
+      - "traefik.http.services.client-test.loadbalancer.server.port=3000" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
       - "traefik.port=443"
 
 networks:
