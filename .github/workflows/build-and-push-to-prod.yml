@@ -1,10 +1,8 @@
-name: Build & Deploy Test
+name: Build & Deploy Prod
 
 on:
   push:
-    branches: [ "main" ]
-  #pull_request: #Uncomment this for testing purposes
-  #  branches: [ "main" ]
+    branches: [ "release" ]
   pull_request: #Uncomment this for testing purposes
     branches: [ "release" ]
 
@@ -15,16 +13,16 @@ jobs:
       - name: Checkout the repo
         uses: actions/checkout@v2
         
-      - name: Create env files
+      - name: Create client environment-specific build configs
         run: |
           touch ./evanbecker-client/.env.local
           echo "Client Build Variables"
-          echo -e "NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_API_URL=https://api-test.evanbecker.net/" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.Prod_Client_NEXT_PUBLIC_SITE_URL }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_API_URL=${{ secrets.Prod_Client_NEXT_PUBLIC_API_URL }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.Prod_Client_NEXT_PUBLIC_AUTH0_DOMAIN }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.Prod_Client_NEXT_PUBLIC_AUTH0_CLIENT_ID }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.Prod_Client_NEXT_PUBLIC_AUTH0_AUDIENCE }}" >> ./evanbecker-client/.env.local
+          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.Prod_Client_NEXT_PUBLIC_AUTH0_REDIRECT_URI }}" >> ./evanbecker-client/.env.local
 
       - name: Update Docker settings
         run: |
@@ -32,18 +30,18 @@ jobs:
           sudo systemctl restart docker
 
       - name: Build image
-        run: docker compose -f docker-compose.test.yaml build --no-cache
+        run: docker compose -f docker-compose.prod.yaml build --no-cache
         
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           
-      - name: Log in to DO Container Registry
+      - name: Login to DigitalOcean Container Registry
         run: doctl registry login
-        
-      - name: Push image to DO Container Registry
-        run: docker compose -f docker-compose.test.yaml push
+
+      - name: Push image to DigitalOcean Container Registry
+        run: docker compose -f docker-compose.prod.yaml push
 
       - name: Deploy Secrets to Server
         uses: appleboy/ssh-action@master
@@ -54,8 +52,8 @@ jobs:
           key: ${{ secrets.GL_SSH_SECRET }}
           port: 22
           script: |
-            echo "Starting Test Deploy:"
-            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
+            echo "Starting Prod Deploy:"
+            cd ~/prod/www.evanbecker.net/deploy/
             echo "Refreshing Secrets..."
             echo "> Deleting previous .env"
             [ ! -e .env ] || rm .env
@@ -63,24 +61,25 @@ jobs:
             touch .env
 
             echo "> Appending API Secrets"
-            echo -e "GitHubConfiguration_Pat=${{ secrets.GH_PAT }}" >> .env
-            echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
-            echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}" >> .env
-            echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}" >> .env
-            echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
-            echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
-            echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
-            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}" >> .env
+            echo -e "Prod_API_Auth0_Domain=${{ secrets.Prod_API_Auth0_Domain }}" >> .env
+            echo -e "Prod_API_GitHub_PAT=${{ secrets.Prod_API_GitHub_PAT }}" >> .env
+            echo -e "Prod_API_Auth0_Audience=${{ secrets.Prod_API_Auth0_Audience }}" >> .env
+            echo -e "Prod_API_Auth0_ClientId=${{ secrets.Prod_API_Auth0_ClientId }}" >> .env
+            echo -e "Prod_API_Auth0_ClientSecret=${{ secrets.Prod_API_Auth0_ClientSecret }}" >> .env
+            echo -e "Prod_API_Auth0_Url=${{ secrets.Prod_API_Auth0_Url }}" >> .env
+
+            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}" >> .env
 
             echo "> Appending DB Secrets"
-            echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo -e "Prod_DB_DATABASE=${{ secrets.Prod_DB_DATABASE }}" >> .env
             echo -e "Prod_DB_USER=${{ secrets.Prod_DB_USER }}" >> .env
             echo -e "Prod_DB_PASSWORD=${{ secrets.Prod_DB_PASSWORD }}" >> .env
-            echo "ENVIRONMENT=test" >> .env
 
             echo "> Appending PG Admin Secrets"
             echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
             echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
+
+            echo "ENVIRONMENT=prod" >> .env            
 
             echo "> Secrets Refreshed..."
 
@@ -91,7 +90,7 @@ jobs:
           mkdir ./evanbecker-api/evanbecker-api/secrets/
           chmod 777 ./evanbecker-api/evanbecker-api/secrets/
           touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           pwd
           cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           echo "Ensuring dotnet-ef is installed..."
@@ -110,18 +109,16 @@ jobs:
           key: ${{ secrets.GL_SSH_SECRET }}
           port: 22
           script: |
-            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
+            cd ~/prod/www.evanbecker.net/deploy/
 
-            echo "Logging into doctl registry..."
+            echo "Ensuring we're logged into doctl registry..."
             doctl registry login
 
             echo "Pulling latest changes..."
             git pull
 
-            echo "Ensuring prod global is started"
-            cd ~/prod/www.evanbecker.net/deploy
+            echo "Ensuring global resources started"
             docker compose -f docker-compose.global.yaml up -d --build
-            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
 
-            echo "Starting docker-compose..."
-            docker compose -f docker-compose.test.yaml -p test up -d --build
+            echo "Starting prod"
+            docker compose -f docker-compose.prod.yaml -p prod up -d --build

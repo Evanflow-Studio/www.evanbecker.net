@@ -1,0 +1,50 @@
+services:
+  evanbecker:
+    container_name: evanbecker-server-prod
+    pull_policy: always
+    image: registry.digitalocean.com/evanbecker/evanbecker-server-prod
+    environment:
+      - Auth0__Domain=${Prod_API_Auth0_Domain}
+      - GitHub__PAT=${Prod_API_GitHub_PAT}
+      - Auth0__Audience=${Prod_API_Auth0_Audience}
+      - Auth0__ClientId=${Prod_API_Auth0_ClientId}
+      - Auth0__ClientSecret=${Prod_API_Auth0_ClientSecret}
+      - Auth0__Url=${Prod_API_Auth0_Url}
+      - ConnectionStrings__Database=${CONNECTION_STRING}
+      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
+      - ASPNETCORE_URLS=http://+:5000
+    ports:
+      - 5000:5000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.aspnetapp.entrypoints=websecure"
+      - "traefik.http.routers.aspnetapp.rule=Host(`api.evanbecker.net`)"      
+      - "traefik.http.routers.aspnetapp.tls=true"
+      - "traefik.http.services.aspnetapp.loadbalancer.server.port=5000"
+      - "traefik.port=443"
+      
+  evanbecker-client:
+    container_name: evanbecker-client-prod
+    pull_policy: always
+    image: registry.digitalocean.com/evanbecker/evanbecker-client-prod
+    depends_on:
+      - evanbecker
+    ports:
+      - 3000:3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.client.entrypoints=websecure"
+      - "traefik.http.routers.client.rule=Host(`www.evanbecker.net`)"
+      - "traefik.http.middlewares.client-web-secure.redirectscheme.scheme=https"
+      - "traefik.http.routers.client.middlewares=redirect-non-www-to-www,client-web-secure"
+      - "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.permanent=true"
+      - "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.regex=^(?:http://|https://)?evanbecker.net(\\/.*)?"
+      - "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.replacement=https://www.evanbecker.net/$${1}"
+      - "traefik.http.routers.client.tls=true"
+      - "traefik.http.services.client.loadbalancer.server.port=3000"
+      - "traefik.port=443"
+
+networks:
+  default:
+    name: traefik_proxy
+    external: true
