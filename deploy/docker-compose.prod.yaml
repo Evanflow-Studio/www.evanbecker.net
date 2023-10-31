@@ -36,6 +36,7 @@ services:
       - "traefik.http.routers.client.entrypoints=websecure"
       - "traefik.http.routers.client.rule=Host(`www.evanbecker.net`)"
       - "traefik.http.middlewares.client-web-secure.redirectscheme.scheme=https"
+      - "traefik.http.routers.client.middlewares=redirect-non-www-to-www@file"
       - "traefik.http.routers.client.middlewares=client-web-secure"
       - "traefik.http.routers.client.tls=true"
       - "traefik.http.services.client.loadbalancer.server.port=3000"

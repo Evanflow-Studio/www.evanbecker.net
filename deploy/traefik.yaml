@@ -7,3 +7,11 @@ tls:
       defaultCertificate:
         certFile: /certs/evanbecker.net.crt
         keyFile: /certs/evanbecker.net.key
+
+http:
+  middlewares:
+    redirect-non-www-to-www:
+      redirectregex:
+        permanent: true
+        regex: "^https?://(?:www\\.)?(.+)"
+        replacement: "https://www.${1}"
