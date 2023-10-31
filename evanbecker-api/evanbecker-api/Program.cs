@@ -17,7 +17,7 @@ var environmentName = builder.Environment.EnvironmentName;
 Console.WriteLine($"Starting API with Environment: {environmentName}");
 var connectionString = builder.Configuration.GetConnectionString("Database");
 builder.Services.AddDbContext<ApplicationContext>(options =>
-    options.UseNpgsql(connectionString, innerOptions => innerOptions.UseAdminDatabase("defaultdb")));
+    options.UseNpgsql(connectionString, innerOptions => innerOptions.UseAdminDatabase("postgres")));
 
 var auth0Section = builder.Configuration.GetSection("Auth0");
 var auth0Settings = new Auth0Configuration();
@@ -62,9 +62,8 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-    // TODO: MOVE TO AppSettings
-    options.Authority = "https://dev-m3uiopcp.us.auth0.com/";
-    options.Audience = "evanbecker.api";
+    options.Authority = $"https://{auth0Settings.Domain}/";
+    options.Audience = auth0Settings.Audience;
 });
 
 var app = builder.Build();

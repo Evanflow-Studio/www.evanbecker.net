@@ -1,4 +1,4 @@
-name: Build & Deploy Test
+name: Build & Deploy Prod
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout the repo
         uses: actions/checkout@v2
         
-      - name: Create env files
+      - name: Create client environment-specific build configs
         run: |
           touch ./evanbecker-client/.env.local
           echo "Client Build Variables"
@@ -37,13 +37,53 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           
-      - name: Log in to DO Container Registry
+      - name: Login to DigitalOcean Container Registry
         run: doctl registry login
-        
-      - name: Push image to DO Container Registry
+
+      - name: Push image to DigitalOcean Container Registry
         run: docker compose -f docker-compose.prod.yaml push
 
-      - name: Run Entity Framework Migrations
+      - name: Deploy Secrets to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.GL_SSH_HOST }}
+          username: ${{ secrets.GL_SSH_USERNAME }}
+          passphrase: ${{ secrets.GL_SSH_PASSPHRASE }}
+          key: ${{ secrets.GL_SSH_SECRET }}
+          port: 22
+          script: |
+            echo "Starting Prod Deploy:"
+            cd ~/prod/www.evanbecker.net/deploy/
+            echo "Refreshing Secrets..."
+            echo "> Deleting previous .env"
+            [ ! -e .env ] || rm .env
+            echo "> Creating new .env"
+            touch .env
+
+            echo "> Appending API Secrets"
+            echo -e "Prod_API_Auth0_Domain=${{ secrets.Prod_API_Auth0_Domain }}" >> .env
+            echo -e "Prod_API_GitHub_PAT=${{ secrets.Prod_API_GitHub_PAT }}" >> .env
+            echo -e "Prod_API_Auth0_Audience=${{ secrets.Prod_API_Auth0_Audience }}" >> .env
+            echo -e "Prod_API_Auth0_ClientId=${{ secrets.Prod_API_Auth0_ClientId }}" >> .env
+            echo -e "Prod_API_Auth0_ClientSecret=${{ secrets.Prod_API_Auth0_ClientSecret }}" >> .env
+            echo -e "Prod_API_Auth0_Url=${{ secrets.Prod_API_Auth0_Url }}" >> .env
+
+            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}" >> .env
+
+            echo "> Appending DB Secrets"
+            echo -e "Prod_DB_DATABASE=${{ secrets.Prod_DB_DATABASE }}" >> .env
+            echo -e "Prod_DB_USER=${{ secrets.Prod_DB_USER }}" >> .env
+            echo -e "Prod_DB_PASSWORD=${{ secrets.Prod_DB_PASSWORD }}" >> .env
+
+            echo "> Appending PG Admin Secrets"
+            echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
+            echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
+
+            echo "ENVIRONMENT=prod" >> .env            
+
+            echo "> Secrets Refreshed..."
+
+      - name: Run Entity Framework Migrations on Database
         run: |
           echo "Creating appsettings.secrets.json..."
           [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
@@ -59,8 +99,8 @@ jobs:
           cd ./evanbecker-api/evanbecker-domain/
           echo "Updating Database..."
           dotnet ef database update
-        
-      - name: Deploy Stack
+
+      - name: Deploy Container to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.GL_SSH_HOST }}
@@ -69,42 +109,16 @@ jobs:
           key: ${{ secrets.GL_SSH_SECRET }}
           port: 22
           script: |
-            echo "Starting Test Deploy:"
-            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
-            echo "Refreshing Secrets..."
-            echo "> Deleting previous .env"
-            [ ! -e .env ] || rm .env
-            echo "> Creating new .env"
-            touch .env
+            cd ~/prod/www.evanbecker.net/deploy/
 
-            echo "> Appending API Secrets"
-            echo -e "Prod_API_Auth0_Domain=${{ secrets.Prod_API_Auth0_Domain }}" >> .env
-            echo -e "Prod_API_GitHub_PAT=${{ secrets.Prod_API_GitHub_PAT }}" >> .env
-            echo -e "Prod_API_Auth0_Audience=${{ secrets.Prod_API_Auth0_Audience }}" >> .env
-            echo -e "Prod_API_Auth0_ClientId=${{ secrets.Prod_API_Auth0_ClientId }}" >> .env
-            echo -e "Prod_API_Auth0_ClientSecret=${{ secrets.Prod_API_Auth0_ClientSecret }}" >> .env
-            echo -e "Prod_API_Auth0_Url=${{ secrets.Prod_API_Auth0_Url }}" >> .env
-            echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
-            echo -e "CONNECTION_STRING=Host=${{ secrets.Prod_DB_DATABASE }};Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}" >> .env
-
-            echo "> Appending DB Secrets"
-            echo -e "Prod_DB_DATABASE=${{ secrets.Prod_DB_DATABASE }}" >> .env
-            echo -e "Prod_DB_USER=${{ secrets.Prod_DB_USER }}" >> .env
-            echo -e "Prod_DB_PASSWORD=${{ secrets.Prod_DB_PASSWORD }}" >> .env
-
-            echo "> Appending PG Admin Secrets"
-            echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
-            echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
-
-            echo -"ENVIRONMENT=prod" >> .env            
-
-            echo "> Secrets Refreshed..."
-
-            echo "Logging into doctl registry..."
+            echo "Ensuring we're logged into doctl registry..."
             doctl registry login
 
             echo "Pulling latest changes..."
             git pull
 
-            echo "Starting docker-compose..."
-            docker compose -f docker-compose.prod.yaml up -d --build
+            echo "Ensuring global resources started"
+            docker compose -f docker-compose.global.yaml up -d --build
+
+            echo "Starting prod"
+            docker compose -f docker-compose.prod.yaml -p prod up -d --build

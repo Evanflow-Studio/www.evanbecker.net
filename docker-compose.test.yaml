@@ -26,8 +26,8 @@ services:
     restart: always
     environment:
       - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_USER=${Prod_DB_USER}
+      - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
     volumes:
       - ./appdata/postgres:/var/lib/postgresql/data
     labels:
@@ -79,7 +79,6 @@ services:
       #  NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     image: registry.digitalocean.com/evanbecker/evanbecker-client
     depends_on:
-      - evanbecker-db
       - evanbecker
     ports:
       - "3000:3000"
@@ -90,3 +89,8 @@ services:
       - "traefik.http.routers.client.rule=Host(`test.evanbecker.net`)"
       - "traefik.http.services.client.loadbalancer.server.port=3000" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
       - "traefik.port=80"
+
+networks:
+  default:
+    name: traefik_proxy
+    external: true
