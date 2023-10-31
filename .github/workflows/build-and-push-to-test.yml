@@ -5,11 +5,11 @@ on:
     branches: [ "main" ]
   #pull_request: #Uncomment this for testing purposes
   #  branches: [ "main" ]
-  pull_request: #Uncomment this for testing purposes
-    branches: [ "release" ]
+  #pull_request: #Uncomment this for testing purposes
+  #  branches: [ "release" ]
 
 jobs:
-  build_and_push:
+  build_and_push_test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
