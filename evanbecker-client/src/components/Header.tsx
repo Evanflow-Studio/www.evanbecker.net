@@ -31,7 +31,7 @@ function MobileNavIcon({ open }: { open: boolean }) {
   return (
     <svg
       aria-hidden="true"
-      className="h-3.5 w-3.5 overflow-visible stroke-slate-700"
+      className="h-3.5 w-3.5 overflow-visible stroke-slate-300"
       fill="none"
       strokeWidth={2}
       strokeLinecap="round"
@@ -55,10 +55,17 @@ function MobileNavIcon({ open }: { open: boolean }) {
 }
 
 function MobileNavigation() {
+  const {
+    isLoading,
+    isAuthenticated,
+    loginWithRedirect,
+    logout,
+  } = useAuth0();
+
   return (
     <Popover>
       <Popover.Button
-        className="relative z-10 flex h-8 w-8 items-center justify-center ui-not-focus-visible:outline-none"
+        className="relative z-10 flex h-8 w-8 items-center justify-center ui-not-focus-visible:outline-none text-slate-100"
         aria-label="Toggle Navigation"
       >
         {({ open }) => <MobileNavIcon open={open} />}
@@ -86,13 +93,25 @@ function MobileNavigation() {
         >
           <Popover.Panel
             as="div"
-            className="absolute inset-x-0 top-full mt-4 flex origin-top flex-col rounded-2xl bg-white p-4 text-lg tracking-tight text-slate-900 shadow-xl ring-1 ring-slate-900/5"
+            className="absolute inset-x-0 top-full mt-4 flex origin-top flex-col rounded-2xl bg-slate-950 p-4 text-lg tracking-tight text-slate-200 shadow-xl ring-1 ring-slate-900/5"
           >
-            <MobileNavLink href="#features">Features</MobileNavLink>
-            <MobileNavLink href="#testimonials">Testimonials</MobileNavLink>
-            <MobileNavLink href="#pricing">Pricing</MobileNavLink>
+            <MobileNavLink href="/">Home</MobileNavLink>
+            <MobileNavLink href="/about-me">About Me</MobileNavLink>
+            <MobileNavLink href="/contact">Contact</MobileNavLink>
+            <MobileNavLink href="/resources">Resources</MobileNavLink>
+            <MobileNavLink href="/articles">Blog</MobileNavLink>
+            <MobileNavLink href="/account/projects">My Projects</MobileNavLink>
             <hr className="m-2 border-slate-300/40" />
-            <MobileNavLink href="/login">Sign in</MobileNavLink>
+            {!isLoading && isAuthenticated && (
+                <>
+                  <MobileNavLink href="/account/dashboard">Dashboard</MobileNavLink>
+                  <MobileNavLink href="/account/settings">Settings</MobileNavLink>
+                  <a href="#" onClick={() => logout()}><MobileNavLink href="#">Logout</MobileNavLink></a>
+                </>
+            )}
+            {!isLoading && !isAuthenticated && (<a href="#" onClick={() => loginWithRedirect()}><MobileNavLink href="#">Sign In</MobileNavLink></a>)}
+            {isLoading && (<LoadingSpinner/>)}
+
           </Popover.Panel>
         </Transition.Child>
       </Transition.Root>

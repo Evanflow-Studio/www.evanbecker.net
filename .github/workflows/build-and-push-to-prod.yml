@@ -3,11 +3,11 @@ name: Build & Deploy Prod
 on:
   push:
     branches: [ "release" ]
-  pull_request: #Uncomment this for testing purposes
-    branches: [ "release" ]
+  #pull_request: #Uncomment this for testing purposes
+  #  branches: [ "release" ]
 
 jobs:
-  build_and_push:
+  build_and_push_prod:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
