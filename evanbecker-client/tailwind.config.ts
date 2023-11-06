@@ -1,6 +1,7 @@
 import formsPlugin from '@tailwindcss/forms'
 import headlessuiPlugin from '@headlessui/tailwindcss'
 import { type Config } from 'tailwindcss'
+const typographyPlugin = require('@tailwindcss/typography')
 const colors = require('tailwindcss/colors')
 
 import typographyStyles from './typography'
@@ -34,6 +35,7 @@ export default {
       light: 'slate-100'
     },
     typography: typographyStyles,
+    darkMode: 'class',
     extend: {
       borderRadius: {
         '4xl': '2rem',
@@ -47,5 +49,5 @@ export default {
       },
     },
   },
-  plugins: [formsPlugin, headlessuiPlugin, require('@tailwindcss/aspect-ratio')],
+  plugins: [formsPlugin, headlessuiPlugin, require('@tailwindcss/aspect-ratio'), typographyPlugin],
 } satisfies Config
