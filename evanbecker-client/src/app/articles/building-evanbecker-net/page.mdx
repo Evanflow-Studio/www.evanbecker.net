@@ -5,7 +5,7 @@ export const article = {
   date: '2023-10-09',
   title: 'Building Evanbecker.net',
   description:
-    'When we released the first version of cosmOS last year, it was written in Go. Go is a wonderful programming language, but it’s been a while since I’ve seen an article on the front page of Hacker News about rewriting some important tool in Go and I see articles on there about rewriting things in Rust every single week.',
+    'It all started a few months ago when I noticed that I wasn’t getting emails. I thought that was rather strange, as I hosted my email service through Zoho, and had no history of problems using my domain for yearsIt all started a few months ago when I noticed that I wasn’t getting emails. I thought that was rather strange, as I hosted my email service through Zoho, and had no history of problems using my domain for years.',
 }
 
 export const metadata = {
@@ -15,7 +15,27 @@ export const metadata = {
 
 export default (props) => <ArticleLayout article={article} {...props} />
 
-When we released the first version of cosmOS last year, it was written in Go. Go is a wonderful programming language with a lot of benefits, but it’s been a while since I’ve seen an article on the front page of Hacker News about rewriting some important tool in Go and I see articles on there about rewriting things in Rust every single week.
+# My Goals and Intent
+It all started a few months ago when I noticed that I wasn’t getting emails. I thought that was rather strange, as I hosted my email service through Zoho, and had no history of problems using my domain for years. It didn’t take long debugging the issue for me to come across the culprit, and it ended up being one of the worst nightmares for many engineers: I forgot to renew my domain, and someone had already snatched it.
+
+I decided to rehost my previous site after purchasing a new www.evanbecker.net domain. There was however one problem. My previous logo was very much tied to my previous domain. I was never really sold on my previous logo. I remember designing it back in college on a sleepless night between various web development consulting gigs to pay for my semester’s tuition. So, instead of whipping up photoshop (and giving Adobe another 300$ (after forgetting to cancel their subscription. (Do I just have a problem with subscriptions?))) I went to the internet and looked for an artist.
+
+After finally stumbling on one who’s profile I really liked, I messaged an artist and was able to get him to build a logo for me. However, after the delivery of the logo, it became quickly clear that I had just created a new problem for myself: my logo was way too good for my now relatively shitty website. My previous site was written using Razor pages and a bootstrap theme I found nearly a decade ago called Unify. It was a rather static website, with the only non-static members being a Unity-created banner involving a ray marching algorithm, and a contact field ‘guarded’ by reCAPTCHA.
+
+Over the years I’ve spent many attempts at redesigning my website, but nothing ever felt right. I took a lot of different stabs at it, ranging from extending the theme I had already purchased, writing a new one from scratch with bootstrap or Material, and even using other themes or frameworks altogether, such as looking at Blazor. I don’t consider myself a UI guy. As an architect, I find myself often in the situation where I will have to work with frontend technologies often, but working with technologies like html and css have often just felt tedious, cumbersome, and janky.
+
+In between clients earlier this year, I worked on an internal nvisia project where I discovered Tailwind. What’s interesting about Tailwind, is it had a lot of the same syntax patterns that the Unify template I had worked with bootstrap had. They took a similar ideology of having a set of classes you would work with in composition as opposed to a hierarchical stylesheet that you would use across the app. I found Tailwind fun to work with after designing a front-page with it for our app. As I mentioned before, I don’t consider myself a UI guy—but I was able to design a good UI with minimal pain. So, for this project, I decided to go with Tailwind, and specifically purchased the Tailwind UI license. While Tailwind itself is free, I really liked their premium components and templates, many of which you see have made it on this site today, in various shapes and forms. Also, since I enjoy their work, I get to directly support a project I care about!
+
+Unlocking the Tailwind UI package fired something in me after playing in it. I initially planned for a completely static website, but decided to aim larger and design a website that could serve as a communication and project management tool for a project I was already working on (blog post coming soon), as well as some of the previous projects I worked on. I also figured it would be a good place for me to convey with the testers of the said product to communicate issues, bugs, and suggestions they have, along with my release and patch notes. I purchased a wildcard certificate through Namecheap, rented a DigitalOcean server, and the rest is now (git) history. This was the start of www.evanbecker.com, about 3 weeks ago from this blog post.
+
+<div className="text-2xl">On the Client</div>
+
+<div className="text-2xl">On the API</div>
+
+<div className="text-2xl">On the Infrastructure</div>
+
+<div className="text-2xl">On the server</div>
+
 
 ```rust
 use ferris_says::say;

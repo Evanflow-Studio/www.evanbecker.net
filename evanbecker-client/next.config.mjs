@@ -4,7 +4,13 @@ import remarkGfm from 'remark-gfm'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    pageExtensions: ['js', 'jsx', 'md', 'ts', 'tsx', 'mdx']
+    pageExtensions: ['js', 'jsx', 'md', 'ts', 'tsx', 'mdx'],
+    rewrites: async () => [
+        {
+            source: "/privacy-policy",
+            destination: "/privacy-policy.html"
+        }
+    ]
 }
 
 const withMDX = nextMDX({
