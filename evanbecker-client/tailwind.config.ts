@@ -2,9 +2,8 @@ import formsPlugin from '@tailwindcss/forms'
 import headlessuiPlugin from '@headlessui/tailwindcss'
 import { type Config } from 'tailwindcss'
 const typographyPlugin = require('@tailwindcss/typography')
+const typographyStyles = require('./typography')
 const colors = require('tailwindcss/colors')
-
-import typographyStyles from './typography'
 
 export default {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
