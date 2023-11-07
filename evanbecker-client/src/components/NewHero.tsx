@@ -40,8 +40,8 @@ export function NewHero() {
                 and autonomous deployment to a <SimpleLink href="https://m.do.co/c/bb04ad8bf1c5">DigitalOcean Droplet</SimpleLink>.
               </p>
               <div className="mt-8 flex gap-4 md:justify-center lg:justify-start">
-                <Button href="/">So, how&apos;d you do it?</Button>
-                <Button href="/" color="blue">
+                <Button href="/articles/building-evanbecker-net">So, how&apos;d you do it?</Button>
+                <Button href="https://github.com/evanjbecker" color="blue">
                   View GitHub
                 </Button>
               </div>
