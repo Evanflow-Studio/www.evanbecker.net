@@ -4,6 +4,7 @@ import {AccountLayout} from "@/components/Account/AccountLayout";
 import { EllipsisVerticalIcon, ArrowLongLeftIcon, ArrowLongRightIcon,
     PlusIcon, TrashIcon, CheckIcon, ChevronUpDownIcon, ExclamationTriangleIcon, PlusCircleIcon } from '@heroicons/react/20/solid'
 import { useRef, Fragment, useState, useEffect } from 'react'
+import clsx from 'clsx'
 import {
     CheckCircleIcon,
 
@@ -1443,13 +1444,13 @@ function ProjectActivityLog({currentProject}) {
                 </ul>
 
                 <div className="mt-6 flex gap-x-3">
-                    <img
+                    {user && (<img
                         src={user?.avatar}
                         alt=""
-                        className="h-6 w-6 flex-none rounded-full bg-slate-950"
-                    />
+                        className="h-6 w-6 flex-none rounded-full bg-slate-900"
+                    />)}
                     <form action="#" className="relative flex-auto">
-                        <div className="overflow-hidden rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-primary-600 focus-within:ring-2 focus-within:ring-primary">
+                        <div className={clsx("overflow-hidden rounded-lg pb-12 shadow-sm ring-1 ring-inset ring-primary-600 focus-within:ring-2 focus-within:ring-primary", user ? "" : "ml-6")}>
                             <label htmlFor="comment" className="sr-only">
                                 Add your comment
                             </label>
@@ -1465,7 +1466,7 @@ function ProjectActivityLog({currentProject}) {
                             />
                         </div>
 
-                        <div className="absolute inset-x-0 bottom-0 flex justify-between py-2 pl-3 pr-2">
+                        <div className={clsx("absolute inset-x-0 bottom-0 flex justify-between py-2 pr-2", user ? "pl-3" : "pl-10" )}>
                             <div className="flex items-center space-x-5">
                                 <div className="flex items-center">
                                     <button
@@ -1550,9 +1551,9 @@ function ProjectActivityLog({currentProject}) {
                             </div>
                             <button
                                 type="button"
-                                disabled={!!user}
+                                disabled={!user}
                                 onClick={() => addProjectComment()}
-                                className="rounded-md px-2.5 py-1.5 text-sm font-semibold text-slate-200 shadow-sm ring-1 ring-inset ring-secondary hover:bg-slate-950 disabled:cursor-not-allowed disabled:bg-slate-800"
+                                className="rounded-md px-2.5 py-1.5 text-sm font-semibold text-slate-200 shadow-sm ring-1 ring-inset ring-secondary hover:bg-slate-950 disabled:cursor-not-allowed disabled:bg-slate-950"
                             >
                                 {isProjectCommentLoading && <LoadingSpinner/>}
                                 {!isProjectCommentLoading && <div>Comment</div>}
@@ -1901,7 +1902,7 @@ const secondaryProjectsNavigation = [ 'Details', 'Deployments', 'Members', 'Acti
 export default function Project({ params }) {
     const [selectedTab, selectTab] = useState(secondaryProjectsNavigation[0]);
 
-    const { getAccessTokenSilently } = useAuth0();
+    const { user, getAccessTokenSilently } = useAuth0();
     const pathname = usePathname();
     const [project, setProject] = useState(null);
     const [isProjectLoading, setProjectLoading] = useState(true);
@@ -2002,7 +2003,6 @@ export default function Project({ params }) {
         return '';
     }
 
-    const [user, setUser] = useState(null);
     const [image, setImage] = useState(null);
     const inputFile = useRef(null);
 
@@ -2084,7 +2084,7 @@ export default function Project({ params }) {
                                                             </div>
                                                             <div className="flex-shrink-0 pr-6">
                                                                 <Menu as="div" className="relative flex-none">
-                                                                    <Menu.Button className="-m-2.5 block p-2.5 text-slate-400 hover:text-slate-100">
+                                                                    <Menu.Button disabled={!user} className="-m-2.5 block p-2.5 text-slate-400 hover:text-slate-100 disabled:cursor-not-allowed">
                                                                         <span className="sr-only">Open options</span>
                                                                         <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
                                                                     </Menu.Button>
@@ -2175,16 +2175,16 @@ export default function Project({ params }) {
                                         <label htmlFor="cover-photo" className="block text-sm font-medium leading-6 text-white">
                                             Add a Project Photo
                                         </label>
-                                        <div className="mt-2 flex justify-center rounded-lg border border-dashed border-white/25 px-6 py-10">
+                                        <div className={clsx("mt-2 flex justify-center rounded-lg border border-dashed border-white/25 px-6 py-10", user ? "" : "cursor-not-allowed")}>
                                             <div className="text-center">
                                                 <PhotoIcon className="mx-auto h-12 w-12 text-gray-500" aria-hidden="true" />
                                                 <div className="mt-4 flex text-sm leading-6 text-gray-400">
                                                     <label
                                                         htmlFor="file-upload"
-                                                        className="relative cursor-pointer rounded-md bg-slate-950 font-semibold text-white focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 focus-within:ring-offset-slate-950 hover:text-primary"
+                                                        className={clsx("relative pl-2 pr-2 cursor-pointer rounded-md bg-slate-950 font-semibold text-white focus-within:outline-none focus-within:ring-2 focus-within:ring-tertiary focus-within:ring-offset-2 focus-within:ring-offset-slate-950 hover:text-primary", user ? "" : "cursor-not-allowed")}
                                                     >
-                                                        <span>Upload a file</span>
-                                                        <input id="file-upload" name="file-upload" ref={inputFile} accept="image/*" onChange={handleFileUpload} type="file" className="sr-only" />
+                                                        <span className={user ? "" : "cursor-not-allowed"}>Upload a file</span>
+                                                        <input id="file-upload" disabled={!(user?.isAdmin == true)} name="file-upload" ref={inputFile} accept="image/*" onChange={handleFileUpload} type="file" className="sr-only" />
                                                     </label>
                                                     <p className="pl-1">or drag and drop</p>
                                                 </div>

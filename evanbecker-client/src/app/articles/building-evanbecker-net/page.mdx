@@ -1,11 +1,15 @@
 import { ArticleLayout } from '@/components/ArticleLayout'
+import apiImage from './auth0-api.png'
+import auth0ApiImage from './auth0-api-api.png'
+import spaImage from './auth0-spa.png'
+import Image from "next/image";
 
 export const article = {
   author: 'Evan Becker',
-  date: '2023-10-09',
+  date: '2023-11-06',
   title: 'Building Evanbecker.net',
   description:
-    'When we released the first version of cosmOS last year, it was written in Go. Go is a wonderful programming language, but it’s been a while since I’ve seen an article on the front page of Hacker News about rewriting some important tool in Go and I see articles on there about rewriting things in Rust every single week.',
+    'It all started a few months ago when I noticed that I wasn’t getting emails. I thought that was rather strange, as I hosted my email service through Zoho, and had no history of problems using my domain for yearsIt all started a few months ago when I noticed that I wasn’t getting emails. I thought that was rather strange, as I hosted my email service through Zoho, and had no history of problems using my domain for years.',
 }
 
 export const metadata = {
@@ -15,18 +19,855 @@ export const metadata = {
 
 export default (props) => <ArticleLayout article={article} {...props} />
 
-When we released the first version of cosmOS last year, it was written in Go. Go is a wonderful programming language with a lot of benefits, but it’s been a while since I’ve seen an article on the front page of Hacker News about rewriting some important tool in Go and I see articles on there about rewriting things in Rust every single week.
+It all began a few months ago when I noticed there was a concerning absence of emails arriving in my custom inbox. It struck me as rather peculiar,
+considering I had been using Zoho to host my email service without an issue for years. An investigation quickly led me to the root of the problem:
+I had forgotten that my domain was tied to a bank account long ago, resulting me in missing the renewal for my domain. And, much to my dismay, someone
+(seemingly not named "Evan Becker") had seized it.
 
-```rust
-use ferris_says::say;
-use std::io::{stdout, BufWriter};
+To rectify this, I purchased a new domain — www.evanbecker.net — and decided to rehost my previous site. Yet, a new dilemma surfaced from this. My former
+logo was intrinsically coupled to my old domain, and, truth be told, I had never entirely been sold on it to begin with. I remember crafting it during a
+sleep-deprived college night, in between juggling various web development consulting gigs to fund my semester's tuition. Rather than diving into Photoshop
+(and inadvertently feeding Adobe another $300 due to forgetting to cancel their subscription for a year — Wait, do I just have a recurring issue with
+recurring subscriptions?), I turned to the internet in search of an artist.
 
-fn main() {
-    let stdout = stdout();
-    let message = String::from("Hello fellow hackers");
-    let width = message.chars().count();
+After stumbling upon an artist whose portfolio resonated with me, I reached out and commissioned a new logo. However, upon its delivery, a fresh problem emerged:
+my new logo far outshone my now relatively lackluster website. My previous website was constructed using Razor pages and a boostrap theme I'd strumbled upon nearly
+a decade ago named Unify. It remained a static website, apart from a Unity-generated banner featuring a ray-marching algorithm and a contact field 'guarded' with reCAPTCHA.
 
-    let mut writer = BufWriter::new(stdout.lock());
-    say(message.as_bytes(), width, &mut writer).unwrap();
+Despite numerous attempts over the years to redesign my website, nothing quite felt right. I took various approaches, from extending the existing theme
+I'd purchased to crafting a new one from scratch using Bootstrap or Material, and even experimenting with alternative themes or frameworks altogether
+such as Blazor. I don't consider myself a UI savant. As an architect, I do frequently find myself grappling with frontend technologies, but working
+directly with HTML and CSS has often felt arduous, cumbersome, and somewhat janky.
+
+During a break between clients earlier this year, while working on an internal project at nvisia, I stumbled upon Tailwind. What intrigued me about Tailwind
+was its similar syntax patterns to the Unify template I'd used previously with Bootstrap. Both followed the ideology of a set of classes for composition instead
+of a hierarchical stylesheet used throughout the application. Designing a front-page with Tailwind for our app was enjoyable despite my prior hesitations with UI work.
+Thus, for this project, I opted for Tailwind and specifically purchased the Tailwind UI license. While Tailwind itself is free, I was drawn to their premium components
+and templates, many of which you can now see integrated into this site in various forms. Moreover, by investing in their work, I get to directly support a project I care about.
+
+The purchase of the Tailwind UI package ignited something within me. Initially planing for a completely static website, I pivoted to a grander vision: crafting a website
+that could double as a communication and project management tool for an upcoming project (stay tuned for a future blog post), as well as a platform to showcase my previous
+work. Additionally, I foresaw it as an ideal space to engage with testers of the mentioned project, where they could communicate issues, bugs, suggestions, and where I could
+publish release and patch notes to.
+
+I procured a wildcard certificate via Namecheap, rented a DigitalOcean server, and the rest was (git) history. This marked the rebirth of my site, now www.evanbecker.net.
+
+# The Client App
+
+Kicking off this whole venture, the first thing on my to-do list was tackling the client app. Initially, the destination wasn’t crystal clear. I embarked on an iterative process,
+thoroughly enjoying the exploration and experimentation with the impressive templates I recently acquired.
+
+I set up a fresh git repository for a Next.js project folder and integrated ESLint with Prettier to maintain code quality. Additionally, I of course incorporated Tailwind
+for a more structure and efficient styling approach.
+
+## Configuration
+
+In crafting the blogging functionality, I opted for a markup language system. Given my background in utilizing such technology for professional documentation already, I utilized
+MDX.js, NextMDX, and Feed. Tweaking the configuration to ensure Next.js recognized MDX as a valid page extension was an essential step:
+
+```js
+// in next.config.mjs
+import rehypePrism from '@mapbox/rehype-prism'
+import nextMDX from '@next/mdx'
+import remarkGfm from 'remark-gfm'
+
+const nextConfig = {
+    pageExtensions: ['js', 'jsx', 'md', 'ts', 'tsx', 'mdx']
+}
+
+const withMDX = nextMDX({
+    extension: /\.mdx?$/,
+    options: {
+        remarkPlugins: [remarkGfm],
+        rehypePlugins: [rehypePrism],
+    }
+});
+
+export default withMDX(nextConfig)
+```
+
+## Code Editing
+
+For presenting code, I leaned towards the Prism library and customized its appearance to harmonize with the overall aesthetics of the site. Here's a snapshot of the current
+"theme" I've curated:
+
+``` css
+/* in styles/prism.css */
+pre[class*='language-'] {
+  color: theme('colors.pink.500');
+}
+
+.token.tag,
+.token.class-name,
+.token.selector,
+.token.selector .class,
+.token.selector.class,
+.token.function {
+  color: theme('colors.green.500');
+}
+
+.token.attr-name,
+.token.keyword,
+.token.rule,
+.token.pseudo-class,
+.token.important {
+  color: theme('colors.slate.300');
+}
+
+.token.module {
+  color: theme('colors.indigo.400');
+}
+
+.token.attr-value,
+.token.class,
+.token.string,
+.token.property {
+  color: theme('colors.sky.300');
+}
+
+.token.punctuation,
+.token.attr-equals {
+  color: theme('colors.slate.400');
+}
+
+.token.unit,
+.language-css .token.function {
+  color: theme('colors.teal.200');
+}
+
+.token.comment,
+.token.operator,
+.token.combinator {
+  color: theme('colors.slate.300');
 }
 ```
+
+## SSO
+
+Moving to the Single Sign-On (SSO) login solution, I decided on Auth0. Their free plan offers an extensive range of features that surpass any immediate needs, and the setup
+within their UI was notably straightforward:
+
+<Image src={auth0ApiImage} alt="" />
+
+<Image src={apiImage} alt="" />
+
+<Image src={spaImage} alt="" />
+
+To organize the various providers, I structured a Providers component. The Auth0 provider setup looked similar to this:
+
+``` jsx
+// in providers.tsx
+<Auth0Provider
+    domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN}
+    clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID}
+    authorizationParams={{
+      audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+      redirect_uri: process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI,
+      scope: "openid profile email offline_access"
+    }}
+    useRefreshTokens
+    cacheLocation="localstorage"
+>
+  {/* CHILDREN */}
+</Auth0Provider>
+```
+
+An important decision was opting for the React Auth0 package over the Next.js Auth0 package. The rationale behind this choice stems from challenges within the current Next.js
+Auth0 implementation, especially concerning client-sided login systems. At present, the Recat, client-only approach, seemed sufficient for the project's needs.
+
+Upon the API becoming operational, the plan is to leverage the access token received from Auth0 to the backend as a Bearer token, utilizing scopes assigned at the provider.
+It's crucial to specify that the audience must align with the API's audience.
+
+``` jsx
+// in projects/page.jsx
+const createProject = async () => {
+    setLoading(true);
+    try {
+        const accessToken = await getAccessTokenSilently();
+        const path = "api/v1/project/new/${projectName}";
+        const call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            mode: "cors",
+        });
+        let project = await call.json();
+        console.log("New Project Returned: ", project);
+        // Do something with project
+    } catch (e) {
+        console.error("Something didn't work", e);
+    }
+}
+```
+
+Finalizing this phase, I ensured the application was containerized using Docker. Here's what that Dockerfile looks like:
+
+``` Dockerfile
+# in Dockerfile
+FROM node:16-alpine
+
+ENV PORT 3000
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY ./evanbecker-client/package*.json /app/
+RUN npm install
+
+COPY ./evanbecker-client/ /app/
+RUN npm run build
+
+EXPOSE 3000
+
+CMD "npm" "start"
+```
+
+# The API
+
+With the client shaped up, attention shifted to the API. Although the API and Client development eventually ran concurrently, the early stages followed a phased approach.
+Commencing with the creation of both the API and the associated Auth0 project marked the primary steps in this phase.
+
+I configured the API to accept Jwt Bearer tokens, leveraging the API's Auth0 setup as described above:
+
+``` dotnet
+// in Program.cs
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.Authority = $"https://{auth0Settings.Domain}/";
+    options.Audience = auth0Settings.Audience;
+});
+```
+
+While in the area, I preemptively managed CORS-related concerns. I established a permissive CORS policy, envisioning the API as publicly accessible. The policy was
+setup in this manner:
+
+``` dotnet
+// in Program.cs
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("cors", builder =>
+    {
+        builder.AllowAnyHeader();
+        builder.AllowAnyMethod();
+        builder.AllowAnyOrigin();
+    });
+});
+
+// ...
+
+app.UseCors("cors");
+```
+
+Considering the frontend and backend reside in separate containers on Traefik'd proxies, enabling their communication technically amounted to a cross-domain setup:
+``` dotnet
+// in Program.cs
+app.Use((context, next) =>
+{
+    context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+    return next.Invoke();
+});
+```
+
+With the creation of a ClaimsPrincipleExtensions class, I devised a method to derive the claim ID from our Auth0 ID:
+
+``` dotnet
+// in Extensions/ClaimsPrincipleExtensions.cs
+public static class ClaimsPrincipleExtensions
+{
+    public static string? GetAuthId(this ClaimsPrincipal user)
+    {
+        return user.Claims
+            .SingleOrDefault(x => x.Type ==
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+            ?.Value;
+    }
+}
+```
+
+This claim ID provides a key to relate to our Users model. Speaking of models, let's delve into the Entity Framework boilerplate.
+
+## Entity Framework Setup
+
+I decided to compartmentalize the project between the domain and server, resulting in the formation of two projects: 'evanbecker-api' and 'evanbecker-domain'.
+The 'evanbecker-domain' solely relies on Entity Framework. This becomes a pivotal consideration in crafting migrations and utilizing them to update our database.
+
+Initial steps involved getting Entity Framework installed. Given our use of PostgreSQL, I opted for the NpgSQL framework. I stored the connection string in appsettings.json.
+For development purposes, I typically create a 'secrets' folder and an optional appsettings.Secrets.json file loaded at runtime. This file remains untracked in version control,
+serving as a repository for non-critical developer secrets.
+
+To integrate these configurations, I introduced the following:
+
+``` dotnet
+// in Program.cs
+builder.Services.AddControllers();
+builder.Configuration.AddJsonFile("./secrets/appsettings.Secrets.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddEnvironmentVariables();
+```
+
+Once the secrets were incorporated into our configuration, I proceeded to add the DB context with the connection string:
+
+``` dotnet
+// in Program.cs
+var connectionString = builder.Configuration.GetConnectionString("Database");
+builder.Services.AddDbContext<ApplicationContext>(options =>
+    options.UseNpgsql(connectionString, innerOptions =>
+        innerOptions.UseAdminDatabase("postgres")));
+```
+
+For ease of development, particularly within a Docker container, executing migrations at runtime proved highly beneficial. To achieve this, I created the context
+using the DesignTimeDbContextFactory that we'll generate shortly and ran the MigrateAsync() method against it. Here’s a glimpse of the logic employed:
+
+``` dotnet
+// in Extensions/WebApplicationExtensions.cs
+using var scope = webApplication.Services.CreateScope();
+var dbf = new DesignTimeDbContextFactory();
+var db = dbf.CreateDbContext(new List<string> { environmentName }.ToArray());
+Console.WriteLine("Starting Migration...");
+await db.Database.MigrateAsync();
+Console.WriteLine("Migration Complete...");
+```
+
+Most of the application context file resembles the standard structure. However, an important aspect is the separate domain project.
+Given that the Entity Framework context and models reside in a library project, a DesignTimeDbContextFactory becomes imperative to instantiate the DB context.
+
+Creating this file almost mimics a startup file when running migration and database update commands. In this scenario, the file path differs, and to access
+the appsetting files, we traverse upwards a directory to the server. Once the configuration is established based on the environment, we can build the context:
+
+``` dotnet
+// in ApplicationContext.cs
+var builder = new DbContextOptionsBuilder<ApplicationContext>();
+var connectionString = configuration.GetConnectionString("Database");
+builder.UseNpgsql(connectionString, options => options.UseAdminDatabase("postgres"));
+return new ApplicationContext(builder.Options);
+```
+
+## Setting up Swagger
+
+I also introduced Swagger for documentation and development purposes. On the server, the instantiation took place as follows:
+
+``` dotnet
+// in Program.cs
+builder.Services.AddSwaggerGen(o =>
+{
+    o.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "api.evanbecker.net",
+        Version = "v1",
+        Description =
+            $"The API for api.evanbecker.net. " +
+            $"Targeting '{environmentName}' environment: " +
+            $"'api-{environmentName}.evanbecker.net' environment."
+    });
+});
+```
+
+I ensured the Swagger UI was enabled:
+
+``` dotnet
+// in Program.cs
+app.UseSwagger();
+app.UseSwaggerUI();
+```
+
+### Setting up Swagger in the Client
+
+Additionally, I aimed to integrate Swagger within the Next.js app. I installed:
+
+``` js
+swagger-ui-react
+```
+
+And, on the 'account/api/v1/' route, the integration looked like this:
+
+``` jsx
+// in account/api/v1/page.jsx
+"use client"
+
+import SwaggerUI from "swagger-ui-react";
+import "swagger-ui-react/swagger-ui.css";
+import "./style.css";
+import {AccountLayout} from "@/components/Account/AccountLayout";
+
+export default function Documentation() {
+    const url = "swagger/v1/swagger.json";
+    const swaggerUrl = `${process.env.NEXT_PUBLIC_API_URL}${url}`;
+    return (
+        <>
+            <AccountLayout>
+                <div className="text-slate-200">
+                    <SwaggerUI url={swaggerUrl} withCredentials/>
+                </div>
+            </AccountLayout>
+        </>
+    );
+}
+```
+
+Finally, to round off this phase, the application was containerized using Docker. Here's a glimpse of the Dockerfile associated with the API:
+
+``` Dockerfile
+# in Dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+WORKDIR /src
+COPY ["evanbecker-api/evanbecker-api/evanbecker-api.csproj", "evanbecker-api/"]
+COPY ["evanbecker-api/evanbecker-domain/evanbecker-domain.csproj", "evanbecker-domain/"]
+RUN dotnet restore "evanbecker-api/evanbecker-api.csproj"
+COPY ./evanbecker-api/ .
+WORKDIR "/src/evanbecker-api"
+ENTRYPOINT ["bin/ls"]
+RUN dotnet build "evanbecker-api.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "evanbecker-api.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "evanbecker-api.dll"]
+```
+
+# Infrastructure
+
+Now it’s time to integrate all the components. While we've created the two Docker images, it’s essential to address how these components will communicate with
+each other and when and how they will be deployed.
+
+Traefik serves as a reverse proxy, enabling the use of different subdomains to point to distinct Docker containers. As we operate both Test and Production
+environments on the same server, it's critical that the Traefik instance appropriately handles and routes these domains. Although in a larger team setup,
+Traefik might live in its own project, for the current scenario, I've organized it within its folder, utilizing the Production version of Traefik. Additionally,
+ensuring that Traefik can manage certificates is another crucial aspect we’ll address shortly.
+
+## Docker Compose
+
+The Docker Compose setup is structured into three files: a global compose, a test compose, and a prod compose. The test and prod composes only include the UI and the API.
+Conversely, the global compose manages both the Traefik configuration and the PostgreSQL setup, considering we operate with a single instance of PostgreSQL deployed for
+two distinct databases. Here’s a snapshot of the global file:
+
+``` yaml
+# in deploy/docker-compose.global.yaml
+services:
+  proxy:
+    image: traefik:latest
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--entrypoints.postgres.address=:5431"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--api.dashboard=true"
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /certs/:/certs/
+      - /etc/traefik/dynamic/:/etc/traefik/dynamic/
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.routers.api.rule=Host(`traefik.evanbecker.net`)"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      - "traefik.http.routers.api.service=api@internal"
+
+  evanbecker-db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=${Prod_DB_USER}
+      - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./appdata/postgres:/var/lib/postgresql/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.postgres.entryPoints=postgres"
+      - "traefik.tcp.routers.postgres.service=postgres"
+      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+      - evanbecker-db
+    volumes:
+      - ./pgadmin-data:/var/lib/pgadmin
+    ports:
+      - 5050:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${Prod_DB_PGADMIN_USER}
+      PGADMIN_DEFAULT_PASSWORD: ${Prod_DB_PGADMIN_PASSWORD}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pgadmin.entrypoints=websecure"
+      - "traefik.http.routers.pgadmin.tls=true"
+      - "traefik.http.routers.pgadmin.service=pgadmin"
+      - "traefik.http.routers.pgadmin.rule=Host(`db.evanbecker.net`)"
+      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+
+networks:
+  default:
+    name: traefik_proxy
+    external: true
+```
+
+It’s vital that the network in use matches the one where we intend to deploy both the test and prod composes. Given the similarity between the test and production compose files,
+I’ll display the production one:
+
+``` yaml
+# in deploy/docker-compose.prod.yaml
+services:
+  evanbecker:
+    container_name: evanbecker-server-prod
+    pull_policy: always
+    image: registry.digitalocean.com/evanbecker/evanbecker-server-prod
+    environment:
+      - Auth0__Domain=${Prod_API_Auth0_Domain}
+      - GitHub__PAT=${Prod_API_GitHub_PAT}
+      - Auth0__Audience=${Prod_API_Auth0_Audience}
+      - Auth0__ClientId=${Prod_API_Auth0_ClientId}
+      - Auth0__ClientSecret=${Prod_API_Auth0_ClientSecret}
+      - Auth0__Url=${Prod_API_Auth0_Url}
+      - ConnectionStrings__Database=${CONNECTION_STRING}
+      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
+      - ASPNETCORE_URLS=http://+:5000
+    ports:
+      - 5000:5000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.aspnetapp.entrypoints=websecure"
+      - "traefik.http.routers.aspnetapp.rule=Host(`api.evanbecker.net`)"
+      - "traefik.http.routers.aspnetapp.tls=true"
+      - "traefik.http.services.aspnetapp.loadbalancer.server.port=5000"
+      - "traefik.port=443"
+
+  evanbecker-client:
+    container_name: evanbecker-client-prod
+    pull_policy: always
+    image: registry.digitalocean.com/evanbecker/evanbecker-client-prod
+    depends_on:
+      - evanbecker
+    ports:
+      - 3000:3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.client.entrypoints=websecure"
+      - "traefik.http.routers.client.rule=Host(`www.evanbecker.net`)"
+      - "traefik.http.middlewares.client-web-secure.redirectscheme.scheme=https"
+      - "traefik.http.routers.client.middlewares=redirect-non-www-to-www,client-web-secure"
+      - "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.permanent=true"
+      - "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.regex=^(?:http://|https://)?evanbecker.net(\\/.*)?"
+      - "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.replacement=https://www.evanbecker.net/$${1}"
+      - "traefik.http.routers.client.tls=true"
+      - "traefik.http.services.client.loadbalancer.server.port=3000"
+      - "traefik.port=443"
+
+networks:
+  default:
+    name: traefik_proxy
+    external: true
+```
+
+Alongside these configurations, a dynamic Traefik configuration file, represented by a 'traefik.yaml', is deployed. This file plays a significant role in binding certificates.
+At present, this configuration file is primarily crucial for TLS, residing alongside the docker-compose file dedicated to Traefik:
+
+```yaml
+# in deploy/traefik.yaml
+tls:
+  certificates:
+    - certFile: /certs/evanbecker.net.crt
+      keyFile: /certs/evanbecker.net.key
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/evanbecker.net.crt
+        keyFile: /certs/evanbecker.net.key
+```
+
+For the configuration of each, we ensure to set the hostname to their proper domain and ascertain that the entrypoints=websecure and tls=true are designated for our routes.
+Moreover, for the frontend, we've set up middlewares to redirect from HTTP to HTTPS and from a non-www-prefix to a www-prefix. This is still a work in progress as it appears
+that it doesn’t match evanbecker.net without the http:// prefix:
+
+``` yaml
+# in deploy/docker-compose.prod.yaml
+- "traefik.http.middlewares.client-web-secure.redirectscheme.scheme=https"
+- "traefik.http.routers.client.middlewares=redirect-non-www-to-www,client-web-secure"
+- "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.permanent=true"
+- "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.regex=^(?:http://|https://)?evanbecker.net(\\/.*)?"
+- "traefik.http.middlewares.redirect-non-www-to-www.redirectregex.replacement=https://www.evanbecker.net/$${1}"
+```
+
+## Workflows
+
+Our workflow incorporates build, test, and deployment procedures. Presently, any pull request to the main branch triggers the build and test of the .NET application.
+Upon completion, a pull request to main results in deployment to the test environment, while a pull request to the release branch deploys to production.
+
+For the build and test step, here’s a glimpse of the action:
+``` yaml
+# in .github/workflows/dotnet-pull_request.yml
+name: Build and Test
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'evanbecker-api/**'
+
+jobs:
+  build-and-test-api:
+    runs-on: self-hosted
+    env:
+      working-directory: ./evanbecker-api
+    steps:
+    - uses: actions/checkout@v3
+    ### Can skip with self-hosted
+    #- name: Setup .NET
+    #  uses: actions/setup-dotnet@v3
+    #  with:
+    #    dotnet-version: 7.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: ${{env.working-directory}}
+    - name: Build
+      run: dotnet build --no-restore
+      working-directory: ${{env.working-directory}}
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+      working-directory: ${{env.working-directory}}
+  build-and-test-client:
+    runs-on: self-hosted
+    env:
+      working-directory: ./evanbecker-client
+    steps:
+    - uses: actions/checkout@v3
+    - name: Restore dependencies
+      run: npm install
+      working-directory: ${{env.working-directory}}
+    - name: Create env files
+      run: |
+          touch ./evanbecker-client/.env.local
+          echo "Client Build Variables"
+          echo -e "NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/" >> ./evanbecker-client/.env.local
+    - name: Build
+      run: npm run build
+      working-directory: ${{env.working-directory}}
+```
+
+Regarding the production and test deployment, the process closely resembles, so I’ll focus on the production instance. Additionally, the actions are divided into distinct jobs.
+Please note, utilizing a Raspberry Pi as a self-hosted GitHub runner has been advantageous as it eliminates the need for reinstalling dotnet for each action.
+
+Initially, we ensure this process exclusively takes place on the release branch, providing it with a name:
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+name: Build & Deploy Prod
+
+on:
+  push:
+    branches: [ "release" ]
+```
+
+The first job involves merely checking out the repository. As observed, the runner is operating on Ubuntu-latest, aligning with my Raspberry Pi setup.
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+jobs:
+  build_and_push_prod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+```
+
+Subsequently, we proceed to configure the client environment specifics. These configurations encompass the NEXT_PUBLIC_ variables in Next.js, typically not requiring secrets.
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+- name: Create client environment-specific build configs
+  run: |
+    touch ./evanbecker-client/.env.local
+    echo "Client Build Variables"
+    echo -e "NEXT_PUBLIC_SITE_URL=${{ secrets.Prod_Client_NEXT_PUBLIC_SITE_URL }}" >> ./evanbecker-client/.env.local
+    echo -e "NEXT_PUBLIC_API_URL=${{ secrets.Prod_Client_NEXT_PUBLIC_API_URL }}" >> ./evanbecker-client/.env.local
+    echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.Prod_Client_NEXT_PUBLIC_AUTH0_DOMAIN }}" >> ./evanbecker-client/.env.local
+    echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.Prod_Client_NEXT_PUBLIC_AUTH0_CLIENT_ID }}" >> ./evanbecker-client/.env.local
+    echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.Prod_Client_NEXT_PUBLIC_AUTH0_AUDIENCE }}" >> ./evanbecker-client/.env.local
+    echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.Prod_Client_NEXT_PUBLIC_AUTH0_REDIRECT_URI }}" >> ./evanbecker-client/.env.local
+```
+
+Configuring the Docker settings is a crucial step. Technically, this needs to be executed only once, but to ensure the process functions seamlessly, I chose to run it
+consistently, even if modifications are made to the runner.
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+- name: Update Docker settings
+  run: |
+    sudo sed -i 's/ }/, \"max-concurrent-uploads\": 2 }/' /etc/docker/daemon.json
+    sudo systemctl restart docker
+```
+
+We proceed with building the image without utilizing the cache, ensuring each build remains clean.
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+- name: Build image
+  run: docker compose -f docker-compose.prod.yaml build --no-cache
+```
+
+Next, we install 'doctl' if not previously installed, then establish a connection using the DigitalOcean access token. Finally, we push the newly built containers.
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+- name: Install doctl
+  uses: digitalocean/action-doctl@v2
+  with:
+    token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+- name: Login to DigitalOcean Container Registry
+  run: doctl registry login
+
+- name: Push image to DigitalOcean Container Registry
+  run: docker compose -f docker-compose.prod.yaml push
+```
+
+Notably, the image names differ slightly between the test and prod environments, allowing the use of the “latest” tag within our compose files for each environment.
+This approach negates the need to tag our builds at this stage, ensuring a seamless workflow.
+
+Finally, the deployment phase commences. Though a service mesh or K8s would streamline this process, given our use of docker-compose for deployment, we SSH into our server.
+Subsequently, we acquire the latest deployment compose files and run them using the containers deployed to the registry. Additionally, any secrets are deployed. Eventually,
+all secrets will be transitioned to either Hashicorp Vault or Azure KeyVault.
+
+Firstly, we SSH into the server and deploy the secrets:
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+- name: Deploy Secrets to Server
+  uses: appleboy/ssh-action@master
+  with:
+    host: ${{ secrets.GL_SSH_HOST }}
+    username: ${{ secrets.GL_SSH_USERNAME }}
+    passphrase: ${{ secrets.GL_SSH_PASSPHRASE }}
+    key: ${{ secrets.GL_SSH_SECRET }}
+    port: 22
+    script: |
+      echo "Starting Prod Deploy:"
+      cd ~/prod/www.evanbecker.net/deploy/
+      echo "Refreshing Secrets..."
+      echo "> Deleting previous .env"
+      [ ! -e .env ] || rm .env
+      echo "> Creating new .env"
+      touch .env
+
+      echo "> Appending API Secrets"
+      echo -e "Prod_API_Auth0_Domain=${{ secrets.Prod_API_Auth0_Domain }}" >> .env
+      echo -e "Prod_API_GitHub_PAT=${{ secrets.Prod_API_GitHub_PAT }}" >> .env
+      echo -e "Prod_API_Auth0_Audience=${{ secrets.Prod_API_Auth0_Audience }}" >> .env
+     …
+     echo "> Secrets Refreshed..."
+```
+
+Following that, we run our Entity Framework migrations against the running database. Initially, we must start up the database the first time for this process to work.
+However, we also ensure that our globals are running beforehand.
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+- name: Run Entity Framework Migrations on Database
+  run: |
+    echo "Creating appsettings.secrets.json..."
+    [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+    mkdir ./evanbecker-api/evanbecker-api/secrets/
+    chmod 777 ./evanbecker-api/evanbecker-api/secrets/
+    touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+    echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+    pwd
+    cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+    echo "Ensuring dotnet-ef is installed..."
+    dotnet tool install --global dotnet-ef
+    dotnet tool restore
+    cd ./evanbecker-api/evanbecker-domain/
+    echo "Updating Database..."
+    dotnet ef database update
+```
+
+Finally, we retrieve our newly built containers from the registry and set them up using the docker-compose.prod.yaml file located in the deploy/ folder.
+
+``` yaml
+# in .github/workflows/build-and-push-to-prod.yml
+- name: Deploy Container to Server
+  uses: appleboy/ssh-action@master
+  with:
+    host: ${{ secrets.GL_SSH_HOST }}
+    username: ${{ secrets.GL_SSH_USERNAME }}
+    passphrase: ${{ secrets.GL_SSH_PASSPHRASE }}
+    key: ${{ secrets.GL_SSH_SECRET }}
+    port: 22
+    script: |
+      cd ~/prod/www.evanbecker.net/deploy/
+
+      echo "Ensuring we're logged into doctl registry..."
+      doctl registry login
+
+      echo "Pulling latest changes..."
+      git pull
+
+      echo "Ensuring global resources started"
+      docker compose -f docker-compose.global.yaml up -d --build
+
+      echo "Starting prod"
+```
+
+## Setting up the DigitalOcean Server
+
+Although the application largely abstracts the operating system due to Docker usage, we need to address deploying certificates, installing docker for the first time,
+and system setup. Here’s a breakdown of the process:
+
+Initially, I installed docker and configured it:
+
+``` bash
+sudo apt-get update
+sudo apt-get install ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo   "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+"$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" |   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+Subsequently, I SCP'd my certificate files into the '/certs/' folder on my server:
+
+``` bash
+scp ./* evan@evanbecker.net:/certs/*
+```
+
+I created the docker network:
+
+``` bash
+docker network create traefik_proxy
+```
+
+Following that, I established two folders in my home directory, a '\~/prod' folder, and a '\~/www.evanbecker.net' folder. While the latter is poorly named, it currently
+serves as my test folder. I cloned instances in both and checked out their respective branches. With everything now properly set up, I embarked on the subsequent ~2 weeks of
+feature development. If you're interested in a detailed blog post on any of these features, feel free to post a comment below!
+
+# Closing Thoughts
+Thank you for reading. I hope you found some valuable insights here. I’m looking forward to the future with this new site and my upcoming projects.
+For more details on this project or my other active endeavors, visit the <a href="/account/projects">Projects</a> section on this site.
+While I’ll be refining this site over time, most of my spare time will be dedicated to my next project.
+
+Speaking of which, stay tuned for my next blog post, where I’ll introduce the rather ambitious project I am working on.
