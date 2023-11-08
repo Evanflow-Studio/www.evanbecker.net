@@ -23,4 +23,5 @@ public interface IProjectService
     Task<IEnumerable<HealthCheckDto>?> GetHealthCheckAsync(Guid projectId, bool onlyProd = false);
     Task<IEnumerable<HealthCheckDto>?>  GetMainHealthCheckAsync();
     Task AddEmailSubscriberAsync(Guid projectId, string emailAddress);
+    Task<Project?> UpdateProjectTypeAsync(User user, Guid projectId, string projectType);
 }
