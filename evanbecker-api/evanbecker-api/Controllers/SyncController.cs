@@ -1,12 +1,5 @@
-﻿using Auth0.AuthenticationApi;
-using Auth0.AuthenticationApi.Models;
-using Auth0.ManagementApi;
-using Auth0.ManagementApi.Paging;
-using evanbecker_api.Configuration;
+﻿using evanbecker_api.Configuration;
 using evanbecker_api.Services.Interfaces;
-using evanbecker_domain;
-using evanbecker_domain.Entities;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Octokit;
@@ -16,44 +9,20 @@ using Deployment = evanbecker_domain.Entities.Deployment;
 namespace evanbecker_api.Controllers;
 
 [Route("[controller]/[action]")]
-public class AuthController : ControllerBase
+public class SyncController : ControllerBase
 {
-
-    public IOptions<Auth0Configuration> _auth0Configuration;
     private readonly IOptions<GitHubConfiguration> _gitHubConfiguration;
     private readonly IProjectService _projectService;
-    private readonly IConfiguration _configuration;
 
-    public AuthController(IOptions<Auth0Configuration> auth0Configuration,
-        IOptions<GitHubConfiguration> gitHubConfiguration,
+    public SyncController(IOptions<GitHubConfiguration> gitHubConfiguration,
         IProjectService projectService)
     {
-        _auth0Configuration = auth0Configuration;
         _gitHubConfiguration = gitHubConfiguration;
         _projectService = projectService;
     }
-
-    [Authorize]
-    [HttpGet]
-    public async Task<IPagedList<Auth0.ManagementApi.Models.User>> GetUsers()
-    {
-        var authClient = new AuthenticationApiClient(_auth0Configuration.Value.Domain);
-        var authToken = await authClient.GetTokenAsync(new ClientCredentialsTokenRequest
-        {
-            Audience = $"https://{_auth0Configuration.Value.Domain}/api/v2/",
-            ClientId = _auth0Configuration.Value.ClientId,
-            ClientSecret = _auth0Configuration.Value.ClientSecret
-        });
-
-        var managementClient = new ManagementApiClient(authToken.AccessToken, _auth0Configuration.Value.Domain);
-        var data = await managementClient.Users.GetAllAsync(new Auth0.ManagementApi.Models.GetUsersRequest(), new PaginationInfo(0, 10, true));
-
-        return data;
-    }
-
-    // wip FOR PROJECTS
-    [HttpGet]
-    public async Task Test()
+    
+    [HttpPost]
+    public async Task Sync()
     {
         var client = new GitHubClient(new ProductHeaderValue(_gitHubConfiguration.Value.Organization));
         var tokenAuth = new Credentials(_gitHubConfiguration.Value.Pat); // This can be a PAT or an OAuth token.

@@ -53,7 +53,7 @@ public class ProjectService : IProjectService
         
         var tempLog = foundProject.ActivityLogs.ToList();
         tempLog.Add(CreateActivityLog(user,
-            ActivityLogType.ChangeRepository,
+            ActivityLogType.EditProjectName,
             $"changed the project name to '{projectName}'."));
         foundProject.ActivityLogs = tempLog;
         
@@ -165,7 +165,7 @@ public class ProjectService : IProjectService
         
         var tempLog = foundProject.ActivityLogs.ToList();
         tempLog.Add(CreateActivityLog(user,
-            ActivityLogType.ChangeEnvironmentUrl,
+            ActivityLogType.ChangeEnvironment,
             "modified environments."));
         foundProject.ActivityLogs = tempLog;
 
@@ -189,6 +189,30 @@ public class ProjectService : IProjectService
         
         _context.Projects.Update(foundProject);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<Project?> UpdateProjectTypeAsync(User user, Guid projectId, string projectType)
+    {
+        var foundProject = await _context
+            .Projects
+            .Include(x => x.ActivityLogs)
+            .ThenInclude(x => x.User)
+            .SingleOrDefaultAsync(x => x.Id == projectId);
+        
+        if (foundProject == null)
+            return null;
+        
+        foundProject.ProjectType = projectType;
+        
+        var tempLog = foundProject.ActivityLogs.ToList();
+        tempLog.Add(CreateActivityLog(user,
+            ActivityLogType.ChangeProjectType,
+            $"changed the project type to {projectType}."));
+        foundProject.ActivityLogs = tempLog;
+            
+        _context.Projects.Update(foundProject);
+        await _context.SaveChangesAsync();
+        return foundProject;
     }
 
     public async Task<Project?> UpdateEnvironmentUrlsAsync(User user, Guid projectId, IEnumerable<EnvironmentUrlDto> environmentUrls)

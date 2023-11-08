@@ -15,9 +15,9 @@ const statuses = {
     error: 'text-rose-400 bg-rose-400/10',
 }
 
-const environments = {
-    Preview: 'text-gray-400 bg-gray-400/10 ring-gray-400/20',
-    Production: 'text-tertiary bg-tertiary/10 ring-tertiary/30',
+const projectTypes = {
+    Game: 'text-teal-400 bg-teal-400/10 ring-teal-400/20',
+    Website: 'text-tertiary bg-tertiary/10 ring-tertiary/30',
 }
 const deployments = [
     {
@@ -232,18 +232,18 @@ export default function AccountProjects() {
                             <LoadingSpinner/>
                         </div>
                         : (<ul role="list" className="divide-y divide-white/5">
-                        {projects && projects.map((deployment) => (
-                            <li key={deployment.id} className="relative flex items-center space-x-4 px-4 py-4 sm:px-6 lg:px-8">
+                        {projects && projects.map((project) => (
+                            <li key={project.id} className="relative flex items-center space-x-4 px-4 py-4 sm:px-6 lg:px-8">
                                 <div className="min-w-0 flex-auto">
                                     <div className="flex items-center gap-x-3">
                                         <div className={classNames(statuses.online, 'flex-none rounded-full p-1')}>
                                             <div className="h-2 w-2 rounded-full bg-current" />
                                         </div>
                                         <h2 className="min-w-0 text-sm font-semibold leading-6 text-white">
-                                            <a href={`/account/projects/${deployment.id}`} className="flex gap-x-2">
+                                            <a href={`/account/projects/${project.id}`} className="flex gap-x-2">
                                                 <span className="truncate">EvanFlow Studio</span>
                                                 <span className="text-gray-400">/</span>
-                                                <span className="whitespace-nowrap">{deployment.name}</span>
+                                                <span className="whitespace-nowrap">{project.name}</span>
                                                 <span className="absolute inset-0" />
                                             </a>
                                         </h2>
@@ -254,16 +254,16 @@ export default function AccountProjects() {
                                             <circle cx={1} cy={1} r={1} />
                                         </svg>
                                         <p className="whitespace-nowrap">Created <time
-                                            dateTime={deployment.created}
+                                            dateTime={project.created}
                                             className=""
                                         >
                                             <span className="h-4 w-0.5 rounded-full bg-slate-500" />
-                                            <span>{new Date(deployment.created).toLocaleDateString('en-US', {
+                                            <span>{new Date(project.created).toLocaleDateString('en-US', {
                                                 day: 'numeric',
                                                 month: 'long',
                                                 year: 'numeric',
                                                 timeZone: 'UTC',
-                                            })} @ {new Date(deployment.created).toLocaleTimeString('en-US', {
+                                            })} @ {new Date(project.created).toLocaleTimeString('en-US', {
                                                 timeZone: 'UTC',
                                             })}</span>
                                         </time></p>
@@ -271,11 +271,11 @@ export default function AccountProjects() {
                                 </div>
                                 <div
                                     className={classNames(
-                                        environments.Production,
+                                        projectTypes[project?.projectType || "Website"],
                                         'rounded-full flex-none py-1 px-2 text-xs font-medium ring-1 ring-inset'
                                     )}
                                 >
-                                    Website
+                                    {project?.projectType || "Default" }
                                 </div>
                                 <ChevronRightIcon className="h-5 w-5 flex-none text-gray-400" aria-hidden="true" />
                             </li>
