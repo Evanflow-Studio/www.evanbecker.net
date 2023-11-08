@@ -37,7 +37,9 @@ const activityLogType = {
     changeNotifications: 6,
     addMember: 7,
     addPhoto: 8,
-    addDeployment: 9,
+    deployment: 9,
+    synced: 10,
+    changeProjectType: 11,
 }
 
 function ProjectNotFound() {
@@ -65,20 +67,6 @@ function ProjectNotFound() {
     )
 }
 
-
-const people1 = [
-    { id: 1, name: 'Wade Cooper' },
-    { id: 2, name: 'Arlene Mccoy' },
-    { id: 3, name: 'Devon Webb' },
-    { id: 4, name: 'Tom Cook' },
-    { id: 5, name: 'Tanya Fox' },
-    { id: 6, name: 'Hellen Schmidt' },
-    { id: 7, name: 'Caroline Schultz' },
-    { id: 8, name: 'Mason Heaney' },
-    { id: 9, name: 'Claudie Smitham' },
-    { id: 10, name: 'Emil Schaefer' },
-]
-
 function EditProject({currentProject}) {
     const [projectName, setProjectName] = useState(currentProject?.name);
     const [repository, setRepository] = useState(currentProject?.repository);
@@ -87,10 +75,13 @@ function EditProject({currentProject}) {
     const [isEnvironmentSaveLoading, setIsEnvironmentSaveLoading] = useState(false);
     const [isEnvironmentUrlSaveLoading, setIsEnvironmentUrlSaveLoading] = useState(false);
     const [isProjectNotificationsLoading, setIsProjectNotificationsLoading] = useState(false);
+    const [isProjectTypeLoading, setIsProjectTypeLoading] = useState(false);
     const [environmentsList, setEnvironmentsList] = useState([]);
     const [environmentUrlList, setEnvironmentUrlList] = useState([]);
     const [project, setProject] = useState(currentProject);
     const [user, setUser] = useState(null);
+
+    const [selectedType, setSelectedType] = useState(null);
 
     const [notifyOnComments, setNotifyOnComments] = useState(currentProject?.notifyOnComments ?? false);
     const [notifyOnPhotos, setNotifyOnPhotos] = useState(currentProject?.notifyOnPhotos ?? false);
@@ -99,6 +90,7 @@ function EditProject({currentProject}) {
 
     const [selected, setSelected] = useState([]);
     const [selectableEnvironments, setSelectableEnvironments] = useState([]);
+    const [selectableTypes, setSelectableTypes] = useState([]);
 
     const pathname = usePathname();
     const { getAccessTokenSilently } = useAuth0();
@@ -182,6 +174,35 @@ function EditProject({currentProject}) {
         }
 
         setIsProjectNotificationsLoading(false);
+    }
+
+    const saveProjectType = async () => {
+        try {
+            setIsProjectTypeLoading(true);
+            const accessToken = await getAccessTokenSilently();
+            const splitUrl = pathname.split('/');
+            const targetLocation = splitUrl[splitUrl.length-1];
+
+            var call = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/v1/project/${targetLocation}/type/${selectedType.name}`, {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                mode: "cors",
+            });
+
+            var savedProject = await call.json();
+            setProject({
+                ...currentProject,
+                projectType: savedProject.projectType
+            });
+            console.log("returned saved project: ", savedProject);
+        } catch (e) {
+            console.error("Something didn't work", e);
+        }
+
+        setIsProjectTypeLoading(false);
     }
 
     const saveRepository = async () => {
@@ -344,6 +365,12 @@ function EditProject({currentProject}) {
         setNotifyRecipients(project?.notifyRecipients);
 
         console.log("updating...", mappedEnvironments);
+        let selectableTypes = [
+            {id: 1, name: "Website"},
+            {id: 2, name: "Game"},
+        ];
+        setSelectableTypes(selectableTypes);
+        setSelectedType(selectableTypes.find(x => x.name === project?.projectType) || selectableTypes[0]);
         setSelectableEnvironments(mappedEnvironments);
         if (mappedEnvironments?.length > 0)
             setSelected(mappedEnvironments[0]);
@@ -425,6 +452,85 @@ function EditProject({currentProject}) {
                         >
                             {isRepositoryLoading && <LoadingSpinner/>}
                             {!isRepositoryLoading && <div>Save</div>}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="border-b border-white/10 pb-12">
+                    <h2 className="text-base font-semibold leading-7 text-white">Type</h2>
+
+                    <label htmlFor="username" className="block text-sm font-medium leading-6 text-white mt-6">
+                        Project Type
+                    </label>
+                    <div className="mt-2 flex inline-flex">
+                        <Listbox value={selectedType} onChange={(e) => setSelectedType(e)}>
+                                {({ open }) => (
+                                    <>
+                                        <div className="relative mr-6 w-64 mt-0.5">
+                                            <Listbox.Button className="relative w-full cursor-default rounded-md bg-slate-900 py-1.5 pl-3 pr-10 text-left text-slate-200 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                                <span className="block truncate">{selectedType?.name || ''}</span>
+                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              </span>
+                                            </Listbox.Button>
+
+                                            <Transition
+                                                show={open}
+                                                as={Fragment}
+                                                leave="transition ease-in duration-100"
+                                                leaveFrom="opacity-100"
+                                                leaveTo="opacity-0"
+                                            >
+                                                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-slate-950 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                                    {selectableTypes?.map((env) => (
+                                                        <Listbox.Option
+                                                            key={env.id}
+                                                            className={({ active }) =>
+                                                                classNames(
+                                                                    active ? 'bg-indigo-600 text-white' : 'text-slate-200',
+                                                                    'relative cursor-default select-none py-2 pl-3 pr-9'
+                                                                )
+                                                            }
+                                                            value={env}
+                                                        >
+                                                            {({ selected, active }) => (
+                                                                <>
+                        <span className={classNames(selected ? 'font-semibold' : 'font-normal', 'block truncate')}>
+                          {env.name}
+                        </span>
+
+
+                                                                    {env.isDeleted ? (
+                                                                        <span
+                                                                            className={classNames(
+                                                                                active ? 'text-white' : 'text-red-600',
+                                                                                'absolute inset-y-0 right-8 flex items-center pr-4'
+                                                                            )}
+                                                                        >
+                                                                        <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+                                                                      </span>
+                                                                    ) : null}
+                                                                </>
+                                                            )}
+                                                        </Listbox.Option>
+                                                    ))}
+                                                </Listbox.Options>
+                                            </Transition>
+                                        </div>
+                                    </>
+                                )}
+                            </Listbox>
+                    </div>
+
+                    <div className="mt-8 flex">
+                        <button
+                            type="button"
+                            disabled={!(user?.isOwner == true)}
+                            onClick={() => saveProjectType()}
+                            className="flex inline-flex items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-tertiary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tertiary disabled:cursor-not-allowed disabled:bg-slate-800"
+                        >
+                            {isProjectTypeLoading && <LoadingSpinner/>}
+                            {!isProjectTypeLoading && <div>Save</div>}
                         </button>
                     </div>
                 </div>
@@ -640,7 +746,8 @@ function EditProject({currentProject}) {
                             onClick={() => saveEnvironmentUrls()}
                             className="flex inline-flex items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-tertiary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tertiary disabled:cursor-not-allowed disabled:bg-slate-800"
                         >
-                            Save
+                            {isEnvironmentUrlSaveLoading && <LoadingSpinner/>}
+                            {!isEnvironmentUrlSaveLoading && <div>Save</div>}
                         </button>
                     </div>
                 </div>
@@ -787,7 +894,8 @@ function EditProject({currentProject}) {
                                 onClick={() => saveNotificationSettings()}
                                 className="flex inline-flex items-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-tertiary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tertiary disabled:cursor-not-allowed disabled:bg-slate-800"
                             >
-                                Save
+                                {isProjectNotificationsLoading && <LoadingSpinner/>}
+                                {!isProjectNotificationsLoading && <div>Save</div>}
                             </button>
                         </div>
                     </div>

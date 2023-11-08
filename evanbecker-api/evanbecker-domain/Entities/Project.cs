@@ -26,6 +26,8 @@ public class Project
     public bool NotifyOnMembers { get; set; }
     public bool NotifyOnPhotos { get; set; }
     public string? NotifyRecipients { get; set; }
+    
+    public string? ProjectType { get; set; }
 
     public DateTime Created { get; set; }
     public DateTime Updated { get; set; }
@@ -33,17 +35,18 @@ public class Project
 
 public enum ActivityLogType
 {
-    Comment,
-    CreateProject,
-    EditProjectName,
-    AddEnvironment,
-    ChangeEnvironmentUrl,
-    ChangeRepository,
-    ChangeNotifications,
-    AddMember,
-    AddPhoto,
-    Deployment,
-    Synced,
+    Comment=0,
+    CreateProject=1,
+    EditProjectName=2,
+    ChangeEnvironment=3,
+    ChangeEnvironmentUrl=4,
+    ChangeRepository=5,
+    ChangeNotifications=6,
+    AddMember=7,
+    AddPhoto=8,
+    Deployment=9,
+    Synced=10,
+    ChangeProjectType=11,
 }
 
 public class EmailSubscriber

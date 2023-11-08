@@ -83,7 +83,7 @@ public class ProjectController : ControllerBase
     }
     
     [HttpPost("{projectId:guid}/email")]
-    public async Task<IActionResult> GetHealthCheck(Guid projectId, [FromBody]string emailAddress)
+    public async Task<IActionResult> AddSubscriberEmail(Guid projectId, [FromBody]string emailAddress)
     {
         await _projectService.AddEmailSubscriberAsync(projectId, emailAddress);
         return Ok();
@@ -187,6 +187,19 @@ public class ProjectController : ControllerBase
         if (project == null)
             return NotFound();
         project.ActivityLogs = project.ActivityLogs.OrderBy(x => x.Created);
+        return Ok(project);
+    }
+    
+    [Authorize]
+    [HttpPatch("{projectId:guid}/type/{projectType}")]
+    public async Task<IActionResult> UpdateProjectType(Guid projectId, string projectType)
+    {
+        var user = await _userService.GetUser(User);
+        if (user == null)
+            return Forbid();
+        var project = await _projectService.UpdateProjectTypeAsync(user, projectId, projectType);
+        if (project == null)
+            return NotFound();
         return Ok(project);
     }
     
