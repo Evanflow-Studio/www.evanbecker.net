@@ -2292,7 +2292,7 @@ export default function Project({ params }) {
                                                         className={clsx("relative pl-2 pr-2 cursor-pointer rounded-md bg-slate-950 font-semibold text-white focus-within:outline-none focus-within:ring-2 focus-within:ring-tertiary focus-within:ring-offset-2 focus-within:ring-offset-slate-950 hover:text-primary", user ? "" : "cursor-not-allowed")}
                                                     >
                                                         <span className={user ? "" : "cursor-not-allowed"}>Upload a file</span>
-                                                        <input id="file-upload" disabled={!(user?.isAdmin == true)} name="file-upload" ref={inputFile} accept="image/*" onChange={handleFileUpload} type="file" className="sr-only" />
+                                                        <input id="file-upload" disabled={!user} name="file-upload" ref={inputFile} accept="image/*" onChange={handleFileUpload} type="file" className="sr-only" />
                                                     </label>
                                                     <p className="pl-1">or drag and drop</p>
                                                 </div>
