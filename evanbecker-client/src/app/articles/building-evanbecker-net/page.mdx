@@ -173,7 +173,7 @@ To organize the various providers, I structured a Providers component. The Auth0
 ```
 
 An important decision was opting for the React Auth0 package over the Next.js Auth0 package. The rationale behind this choice stems from challenges within the current Next.js
-Auth0 implementation, especially concerning client-sided login systems. At present, the Recat, client-only approach, seemed sufficient for the project's needs.
+Auth0 implementation, especially concerning client-sided login systems. At present, the React, client-only approach, seemed sufficient for the project's needs.
 
 Upon the API becoming operational, the plan is to leverage the access token received from Auth0 to the backend as a Bearer token, utilizing scopes assigned at the provider.
 It's crucial to specify that the audience must align with the API's audience.

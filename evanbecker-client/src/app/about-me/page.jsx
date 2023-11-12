@@ -288,22 +288,22 @@ function Resume() {
             company: 'Mitutoyo-RDA',
             title: 'Software Engineer',
             logo: mitutoyoLogo,
-            start: '2014',
+            start: '2018',
             end: '2019',
         },
         {
             company: 'Stack41',
             title: 'Software Engineer',
             logo: stack41Logo,
-            start: '2011',
-            end: '2014',
+            start: '2018',
+            end: '2018',
         },
         {
             company: 'UW-Milwaukee',
             title: 'Software Engineer',
             logo: uwMilwaukeeLogo,
-            start: '2008',
-            end: '2011',
+            start: '2016',
+            end: '2018',
         },
     ];
 
