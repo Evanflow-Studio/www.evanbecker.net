@@ -5,7 +5,6 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      # TODO: Test if 5430 is valid for postgresql
       - "--entrypoints.postgres.address=:5430"
       - "--entrypoints.web.address=:3000"
       - "--entrypoints.websecure.address=:3001"
@@ -29,7 +28,7 @@ services:
       - POSTGRES_USER=${Prod_DB_USER}
       - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
     volumes:
-      - ./appdata/postgres:/var/lib/postgresql/data
+      - ./appdata/postgres:/var/lib/postgresql
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.postgres.rule=HostSNI(`db-test.evanbecker.net`)"
@@ -54,8 +53,9 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:443;http://+:80
       # TODO: Grab cert from server paths
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=123
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${ASPNETCORE_CERT_PASSWORD}
+      - ASPNETCORE_Kestrel__Certificates__Default__KeyPath=/usr/local/share/ca-certificates/aspnetapp.key
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/usr/local/share/ca-certificates/aspnetapp.crt
 
     ports:
       - "5002:80"

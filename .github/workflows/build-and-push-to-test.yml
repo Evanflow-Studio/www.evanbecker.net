@@ -83,6 +83,8 @@ jobs:
             echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
             echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
 
+            echo -e "ASPNETCORE_CERT_PASSWORD=${{ secrets.ASPNETCORE_CERT_PASSWORD }}" >> .env
+
             echo "> Secrets Refreshed..."
 
       - name: Run Entity Framework Migrations on Database

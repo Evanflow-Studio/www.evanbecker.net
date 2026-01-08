@@ -88,12 +88,12 @@ export default function AboutMe() {
                         </div>
                         <div className="lg:order-first lg:row-span-2">
                             <h1 className="text-4xl font-bold tracking-tight text-light sm:text-5xl text-slate-200">
-                                I&apos;m Evan Becker, a software architect living in MKE, dealing with the -ilities.
+                                I&apos;m Evan Becker, a software architect living in MKE, dealing with the <span className="whitespace-nowrap">-ilities.</span>
                             </h1>
                             <div className="mt-6 space-y-7 text-base text-slate-300">
                                 <p>
                                     I am experienced in helping enterprises design scalable and consumable
-                                    systems that bring real value. I am employed as a Technical Architect at nvisia,
+                                    systems that bring real value. I am employed as a Senior Technical Architect at nvisia,
                                     where I consult clean code and clean architecture. My most recent clients have
                                     been Milwaukee Tool, Alliant Energy, and Generac.
                                 </p>
@@ -109,13 +109,13 @@ export default function AboutMe() {
                                     evolutionary practices.
                                 </p>
                                 <p>
-                                    On the side, I apply the same enthusiam I do at work at home
+                                    On the side, I apply the same enthusiasm I do at work at home
                                     for software in personal and side client projects.
                                     I am passionate about working in 3D, particularly those involving complicated
                                     mathematics. Whether its designing a model in Fusion 360 for my printer,
                                     working on a new renderer or shader for Unity or Unreal Engine, developing video
                                     games, or dealing with sensors in 3D embedded IoT
-                                    environments, I have fun with the challenges.
+                                    environments, I have fun with the challenges added with extra dimensions.
                                 </p>
                             </div>
                             <h1 className="text-2xl font-bold tracking-tight text-light sm:text-3xl mt-20 mb-4 text-slate-200">
@@ -207,7 +207,8 @@ export default function AboutMe() {
 }
 
 function Newsletter() {
-    return (
+    // TODO: Handle
+/*    return (
         <form
             action="/thank-you"
             className="rounded-2xl border p-6 border-slate-700/40"
@@ -232,7 +233,7 @@ function Newsletter() {
                 </Button>
             </div>
         </form>
-    )
+    )*/
 }
 
 function Role({ role }) {
@@ -318,10 +319,12 @@ function Resume() {
                     <Role key={roleIndex} role={role} />
                 ))}
             </ol>
+
+            {/* TODO: Handle
             <Button href="#" variant="solid" color="blue"  className="group mt-6 w-full">
                 Download Resume
                 <ArrowDownIcon className="h-4 w-4 stroke-slate-400 transition group-hover:stroke-slate-50 group-active:stroke-slate-50" />
-            </Button>
+            </Button>*/}
         </div>
     )
 }
