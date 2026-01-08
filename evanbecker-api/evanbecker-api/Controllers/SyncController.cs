@@ -74,7 +74,7 @@ public class SyncController : ControllerBase
                 Created = commit?.Commit?.Author?.Date.UtcDateTime ?? DateTime.MinValue
             }).ToList();
 
-            await _projectService.SyncProjectDeploymentsAndCommitsAsync(project.Id, deployments, projectCommits);
+            await _projectService.SyncProjectDeploymentsAndCommitsAsync(project.Id, deployments, projectCommits!);
         }
     }
 }

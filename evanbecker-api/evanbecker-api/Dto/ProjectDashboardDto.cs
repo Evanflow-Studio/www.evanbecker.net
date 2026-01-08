@@ -4,31 +4,31 @@ namespace evanbecker_api.Dto;
 
 public class ProjectDashboardDto
 {
-    public IList<ProjectDashboardCardDto> DashboardCards { get; set; }
-    public IList<DeploymentDto> LatestDeployments { get; set; }
+    public required IList<ProjectDashboardCardDto> DashboardCards { get; set; }
+    public required IList<DeploymentDto> LatestDeployments { get; set; }
 }
 
 public class ProjectDashboardCardDto
 {
-    public string? ProjectName { get; set; }
-    public string? Type { get; set; }
-    public List<string?> EnvironmentNames { get; set; }
-    public string NumberOfPipelineRuns { get; set; }
-    public string AveragePipelineTime { get; set; }
-    public string NumberOfDomains { get; set; }
-    public string PipelineSuccessRate { get; set; }
-    public bool IsActive { get; set; }
+    public required string? ProjectName { get; set; }
+    public required string? Type { get; set; }
+    public required List<string?> EnvironmentNames { get; set; }
+    public required string NumberOfPipelineRuns { get; set; }
+    public required string AveragePipelineTime { get; set; }
+    public required string NumberOfDomains { get; set; }
+    public required string PipelineSuccessRate { get; set; }
+    public required bool IsActive { get; set; }
 }
 
 public class DeploymentDto
 {
-    public string UserUrl { get; set; }
-    public string UserAvatar { get; set; }
-    public string UserLogin { get; set; }
-    public string Sha { get; set; }
-    public string Branch { get; set; }
-    public string? Conclusion { get; set; }
-    public string? Duration { get; set; }
-    public DateTime Created { get; set; }
-    public string? AssociatedProject { get; set; }
+    public required string UserUrl { get; set; }
+    public required string UserAvatar { get; set; }
+    public required string UserLogin { get; set; }
+    public required string Sha { get; set; }
+    public required string Branch { get; set; }
+    public required string? Conclusion { get; set; }
+    public required string? Duration { get; set; }
+    public required DateTime Created { get; set; }
+    public required string? AssociatedProject { get; set; }
 }
