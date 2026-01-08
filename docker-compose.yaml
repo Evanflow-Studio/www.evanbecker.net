@@ -27,7 +27,9 @@ services:
       - POSTGRES_USER=${Prod_DB_USER}
       - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
     volumes:
-      - ./appdata/postgres:/var/lib/postgresql/data
+      - ./appdata/postgres:/var/lib/postgresql
+      - ./dev/pg_hba.conf:/var/lib/foo/pg_hba.conf
+    command: ["postgres", "-c", "hba_file=/var/lib/foo/pg_hba.conf"]
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
@@ -40,12 +42,14 @@ services:
     build:
       context: .
       dockerfile: evanbecker-api/Dockerfile
+      args:
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=123
+      - ASPNETCORE_Kestrel__Certificates__Default__KeyPath=/usr/local/share/ca-certificates/aspnetapp.key
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/usr/local/share/ca-certificates/aspnetapp.crt
     image: ${DOCKER_REGISTRY-}evanbecker
     environment:
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:443;http://+:80
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=123
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
     ports:
       - "5002:80"
       - "5003:443"

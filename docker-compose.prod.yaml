@@ -5,7 +5,6 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      # TODO: Test if 5430 is valid for postgresql
       - "--entrypoints.postgres.address=:5431"
       - "--entrypoints.web.address=:3000"
       - "--entrypoints.websecure.address=:3001"
@@ -33,7 +32,7 @@ services:
       - POSTGRES_USER=${Prod_DB_USER}
       - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
     volumes:
-      - ./appdata/postgres:/var/lib/postgresql/data
+      - ./appdata/postgres:/var/lib/postgresql
     command: -p 5431
     labels:
       - "traefik.enable=true"
@@ -58,8 +57,10 @@ services:
       - ConnectionStrings__Database=${CONNECTION_STRING}
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:443;http://+:80
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=123
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${ASPNETCORE_CERT_PASSWORD}
+      - ASPNETCORE_Kestrel__Certificates__Default__KeyPath=/usr/local/share/ca-certificates/aspnetapp.key
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/usr/local/share/ca-certificates/aspnetapp.crt
+
     ports:
       - "5002:80"
       - "5003:443"
@@ -85,7 +86,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.client.entrypoints=web,websecure"
-      - "traefik.http.routers.client.rule=Host(`www.evanbecker.net`)"
+      - "traefik.http.routers.client.rule=Host(`www.evanbecker.net`) || Host(`evanbecker.net`)"
       - "traefik.http.services.client.loadbalancer.server.port=3000" # I'm setting up the reverse proxy to target 3000 as we defined in the Dockerfile.
       - "traefik.port=80"
 
