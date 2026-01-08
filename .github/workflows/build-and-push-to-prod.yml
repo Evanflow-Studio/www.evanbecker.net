@@ -101,8 +101,6 @@ jobs:
           dotnet tool restore
           cd ./evanbecker-api/evanbecker-domain/
           echo "Updating Database..."
-          pwd
-          ls -la
           dotnet ef database update
 
       - name: Deploy Container to Server
