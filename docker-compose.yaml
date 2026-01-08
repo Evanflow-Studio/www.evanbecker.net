@@ -50,7 +50,6 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:443;http://+:80
-      - PASSWORD_ENV_SEEDED=123
     ports:
       - "5002:80"
       - "5003:443"
