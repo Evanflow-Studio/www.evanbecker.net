@@ -97,6 +97,7 @@ jobs:
           cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           echo "Ensuring dotnet-ef is installed..."
           dotnet tool install --global dotnet-ef
+          dotnet restore
           dotnet tool restore
           cd ./evanbecker-api/evanbecker-domain/
           echo "Updating Database..."
