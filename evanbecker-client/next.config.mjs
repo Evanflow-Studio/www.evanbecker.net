@@ -10,7 +10,8 @@ const nextConfig = {
             source: "/privacy-policy",
             destination: "/privacy-policy.html"
         }
-    ]
+    ],
+    turbopack: {}
 }
 
 const withMDX = nextMDX({
