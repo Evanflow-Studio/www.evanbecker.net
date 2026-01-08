@@ -12,8 +12,8 @@ import { SimpleLink } from "@/components/SimpleLink";
 export function NewHero() {
   return (
     <div className="bg-slate-900 dark:-mb-32 dark:mt-[-4.75rem] dark:pb-32 dark:pt-[4.75rem] ">
-      <div className="py-16 sm:px-2 lg:relative lg:px-0 lg:py-20">
-        <div className="mx-auto grid max-w-2xl grid-cols-1 items-center gap-x-8 gap-y-16 px-4 lg:max-w-8xl lg:grid-cols-2 lg:px-8 xl:gap-x-16 xl:px-12">
+      <div className="py-6 md:py-16 sm:px-2 overflow-x-clip lg:relative lg:px-0 lg:py-20">
+        <div className="mx-auto grid max-w-2xl grid-cols-1 items-center gap-x-8 gap-y-8 md:gap-y-16 px-4 lg:max-w-8xl lg:grid-cols-2 lg:px-8 xl:gap-x-16 xl:px-12">
           <div className="relative z-10 md:text-center lg:text-left">
             <Image
               className="absolute bottom-full right-full -mb-56 -mr-72 opacity-50"
@@ -28,12 +28,9 @@ export function NewHero() {
               <p className="inline bg-gradient-to-r from-indigo-200 via-sky-400 to-indigo-200 bg-clip-text font-display text-5xl tracking-tight text-transparent">
                 Hello, World!
               </p>
-              <p className="mt-3 text-xl tracking-tight text-slate-300">
-                Welcome to the new <SimpleLink href="#">evanbecker.net</SimpleLink>.
-              </p>
               <p className="mt-3 text-2xl tracking-tight text-slate-300">
-                This UI is built using <SimpleLink href="https://tailwindcss.com/">Tailwind CSS</SimpleLink> and <SimpleLink href="https://nextjs.org/">Next.js</SimpleLink>,
-                the backend in <SimpleLink href="https://dotnet.microsoft.com/en-us/download/dotnet/7.0">.NET 7</SimpleLink> w/ <SimpleLink href="https://learn.microsoft.com/en-us/ef/">Entity Framework</SimpleLink>,
+                This UI is built using <SimpleLink href="https://tailwindcss.com/">Tailwind CSS</SimpleLink> and <SimpleLink href="https://nextjs.org/">NextJS</SimpleLink>,
+                the backend in <SimpleLink href="https://dotnet.microsoft.com/en-us/download/dotnet/7.0">.NET 9</SimpleLink> w/ <SimpleLink href="https://learn.microsoft.com/en-us/ef/">Entity Framework</SimpleLink>,
                 database using <SimpleLink href="https://www.postgresql.org/">PostgreSQL</SimpleLink>
                 , <SimpleLink href="https://traefik.io/traefik/">Traefik</SimpleLink> as a reverse proxy, <SimpleLink href="https://en.wikipedia.org/wiki/CI/CD">CI/CD</SimpleLink> using <SimpleLink href="https://github.com/features/actions">GitHub Actions</SimpleLink>,
                 containerized using <SimpleLink href="https://www.docker.com/">Docker</SimpleLink>,

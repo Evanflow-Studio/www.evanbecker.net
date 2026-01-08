@@ -79,6 +79,8 @@ jobs:
             echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
             echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
 
+            echo -e "ASPNETCORE_CERT_PASSWORD=${{ secrets.ASPNETCORE_CERT_PASSWORD }}" >> .env
+
             echo "ENVIRONMENT=prod" >> .env            
 
             echo "> Secrets Refreshed..."
@@ -95,6 +97,7 @@ jobs:
           cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           echo "Ensuring dotnet-ef is installed..."
           dotnet tool install --global dotnet-ef
+          dotnet restore
           dotnet tool restore
           cd ./evanbecker-api/evanbecker-domain/
           echo "Updating Database..."

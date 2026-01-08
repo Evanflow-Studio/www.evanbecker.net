@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>evanbecker_api</RootNamespace>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <UserSecretsId>30f934c0-066d-4700-a822-55634dd80969</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>

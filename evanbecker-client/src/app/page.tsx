@@ -17,15 +17,6 @@ export default function Home() {
       <Header />
       <main>
         <NewHero />
-        {/*<PrimaryFeatures />
-        <SecondaryFeatures />
-        <CallToAction />
-        <Testimonials />
-        <Pricing />
-        <Faqs />*/}
-          <Container className="mt-24 md:mt-28">
-
-          </Container>
       </main>
       <Footer />
     </>

@@ -18,13 +18,6 @@
     My personal blog site, deployment dashboard, & release location.
     <br />
     <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the blog »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/othneildrew/Best-README-Template">View Projects</a>
-    ·
-    <a href="https://github.com/othneildrew/Best-README-Template/issues">Contact Me</a>
-    ·
-    <a href="https://github.com/othneildrew/Best-README-Template/issues">Test Environment</a>
   </p>
 </div>
 

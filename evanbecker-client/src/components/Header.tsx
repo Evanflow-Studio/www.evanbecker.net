@@ -98,7 +98,7 @@ function MobileNavigation() {
             <MobileNavLink href="/">Home</MobileNavLink>
             <MobileNavLink href="/about-me">About Me</MobileNavLink>
             <MobileNavLink href="/contact">Contact</MobileNavLink>
-            <MobileNavLink href="/resources">Resources</MobileNavLink>
+            <MobileNavLink href="/shop">Shop</MobileNavLink>
             <MobileNavLink href="/articles">Blog</MobileNavLink>
             <MobileNavLink href="/account/projects">My Projects</MobileNavLink>
             <hr className="m-2 border-slate-300/40" />
@@ -140,8 +140,6 @@ export function Header() {
       window.removeEventListener('scroll', onScroll)
     }
   }, [])
-
-  console.log("user", user);
   
   return (
     <header className={clsx(
@@ -152,19 +150,19 @@ export function Header() {
     )}>
       <Container>
         <nav className="relative z-50 flex justify-between">
-          <div className="flex items-center md:gap-x-12">
+          <div className="flex items-center lg:gap-x-12">
             <Link href="/" aria-label="Home" className="pt-6">
-              <Logo className="h-20 w-auto"/>
+              <Logo className="h-20 md:h-12 lg:h-20 w-auto"/>
             </Link>
-            <div className="hidden md:flex md:gap-x-6 pt-6">
+            <div className="hidden md:flex lg:gap-x-6 pt-6">
               <NavLink href="/">Home</NavLink>
               <NavLink href="/about-me">About Me</NavLink>
               <NavLink href="/contact">Contact</NavLink>
-              <NavLink href="/resources">Resources</NavLink>
+              <NavLink href="/shop">Shop</NavLink>
               <NavLink href="/articles">Blog</NavLink>
             </div>
           </div>
-          <div className="flex items-center gap-x-5 md:gap-x-8 pt-8">
+          <div className="flex items-center gap-x-5 lg:gap-x-6 pt-6">
             <div className="hidden md:block">
               <NavLink href="/account/projects">My Projects</NavLink>
             </div>
@@ -226,10 +224,12 @@ export function Header() {
                   </Transition>
                 </Menu>
             )}
-            {!isLoading && !isAuthenticated && (<Button href="#" onClick={() => loginWithRedirect()} color="blue">
-              Sign In
-            </Button>)}
-            {isLoading && (<LoadingSpinner/>)}
+            <div className="hidden md:block">
+              {!isLoading && !isAuthenticated && (<Button href="#" onClick={() => loginWithRedirect()} color="blue">
+                <span className="whitespace-nowrap">Sign In</span>
+              </Button>)}
+              {isLoading && (<LoadingSpinner/>)}
+            </div>
             <div className="-mr-1 md:hidden">
               <MobileNavigation />
             </div>
