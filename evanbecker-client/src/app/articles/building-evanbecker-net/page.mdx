@@ -19,6 +19,8 @@ export const metadata = {
 
 export default (props) => <ArticleLayout article={article} {...props} />
 
+## Commit message suggestions {{ date: '2023-04-06T00:00Z' }}
+
 It all began a few months ago when I noticed there was a concerning absence of emails arriving in my custom inbox. It struck me as rather peculiar,
 considering I had been using Zoho to host my email service without an issue for years. An investigation quickly led me to the root of the problem:
 I had forgotten that my domain was tied to a bank account long ago, resulting me in missing the renewal for my domain. And, much to my dismay, someone
@@ -204,7 +206,7 @@ const createProject = async () => {
 
 Finalizing this phase, I ensured the application was containerized using Docker. Here's what that Dockerfile looks like:
 
-``` Dockerfile
+``` docker
 # in Dockerfile
 FROM node:16-alpine
 
@@ -231,7 +233,7 @@ Commencing with the creation of both the API and the associated Auth0 project ma
 
 I configured the API to accept Jwt Bearer tokens, leveraging the API's Auth0 setup as described above:
 
-``` dotnet
+``` csharp
 // in Program.cs
 builder.Services.AddAuthentication(options =>
 {
@@ -247,7 +249,7 @@ builder.Services.AddAuthentication(options =>
 While in the area, I preemptively managed CORS-related concerns. I established a permissive CORS policy, envisioning the API as publicly accessible. The policy was
 setup in this manner:
 
-``` dotnet
+``` csharp
 // in Program.cs
 builder.Services.AddCors(options =>
 {
@@ -265,7 +267,7 @@ app.UseCors("cors");
 ```
 
 Considering the frontend and backend reside in separate containers on Traefik'd proxies, enabling their communication technically amounted to a cross-domain setup:
-``` dotnet
+``` csharp
 // in Program.cs
 app.Use((context, next) =>
 {
@@ -276,7 +278,7 @@ app.Use((context, next) =>
 
 With the creation of a ClaimsPrincipleExtensions class, I devised a method to derive the claim ID from our Auth0 ID:
 
-``` dotnet
+``` csharp
 // in Extensions/ClaimsPrincipleExtensions.cs
 public static class ClaimsPrincipleExtensions
 {
@@ -303,7 +305,7 @@ serving as a repository for non-critical developer secrets.
 
 To integrate these configurations, I introduced the following:
 
-``` dotnet
+``` csharp
 // in Program.cs
 builder.Services.AddControllers();
 builder.Configuration.AddJsonFile("./secrets/appsettings.Secrets.json", optional: true, reloadOnChange: true);
@@ -312,7 +314,7 @@ builder.Configuration.AddEnvironmentVariables();
 
 Once the secrets were incorporated into our configuration, I proceeded to add the DB context with the connection string:
 
-``` dotnet
+``` csharp
 // in Program.cs
 var connectionString = builder.Configuration.GetConnectionString("Database");
 builder.Services.AddDbContext<ApplicationContext>(options =>
@@ -323,7 +325,7 @@ builder.Services.AddDbContext<ApplicationContext>(options =>
 For ease of development, particularly within a Docker container, executing migrations at runtime proved highly beneficial. To achieve this, I created the context
 using the DesignTimeDbContextFactory that we'll generate shortly and ran the MigrateAsync() method against it. Here’s a glimpse of the logic employed:
 
-``` dotnet
+``` csharp
 // in Extensions/WebApplicationExtensions.cs
 using var scope = webApplication.Services.CreateScope();
 var dbf = new DesignTimeDbContextFactory();
@@ -339,7 +341,7 @@ Given that the Entity Framework context and models reside in a library project, 
 Creating this file almost mimics a startup file when running migration and database update commands. In this scenario, the file path differs, and to access
 the appsetting files, we traverse upwards a directory to the server. Once the configuration is established based on the environment, we can build the context:
 
-``` dotnet
+``` csharp
 // in ApplicationContext.cs
 var builder = new DbContextOptionsBuilder<ApplicationContext>();
 var connectionString = configuration.GetConnectionString("Database");
@@ -351,7 +353,7 @@ return new ApplicationContext(builder.Options);
 
 I also introduced Swagger for documentation and development purposes. On the server, the instantiation took place as follows:
 
-``` dotnet
+``` csharp
 // in Program.cs
 builder.Services.AddSwaggerGen(o =>
 {
@@ -369,7 +371,7 @@ builder.Services.AddSwaggerGen(o =>
 
 I ensured the Swagger UI was enabled:
 
-``` dotnet
+``` csharp
 // in Program.cs
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -411,7 +413,7 @@ export default function Documentation() {
 
 Finally, to round off this phase, the application was containerized using Docker. Here's a glimpse of the Dockerfile associated with the API:
 
-``` Dockerfile
+``` docker
 # in Dockerfile
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app

@@ -10,13 +10,13 @@ export async function GET(req: Request) {
     }
 
     let author = {
-        name: 'Spencer Sharp',
-        email: 'spencer@planetaria.tech',
+        name: 'Evan Becker',
+        email: 'me@evanbecker.net',
     }
 
     let feed = new Feed({
         title: author.name,
-        description: 'Your blog description',
+        description: 'A blog by Evan Becker',
         author,
         id: siteUrl,
         link: siteUrl,
@@ -28,22 +28,23 @@ export async function GET(req: Request) {
         },
     })
 
-    let articleIds = require
-        .context('../articles', true, /\/page\.mdx$/)
-        .keys()
-        .filter((key) => key.startsWith('./'))
-        .map((key) => key.slice(2).replace(/\/page\.mdx$/, ''))
+    let html = await (await fetch(new URL('/', req.url))).text()
+    let $ = cheerio.load(html)
 
-    for (let id of articleIds) {
-        let url = String(new URL(`/articles/${id}`, req.url))
-        let html = await (await fetch(url)).text()
-        let $ = cheerio.load(html)
+    $('article').each(function () {
+        let id = $(this).attr('id')
+        assert(typeof id === 'string')
 
-        let publicUrl = `${siteUrl}/articles/${id}`
-        let article = $('article').first()
-        let title = article.find('h1').first().text()
-        let date = article.find('time').first().attr('datetime')
-        let content = article.find('[data-mdx-content]').first().html()
+        let url = `${siteUrl}/#${id}`
+        let heading = $(this).find('h2').first()
+        let title = heading.text()
+        let date = $(this).find('time').first().attr('datetime')
+
+        // Tidy content
+        heading.remove()
+        $(this).find('h3 svg').remove()
+
+        let content = $(this).find('[data-mdx-content]').first().html()
 
         assert(typeof title === 'string')
         assert(typeof date === 'string')
@@ -51,14 +52,14 @@ export async function GET(req: Request) {
 
         feed.addItem({
             title,
-            id: publicUrl,
-            link: publicUrl,
+            id: url,
+            link: url,
             content,
             author: [author],
             contributor: [author],
             date: new Date(date),
         })
-    }
+    })
 
     return new Response(feed.rss2(), {
         status: 200,
