@@ -2,5 +2,5 @@
 
 public class CommentDto
 {
-    public string CommentText { get; set; }
+    public required string CommentText { get; set; }
 }

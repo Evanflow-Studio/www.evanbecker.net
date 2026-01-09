@@ -54,7 +54,7 @@ public class EmailSubscriber
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; }
-    public string EmailAddress { get; set; }
+    public required string EmailAddress { get; set; }
 }
 
 public class Deployment
@@ -92,14 +92,14 @@ public class Commit
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; }
     
-    public string UserUrl { get; set; } // Author.HtmlUrl
-    public string UserAvatar { get; set; } // Author.AvatarUrl
-    public string UserLogin { get; set; } // Author.Login
+    public required string UserUrl { get; set; } // Author.HtmlUrl
+    public required string UserAvatar { get; set; } // Author.AvatarUrl
+    public required string UserLogin { get; set; } // Author.Login
     
-    public string Message { get; set; } // Commit.Message
+    public required string Message { get; set; } // Commit.Message
     
-    public string? Sha { get; set; } // Sha
-    public DateTime Created { get; set; } // Commit.Author.Date
+    public required string? Sha { get; set; } // Sha
+    public required DateTime Created { get; set; } // Commit.Author.Date
 }
 
 public class ActivityLog
@@ -107,11 +107,11 @@ public class ActivityLog
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; }
-    public bool IsDeleted { get; set; }
-    public ActivityLogType Type { get; set; }
-    public User? User { get; set; }
-    public string? Text { get; set; }
-    public DateTime Created { get; set; }
+    public required bool IsDeleted { get; set; }
+    public required ActivityLogType Type { get; set; }
+    public required User? User { get; set; }
+    public required string? Text { get; set; }
+    public required DateTime Created { get; set; }
 }
 
 public class Photo
@@ -119,12 +119,12 @@ public class Photo
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; }
-    public bool IsDeleted { get; set; }
-    public string? FileName { get; set; }
-    public string? Size { get; set; }
-    public string? Base64 { get; set; }
-    public DateTime Created { get; set; }
-    public DateTime Updated { get; set; }
+    public required bool IsDeleted { get; set; }
+    public required string? FileName { get; set; }
+    public required string? Size { get; set; }
+    public required string? Base64 { get; set; }
+    public required DateTime Created { get; set; }
+    public required DateTime Updated { get; set; }
 }
 
 public class Environment

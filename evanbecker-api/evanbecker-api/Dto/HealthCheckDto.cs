@@ -2,9 +2,9 @@
 
 public class HealthCheckDto
 {
-    public string Status { get; set; }
-    public string Url { get; set; }
-    public string Environment { get; set; }
-    public string Name { get; set; }
-    public DateTime Created { get; set;}
+    public required string Status { get; set; }
+    public required string Url { get; set; }
+    public required string Environment { get; set; }
+    public required string Name { get; set; }
+    public required DateTime Created { get; set;}
 }

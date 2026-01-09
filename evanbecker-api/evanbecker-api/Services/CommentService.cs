@@ -19,7 +19,7 @@ public class CommentService : ICommentService
         
         var comment = new Comment
         {
-            Replies = new List<Reply?>(),
+            Replies = [],
             Author = user,
             Published = DateTime.Now.ToUniversalTime(),
             CommentText = commentText,
@@ -50,13 +50,13 @@ public class CommentService : ICommentService
             TargetLocation = targetLocation
         };
         
-        if (comment.Replies.Any())
+        if (comment?.Replies?.Any() == true)
         {
             comment.Replies.Add(reply);
         }
         else
         {
-            comment.Replies = new List<Reply?> { reply };
+            comment!.Replies = [reply];
         }
 
         await _context.SaveChangesAsync();
@@ -68,7 +68,7 @@ public class CommentService : ICommentService
         return _context
             .Comments
             .Include(x => x.Author)
-            .Include(x => x.Replies)
+            .Include(x => x.Replies)!
             .ThenInclude(x => x.Author)
             .Select(comment => new Comment
             {
@@ -78,7 +78,7 @@ public class CommentService : ICommentService
                 CommentText = comment.CommentText,
                 IsDeleted = comment.IsDeleted,
                 Id = comment.Id,
-                Replies = comment.Replies.Where(reply => reply != null && !reply.IsDeleted).ToList()
+                Replies = comment.Replies!.Where(reply => reply != null && !reply.IsDeleted).ToList()
             })
             .OrderBy(x => x.Published)
             .Where(x => x.TargetLocation == targetLocation)

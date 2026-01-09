@@ -43,6 +43,7 @@ export default function RootLayout({
         inter.variable,
         lexend.variable,
       )}
+      suppressHydrationWarning
     >
       <body className="flex h-full flex-col bg-slate-900">
         <Providers>{children}</Providers>

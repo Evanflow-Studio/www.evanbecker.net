@@ -37,12 +37,12 @@ public class UserService : IUserService
         if (user != null)
             return user;
         
-        var authClient = new AuthenticationApiClient(_auth0Configuration.Value.Domain);
+        var authClient = new AuthenticationApiClient(_auth0Configuration.Value.Domain!);
         var authToken = await authClient.GetTokenAsync(new ClientCredentialsTokenRequest
         {
             Audience = $"https://{_auth0Configuration.Value.Domain}/api/v2/",
-            ClientId = _auth0Configuration.Value.ClientId,
-            ClientSecret = _auth0Configuration.Value.ClientSecret
+            ClientId = _auth0Configuration.Value.ClientId!,
+            ClientSecret = _auth0Configuration.Value.ClientSecret!
         });
 
         // TODO: Move to some sort of Auth0Service

@@ -7,12 +7,12 @@ public class UserDto
 
 public class UserPersonalInformationDto
 {
-    public string Avatar { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
-    public string Email { get; set; } // are ignored on save
-    public string Auth0Id { get; set; } // are ignored on save
-    public string TimeZone { get; set; }
+    public required string Avatar { get; set; }
+    public required string FirstName { get; set; }
+    public required string LastName { get; set; }
+    public required string Email { get; set; } // are ignored on save
+    public required string Auth0Id { get; set; } // are ignored on save
+    public required string TimeZone { get; set; }
 }
 
 public class UserNotificationsDto

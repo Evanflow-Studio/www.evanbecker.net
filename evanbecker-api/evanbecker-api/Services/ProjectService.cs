@@ -381,7 +381,7 @@ public class ProjectService : IProjectService
             .Include(x => x.Deployments.OrderByDescending(y => y.Created).Skip((page-1)*pageSize).Take(pageSize))
             .SingleOrDefaultAsync(x => x.Id == projectId);
 
-        var count = await _context.Entry(foundProject).Collection(d => d.Deployments).Query().CountAsync();
+        var count = await _context.Entry(foundProject).Collection(d => d!.Deployments).Query().CountAsync();
 
         return new PagedDto<Deployment>
         {
@@ -399,7 +399,7 @@ public class ProjectService : IProjectService
             .Include(x => x.Commits.OrderByDescending(y => y.Created).Skip((page-1)*pageSize).Take(pageSize))
             .SingleOrDefaultAsync(x => x.Id == projectId);
         
-        var count = await _context.Entry(foundProject).Collection(d => d.Commits).Query().CountAsync();
+        var count = await _context.Entry(foundProject).Collection(d => d!.Commits).Query().CountAsync();
 
         return new PagedDto<Commit>
         {

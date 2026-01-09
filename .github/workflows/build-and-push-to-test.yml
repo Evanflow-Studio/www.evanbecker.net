@@ -104,6 +104,8 @@ jobs:
           dotnet restore
           dotnet tool restore
           cd ./evanbecker-api/evanbecker-domain/
+          pwd
+          ls -la
           echo "Updating Database..."
           dotnet ef database update
 
