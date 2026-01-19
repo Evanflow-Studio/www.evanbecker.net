@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         
       - name: Create env files
         run: |
@@ -50,6 +50,9 @@ jobs:
     needs: build_containers_and_push_to_registry
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+        
       - name: Deploy Secrets to Server
         uses: appleboy/ssh-action@master
         with:
@@ -96,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Entity Framework Migrations
         run: |
@@ -121,6 +124,9 @@ jobs:
     needs: build_containers_and_push_to_registry
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
       - name: Deploy Container to Server
         uses: appleboy/ssh-action@master
         with:
