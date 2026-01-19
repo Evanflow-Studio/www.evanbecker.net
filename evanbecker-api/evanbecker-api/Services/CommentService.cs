@@ -27,7 +27,7 @@ public class CommentService : ICommentService
         var comment = new Comment
         {
             Author = user,
-            Published = DateTimeOffset.Now,
+            Published = DateTime.Now.ToUniversalTime(),
             CommentText = commentText,
             TargetLocation = targetLocation
         };
@@ -49,7 +49,7 @@ public class CommentService : ICommentService
         var reply = new Reply
         {
             Author = user,
-            Published = DateTimeOffset.Now,
+            Published = DateTime.Now.ToUniversalTime(),
             CommentText = commentText,
             TargetLocation = targetLocation
         };

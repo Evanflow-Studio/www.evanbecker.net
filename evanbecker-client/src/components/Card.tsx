@@ -84,7 +84,7 @@ Card.Tags = function CardDescription({
   tags: string[]
 }) {
   return tags?.map((i) => (
-    <span className="mt-1 inline-flex uppercase items-center gap-x-1.5 rounded-md px-2 py-1 text-xs text-gray-900 inset-ring inset-ring-gray-200 dark:text-white dark:inset-ring-white/10">
+    <span key={i} className="mt-1 inline-flex uppercase items-center gap-x-1.5 rounded-md px-2 py-1 text-xs text-gray-900 inset-ring inset-ring-gray-200 dark:text-white dark:inset-ring-white/10">
       <svg
         viewBox="0 0 6 6"
         aria-hidden="true"

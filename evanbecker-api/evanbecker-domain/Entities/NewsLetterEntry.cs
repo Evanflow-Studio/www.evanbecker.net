@@ -12,5 +12,5 @@ public class NewsLetterEntry
     [MaxLength(255)]
     public required string EmailAddress { get; set; }
 
-    public DateTimeOffset Created { get; set; }
+    public DateTime Created { get; set; }
 }

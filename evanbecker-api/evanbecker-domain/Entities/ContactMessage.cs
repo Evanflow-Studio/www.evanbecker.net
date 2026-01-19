@@ -24,5 +24,5 @@ public class ContactMessage
     [MaxLength(255)]
     public string? Message { get; set; }
     
-    public DateTimeOffset Created { get; set; }
+    public DateTime Created { get; set; }
 }

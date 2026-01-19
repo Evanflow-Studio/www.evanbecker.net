@@ -4,12 +4,6 @@ import { createContext, useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ThemeProvider, useTheme } from 'next-themes'
 import { Auth0Provider } from '@auth0/auth0-react'
-import {
-  HydrationBoundary,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 function usePrevious<T>(value: T) {
   let ref = useRef<T | undefined>(undefined)
@@ -51,8 +45,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
   let pathname = usePathname()
   let previousPathname = usePrevious(pathname)
 
-  const [client] = useState(new QueryClient())
-
   return (
     <AppContext.Provider value={{ previousPathname }}>
       <Auth0Provider
@@ -68,15 +60,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
           scope: 'openid profile email offline_access',
         }}
         useRefreshTokens
+        useRefreshTokensFallback
         cacheLocation="localstorage"
       >
-        <QueryClientProvider client={client}>
-          <ThemeProvider attribute="class" disableTransitionOnChange>
-            <ThemeWatcher />
-            {children}
-            <ReactQueryDevtools initialIsOpen={false} />
-          </ThemeProvider>
-        </QueryClientProvider>
+        <ThemeProvider attribute="class" disableTransitionOnChange>
+          <ThemeWatcher />
+          {children}
+        </ThemeProvider>
       </Auth0Provider>
     </AppContext.Provider>
   )

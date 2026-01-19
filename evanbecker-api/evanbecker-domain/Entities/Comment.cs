@@ -9,7 +9,7 @@ public class CommentBase
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid? Id { get; set; }
     
-    public DateTimeOffset Published { get; set; }
+    public DateTime Published { get; set; }
     
     public required User Author { get; set; }
     

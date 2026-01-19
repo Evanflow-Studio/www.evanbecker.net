@@ -127,6 +127,12 @@ export function Header() {
   } = useAuth0();
 
   useEffect(() => {
+    console.log({ user })
+    console.log({ isLoading })
+    console.log({ isAuthenticated })
+  }, [user, isLoading, isAuthenticated])
+
+  useEffect(() => {
     function onScroll() {
       setIsScrolled(window.scrollY > 0)
     }
