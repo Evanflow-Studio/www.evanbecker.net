@@ -1,4 +1,43 @@
-@tailwind base;
-@tailwind components;
-@import './prism.css';
-@tailwind utilities;
+@import 'tailwindcss';
+@import './prism.css' layer(components);
+
+@plugin '@tailwindcss/typography';
+@config '../../typography.ts';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.5rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.75rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 2rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2rem;
+  --text-4xl--line-height: 2.5rem;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 3.5rem;
+  --text-6xl: 3.75rem;
+  --text-6xl--line-height: 1;
+  --text-7xl: 4.5rem;
+  --text-7xl--line-height: 1;
+  --text-8xl: 6rem;
+  --text-8xl--line-height: 1;
+  --text-9xl: 8rem;
+  --text-9xl--line-height: 1;
+  --color-primary: oklch(0.5407 0.209 259.69);
+  --color-secondary: oklch(0.6636 0.1783 252.4);
+  --color-tertiary: oklch(0.701 0.1515 247.1);
+  --colors-primary: oklch(0.5407 0.209 259.69);
+  --colors-secondary: oklch(0.6636 0.1783 252.4);
+  --colors-tertiary: oklch(0.701 0.1515 247.1);
+  --color-light: 'slate-100'
+}

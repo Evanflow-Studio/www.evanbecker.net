@@ -2,17 +2,19 @@
 using Auth0.AuthenticationApi;
 using Auth0.AuthenticationApi.Models;
 using Auth0.ManagementApi;
-using Auth0.ManagementApi.Paging;
 using evanbecker_api.Configuration;
 using evanbecker_api.Extensions;
-using evanbecker_api.Services.Interfaces;
 using evanbecker_domain;
 using evanbecker_domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Options;
 
 namespace evanbecker_api.Services;
+
+public interface IUserService
+{
+    Task<User?> GetUserAsync(ClaimsPrincipal claimsUser);
+}
 
 public class UserService : IUserService
 {
@@ -26,14 +28,16 @@ public class UserService : IUserService
         _auth0Configuration = auth0Configuration;
     }
     
-    public async Task<User?> GetUser(ClaimsPrincipal claimsUser)
+    public async Task<User?> GetUserAsync(ClaimsPrincipal claimsUser)
     {
         var authId = claimsUser?.GetAuthId();
         if (authId == null)
             return null;
+        
         var user = await _context
             .Users
             .SingleOrDefaultAsync(x => x.Auth0Id == authId);
+        
         if (user != null)
             return user;
         

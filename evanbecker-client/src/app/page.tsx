@@ -1,15 +1,7 @@
-import { CallToAction } from '@/components/CallToAction'
-import { Faqs } from '@/components/Faqs'
 import { Footer } from '@/components/Footer'
 import { Header } from '@/components/Header'
 import { NewHero } from '@/components/NewHero'
-import { Pricing } from '@/components/Pricing'
-import { PrimaryFeatures } from '@/components/PrimaryFeatures'
-import { SecondaryFeatures } from '@/components/SecondaryFeatures'
-import { Testimonials } from '@/components/Testimonials'
-import {Container} from "@/components/Container";
-import {Button} from "@/components/Button";
-
+import { Container } from '@/components/Container'
 
 export default function Home() {
   return (
@@ -17,10 +9,9 @@ export default function Home() {
       <Header />
       <main>
         <NewHero />
+        <Container className="mt-24 md:mt-28"></Container>
       </main>
       <Footer />
     </>
   )
 }
-
-

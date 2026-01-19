@@ -1,7 +1,6 @@
 using evanbecker_api.Configuration;
 using evanbecker_api.Extensions;
 using evanbecker_api.Services;
-using evanbecker_api.Services.Interfaces;
 using evanbecker_domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +30,6 @@ builder.Services.Configure<GitHubConfiguration>(gitHubSection);
 
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IProjectService, ProjectService>();
 
 builder.Services.AddEndpointsApiExplorer(); 
 builder.Services.AddSwaggerGen(o =>

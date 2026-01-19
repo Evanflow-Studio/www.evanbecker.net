@@ -24,7 +24,6 @@ RUN dotnet publish "evanbecker-api.csproj" -c Release -o /app/publish
 RUN mkdir /config
 # Developer Certificate Creation
 RUN dotnet dev-certs https --export-path /config/aspnetapp.pem --password "${ASPNETCORE_Kestrel__Certificates__Default__Password}" --format PEM
-
 FROM base AS final
 # Developer Certificate Arguments
 ARG ASPNETCORE_Kestrel__Certificates__Default__Path
@@ -33,7 +32,6 @@ ARG ASPNETCORE_Kestrel__Certificates__Default__Password
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path=$ASPNETCORE_Kestrel__Certificates__Default__Path
 ENV ASPNETCORE_Kestrel__Certificates__Default__KeyPath=$ASPNETCORE_Kestrel__Certificates__Default__KeyPath
 ENV ASPNETCORE_Kestrel__Certificates__Default__Password=$ASPNETCORE_Kestrel__Certificates__Default__Password
-
 WORKDIR /app
 
 # Developer Certificate Setup
@@ -51,7 +49,6 @@ RUN cat $ASPNETCORE_Kestrel__Certificates__Default__Path >> /etc/ssl/certs/ca-ce
 RUN chmod 755 $ASPNETCORE_Kestrel__Certificates__Default__KeyPath
 RUN chmod +x $ASPNETCORE_Kestrel__Certificates__Default__KeyPath
 RUN update-ca-certificates
-
 
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "evanbecker-api.dll"]

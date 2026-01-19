@@ -9,35 +9,37 @@ import { Highlight, Prism } from 'prism-react-renderer'
 require("prismjs/components/prism-docker");
 
 const defTabs: any[] = [
+  {
+    name: 'Dockerfile',
+    isActive: true,
+    code: `[ApiController]
+[Route("api/v1/project")]
+public class ProjectController : ControllerBase
+{
+    private readonly IUserService _userService;
+    private readonly IProjectService _projectService;
+
+    public ProjectController(IUserService userService,
+       IProjectService projectService)
     {
-        name: 'Dockerfile',
-        isActive: true,
-        code: `FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+        _userService = userService;
+        _projectService = projectService;
+    }
+    
+    [HttpGet]
+    public async Task<IActionResult> GetAllProjects()
+    {
+        var projects = await _projectService.GetAllProjectsAsync();
+        return Ok(projects);
+    }
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-WORKDIR /src
-COPY ["EB/EB.csproj", "EB/"]
-RUN dotnet restore "EB/EB.csproj"
-COPY . .
-WORKDIR "/src/EB"
-RUN dotnet build "EB.csproj" -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish "EB.csproj" -c Release -o /app/publish
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "EB.dll"]`,
-        codeLanguage: 'dockerfile'
-    },
-    { 
-        name: 'Stats.cpp',
-        isActive: false,
-        code: `float UStats::ApplyStatMultiplier(const float StatValue,
+    ...`,
+    codeLanguage: 'c',
+  },
+  {
+    name: 'Stats.cpp',
+    isActive: false,
+    code: `float UStats::ApplyStatMultiplier(const float StatValue,
     const float StatMultiplier)
 {
     return StatValue * StatMultiplier + StatValue;
@@ -58,9 +60,9 @@ UStatsCalculated* UStats::Calculate()
     );
   //...
 }`,
-        codeLanguage: 'cpp'
-    },
-  ]
+    codeLanguage: 'cpp',
+  },
+]
 
 function TrafficLightsIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
     return (

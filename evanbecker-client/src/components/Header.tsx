@@ -98,14 +98,10 @@ function MobileNavigation() {
             <MobileNavLink href="/">Home</MobileNavLink>
             <MobileNavLink href="/about-me">About Me</MobileNavLink>
             <MobileNavLink href="/contact">Contact</MobileNavLink>
-            <MobileNavLink href="/shop">Shop</MobileNavLink>
             <MobileNavLink href="/articles">Blog</MobileNavLink>
-            <MobileNavLink href="/account/projects">My Projects</MobileNavLink>
             <hr className="m-2 border-slate-300/40" />
             {!isLoading && isAuthenticated && (
                 <>
-                  <MobileNavLink href="/account/dashboard">Dashboard</MobileNavLink>
-                  <MobileNavLink href="/account/settings">Settings</MobileNavLink>
                   <a href="#" onClick={() => logout()}><MobileNavLink href="#">Logout</MobileNavLink></a>
                 </>
             )}
@@ -150,22 +146,18 @@ export function Header() {
     )}>
       <Container>
         <nav className="relative z-50 flex justify-between">
-          <div className="flex items-center lg:gap-x-12">
+          <div className="flex items-center md:gap-x-12">
             <Link href="/" aria-label="Home" className="pt-6">
-              <Logo className="h-20 md:h-12 lg:h-20 w-auto"/>
+              <Logo className="h-20 w-auto"/>
             </Link>
-            <div className="hidden md:flex lg:gap-x-6 pt-6">
+            <div className="hidden md:flex md:gap-x-6 pt-6">
               <NavLink href="/">Home</NavLink>
               <NavLink href="/about-me">About Me</NavLink>
               <NavLink href="/contact">Contact</NavLink>
-              <NavLink href="/shop">Shop</NavLink>
               <NavLink href="/articles">Blog</NavLink>
             </div>
           </div>
-          <div className="flex items-center gap-x-5 lg:gap-x-6 pt-6">
-            <div className="hidden md:block">
-              <NavLink href="/account/projects">My Projects</NavLink>
-            </div>
+          <div className="flex items-center gap-x-5 md:gap-x-8 pt-8">
             {!isLoading && isAuthenticated && (
                 <Menu as="div" className="relative ml-3">
                   <div>
@@ -192,26 +184,6 @@ export function Header() {
                       <Menu.Item>
                         {({ active }) => (
                             <a
-                                href="/account"
-                                className={classNames(active ? 'bg-slate-800' : '', 'block px-4 py-2 text-sm text-slate-200')}
-                            >
-                              Dashboard
-                            </a>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                            <a
-                                href="/account/settings"
-                                className={classNames(active ? 'bg-slate-800' : '', 'block px-4 py-2 text-sm text-slate-200')}
-                            >
-                              Settings
-                            </a>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                            <a
                                 href="#"
                                 onClick={() => logout()}
                                 className={classNames(active ? 'bg-slate-800' : '', 'block px-4 py-2 text-sm text-slate-200')}
@@ -224,12 +196,10 @@ export function Header() {
                   </Transition>
                 </Menu>
             )}
-            <div className="hidden md:block">
-              {!isLoading && !isAuthenticated && (<Button href="#" onClick={() => loginWithRedirect()} color="blue">
-                <span className="whitespace-nowrap">Sign In</span>
-              </Button>)}
-              {isLoading && (<LoadingSpinner/>)}
-            </div>
+            {!isLoading && !isAuthenticated && (<Button href="#" onClick={() => loginWithRedirect()} color="blue">
+              Sign In
+            </Button>)}
+            {isLoading && (<LoadingSpinner/>)}
             <div className="-mr-1 md:hidden">
               <MobileNavigation />
             </div>
