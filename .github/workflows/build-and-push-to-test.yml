@@ -50,13 +50,6 @@ jobs:
     needs: build_containers_and_push_to_registry
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the repo
-        uses: actions/checkout@v4
-
-      - name: Test
-        run: |
-          echo -e "TEST=${{ secrets.GL_SSH_HOST }}"
-
       - name: Deploy Secrets to Server
         uses: appleboy/ssh-action@master
         with:
@@ -128,9 +121,6 @@ jobs:
     needs: build_containers_and_push_to_registry
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the repo
-        uses: actions/checkout@v4
-
       - name: Deploy Container to Server
         uses: appleboy/ssh-action@master
         with:
