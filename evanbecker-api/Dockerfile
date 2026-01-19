@@ -1,5 +1,4 @@
-﻿﻿# Developer Certificate Arguments
-ARG ASPNETCORE_Kestrel__Certificates__Default__Path
+﻿ARG ASPNETCORE_Kestrel__Certificates__Default__Path
 ARG ASPNETCORE_Kestrel__Certificates__Default__KeyPath
 ARG ASPNETCORE_Kestrel__Certificates__Default__Password
 
