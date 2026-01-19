@@ -103,7 +103,7 @@ jobs:
         run: |
           echo "> Cleaning existing appsettings.secrets.json"
           [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          mkdir ./evanbecker-api/evanbecker-api/secrets/
+          mkdir -p ./evanbecker-api/evanbecker-api/secrets/
           chmod 777 ./evanbecker-api/evanbecker-api/secrets/
           touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           echo ">  Writing contents to new appsettings.secrets.json"
