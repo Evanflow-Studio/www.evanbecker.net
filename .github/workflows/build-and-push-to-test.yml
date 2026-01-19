@@ -18,7 +18,7 @@ jobs:
       - name: Create env files
         run: |
           touch ./evanbecker-client/.env.local
-          echo "Client Build Variables"
+          echo "> Generating Client Build Variables"
           echo -e "NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/" >> ./evanbecker-client/.env.local
           echo -e "NEXT_PUBLIC_API_URL=https://api-test.evanbecker.net/" >> ./evanbecker-client/.env.local
           echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> ./evanbecker-client/.env.local
@@ -87,24 +87,24 @@ jobs:
 
             echo "> Secrets Refreshed..."
 
-      - name: Run Entity Framework Migrations on Database
+      - name: Setup Entity Framework Migrations
         run: |
-          echo "Creating appsettings.secrets.json..."
+          echo "> Cleaning existing appsettings.secrets.json"
           [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           mkdir ./evanbecker-api/evanbecker-api/secrets/
           chmod 777 ./evanbecker-api/evanbecker-api/secrets/
           touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
+          echo ">  Writing contents to new appsettings.secrets.json"
           echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          pwd
-          cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo "Ensuring dotnet-ef is installed..."
+          echo "> Ensuring dotnet-ef is installed"
           dotnet tool install --global dotnet-ef
           dotnet restore
           dotnet tool restore
-          cd ./evanbecker-api/evanbecker-domain/
-          pwd
+
+      - name: Run Entity Framework Migrations on Database
+        working-directory: evanbecker-api/evanbecker-domain/
+        run: |
           ls -la
-          echo "Updating Database..."
           dotnet ef database update
 
       - name: Deploy Container to Server
@@ -118,16 +118,16 @@ jobs:
           script: |
             cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
 
-            echo "Logging into doctl registry..."
+            echo "> Logging into doctl registry..."
             doctl registry login
 
-            echo "Pulling latest changes..."
+            echo "> Pulling latest changes..."
             git pull
 
-            echo "Ensuring prod global is started"
+            echo "> Ensuring prod global is started"
             cd ~/prod/www.evanbecker.net/deploy
             docker compose -f docker-compose.global.yaml up -d --build
             cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
 
-            echo "Starting docker-compose..."
+            echo "> Starting docker-compose..."
             docker compose -f docker-compose.test.yaml -p test up -d --build
