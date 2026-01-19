@@ -52,7 +52,11 @@ jobs:
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
-        
+
+      - name: Test
+        run: |
+          echo -e "TEST=${{ secrets.GL_SSH_HOST }}"
+
       - name: Deploy Secrets to Server
         uses: appleboy/ssh-action@master
         with:
