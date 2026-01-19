@@ -60,7 +60,7 @@ jobs:
           port: 22
           script: |
             echo "Starting Test Deploy:"
-            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
+            cd ~/website/test/www.evanbecker.net/deploy/
             echo "Refreshing Secrets..."
             echo "> Deleting previous .env"
             [ ! -e .env ] || rm .env
@@ -130,7 +130,7 @@ jobs:
           key: ${{ secrets.GL_SSH_SECRET }}
           port: 22
           script: |
-            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
+            cd ~/website/test/www.evanbecker.net/deploy/
 
             echo "> Logging into doctl registry..."
             doctl registry login
@@ -139,9 +139,9 @@ jobs:
             git pull
 
             echo "> Ensuring prod global is started"
-            cd ~/prod/www.evanbecker.net/deploy
+            cd ~/website/prod/www.evanbecker.net/deploy
             docker compose -f docker-compose.global.yaml up -d --build
-            cd ~/www.evanbecker.net/www.evanbecker.net/deploy/
 
             echo "> Starting docker-compose..."
+            cd ~/website/test/www.evanbecker.net/deploy/
             docker compose -f docker-compose.test.yaml -p test up -d --build

@@ -63,6 +63,27 @@ tls:
         keyFile: /certs/evanbecker.net.key
 ```
 
+
+```sh
+snap install doctl
+snap install docker
+sudo usermod -aG sudo evan
+su evan
+mkdir ~/.ssh
+vim ~/.ssh/authorized_keys # Add public key
+cat ~/.ssh/authorized_keys # Check
+
+sudo docker network create traefik_proxy
+```
+
+### Secret Management / I need to create a new Droplet
+- Create a new DO PAT token
+
+```
+
+```
+
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 [issues-shield]: https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=for-the-badge
