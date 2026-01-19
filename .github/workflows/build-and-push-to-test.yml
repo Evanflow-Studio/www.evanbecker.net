@@ -9,7 +9,7 @@ on:
   #  branches: [ "release" ]
 
 jobs:
-  build_and_push_test:
+  build_and_test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
@@ -34,7 +34,11 @@ jobs:
 
       - name: Build image
         run: docker compose -f docker-compose.test.yaml build --no-cache
-        
+
+  deploy_containers_to_registry:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
@@ -46,6 +50,10 @@ jobs:
       - name: Push image to DO Container Registry
         run: docker compose -f docker-compose.test.yaml push
 
+  deploy_secrets:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy Secrets to Server
         uses: appleboy/ssh-action@master
         with:
@@ -87,6 +95,10 @@ jobs:
 
             echo "> Secrets Refreshed..."
 
+  deploy_database_changes:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    steps:
       - name: Setup Entity Framework Migrations
         run: |
           echo "> Cleaning existing appsettings.secrets.json"
@@ -106,6 +118,10 @@ jobs:
           dotnet restore
           dotnet ef database update
 
+  deploy_app_to_server:
+    needs: deploy_containers_to_registry
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy Container to Server
         uses: appleboy/ssh-action@master
         with:
