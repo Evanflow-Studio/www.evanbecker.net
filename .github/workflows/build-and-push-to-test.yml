@@ -89,6 +89,8 @@ jobs:
             mkdir -p ~/website/test/
             cd ~/website/test/
             [ ! -d 'www.evanbecker.net' ] && git clone https://github.com/Evanflow-Studio/www.evanbecker.net.git
+            git checkout main
+            git pull
             cd ~/website/test/www.evanbecker.net/deploy/
             echo "> Refreshing Secrets... (.env file in ~/website/test/www.evanbecker.net/deploy/)"
             [ ! -e .env ] || rm .env
