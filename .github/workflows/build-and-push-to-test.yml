@@ -120,6 +120,9 @@ jobs:
 
             echo "> Secrets Refreshed... (.env file in ~/website/test/www.evanbecker.net/deploy/)"
 
+            echo "> Init auth"
+            doctl auth init -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
             echo "> Logging into doctl registry..."
             doctl registry login
 
@@ -128,8 +131,8 @@ jobs:
 
             echo "> Ensuring prod global is started"
             cd ~/website/prod/www.evanbecker.net/deploy
-            sudo docker compose -f docker-compose.global.yaml up -d --build
+            docker compose -f docker-compose.global.yaml up -d --build
 
             echo "> Starting docker-compose..."
             cd ~/website/test/www.evanbecker.net/deploy/
-            sudo docker compose -f docker-compose.test.yaml -p test up -d --build
+            docker compose -f docker-compose.test.yaml -p test up -d --build
