@@ -33,7 +33,7 @@ jobs:
           sudo systemctl restart docker
 
       - name: Build image
-        run: sudo docker compose -f docker-compose.test.yaml build --no-cache
+        run: docker compose -f docker-compose.test.yaml build --no-cache
 
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
@@ -44,7 +44,7 @@ jobs:
         run: doctl registry login
         
       - name: Push image to DO Container Registry
-        run: sudo docker compose -f docker-compose.test.yaml push
+        run: docker compose -f docker-compose.test.yaml push
 
   deploy_database_changes:
     needs: build_containers_and_push_to_registry
