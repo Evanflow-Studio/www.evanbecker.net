@@ -68,7 +68,6 @@ jobs:
       - name: Run Entity Framework Migrations on Database
         working-directory: evanbecker-api/evanbecker-domain/
         run: |
-          ls -la
           dotnet restore
           dotnet ef database update
 
@@ -91,6 +90,7 @@ jobs:
             [ ! -d 'www.evanbecker.net' ] && git clone https://github.com/Evanflow-Studio/www.evanbecker.net.git
             git checkout main
             git pull
+
             cd ~/website/test/www.evanbecker.net/deploy/
             echo "> Refreshing Secrets... (.env file in ~/website/test/www.evanbecker.net/deploy/)"
             [ ! -e .env ] || rm .env
@@ -125,9 +125,6 @@ jobs:
 
             echo "> Logging into doctl registry..."
             doctl registry login
-
-            echo "> Pulling latest changes..."
-            git pull
 
             echo "> Ensuring prod global is started"
             cd ~/website/prod/www.evanbecker.net/deploy
