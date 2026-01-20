@@ -61,7 +61,8 @@ services:
       - ConnectionStrings__Database=${CONNECTION_STRING}
       - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
       - ASPNETCORE_URLS=https://+:443;http://+:80
-
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=123
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
     ports:
       - "5002:80"
       - "5003:443"

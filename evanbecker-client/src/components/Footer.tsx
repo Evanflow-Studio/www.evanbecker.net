@@ -5,7 +5,7 @@ const navigation = {
 
   main: [
     { name: 'Legal', href: 'privacy-policy' },
-    { name: 'Resources', href: '/resources' },
+    { name: 'Recommendations', href: '/resources' },
     { name: 'Projects', href: '/account/projects' },
   ],
   social: [
@@ -74,7 +74,7 @@ export function Footer() {
           ))}
         </div>
         <p className="mt-10 text-center text-xs leading-5 text-gray-400">
-          &copy; 2026 Evan Becker - All rights reserved.
+          &copy; 2026 Evan Becker™. All rights reserved.
         </p>
       </div>
     </footer>

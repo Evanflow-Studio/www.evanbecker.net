@@ -28,7 +28,7 @@ services:
       - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
     volumes:
       - ./appdata/postgres:/var/lib/postgresql
-      - ./dev/pg_hba.conf:/var/lib/foo/pg_hba.conf
+      - ./deploy/pg_hba.conf:/var/lib/foo/pg_hba.conf
     command: ["postgres", "-c", "hba_file=/var/lib/foo/pg_hba.conf"]
     labels:
       - "traefik.enable=true"

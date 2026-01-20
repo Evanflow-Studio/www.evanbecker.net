@@ -7,20 +7,24 @@ public class CommentBase
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public Guid Id { get; set; }
+    public Guid? Id { get; set; }
+    
     public DateTime Published { get; set; }
-    public User? Author { get; set; }
-    public string? CommentText { get; set; }
-    public string? TargetLocation { get; set; } // The Unique Url that this Comment will Show Up
+    
+    public required User Author { get; set; }
+    
+    [MaxLength(255)]
+    public required string CommentText { get; set; }
+    
+    [MaxLength(255)]
+    public required string TargetLocation { get; set; } // The Unique Url that this Comment will Show Up
+    
     public bool IsDeleted { get; set; }
 }
 
 public class Comment : CommentBase
 {
-    public List<Reply>? Replies { get; set; }
+    public List<Reply> Replies { get; set; } = [];
 }
 
-public class Reply : CommentBase
-{
-    
-}
+public class Reply : CommentBase { }

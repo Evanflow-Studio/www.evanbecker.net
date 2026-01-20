@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         
       - name: Create client environment-specific build configs
         run: |
@@ -54,9 +54,14 @@ jobs:
           port: 22
           script: |
             echo "Starting Prod Deploy:"
-            cd ~/prod/www.evanbecker.net/deploy/
-            echo "Refreshing Secrets..."
-            echo "> Deleting previous .env"
+            mkdir -p ~/website/prod/
+            cd ~/website/prod/
+            [ ! -d 'www.evanbecker.net' ] && git clone https://github.com/Evanflow-Studio/www.evanbecker.net.git
+            git checkout release
+            git pull
+
+            cd ~/website/prod/www.evanbecker.net/deploy/
+            echo "Refreshing Secrets... (.env file in ~/website/prod/www.evanbecker.net/deploy/)"
             [ ! -e .env ] || rm .env
             echo "> Creating new .env"
             touch .env
@@ -68,27 +73,37 @@ jobs:
             echo -e "Prod_API_Auth0_ClientId=${{ secrets.Prod_API_Auth0_ClientId }}" >> .env
             echo -e "Prod_API_Auth0_ClientSecret=${{ secrets.Prod_API_Auth0_ClientSecret }}" >> .env
             echo -e "Prod_API_Auth0_Url=${{ secrets.Prod_API_Auth0_Url }}" >> .env
-
+            echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
             echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}" >> .env
+            echo -e "ASPNETCORE_CERT_PASSWORD=${{ secrets.ASPNETCORE_CERT_PASSWORD }}" >> .env  
 
             echo "> Appending DB Secrets"
             echo -e "Prod_DB_DATABASE=${{ secrets.Prod_DB_DATABASE }}" >> .env
             echo -e "Prod_DB_USER=${{ secrets.Prod_DB_USER }}" >> .env
             echo -e "Prod_DB_PASSWORD=${{ secrets.Prod_DB_PASSWORD }}" >> .env
+            echo "ENVIRONMENT=prod" >> .env 
 
             echo "> Appending PG Admin Secrets"
             echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
             echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
 
-            echo -e "ASPNETCORE_CERT_PASSWORD=${{ secrets.ASPNETCORE_CERT_PASSWORD }}" >> .env
+            echo "> Secrets Refreshed... (.env file in ~/website/prod/www.evanbecker.net/deploy/)"
 
-            echo "ENVIRONMENT=prod" >> .env            
+            echo "> Init auth"
+            doctl auth init -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-            echo "> Secrets Refreshed..."
+            echo "> Logging into doctl registry..."
+            doctl registry login
 
-      - name: Run Entity Framework Migrations on Database
+            echo "Ensuring global resources started"
+            docker compose -f docker-compose.global.yaml up -d --build
+
+            echo "Starting prod"
+            docker compose -f docker-compose.prod.yaml -p prod up -d --build
+
+      - name: Setup Entity Framework Migrations
         run: |
-          echo "Creating appsettings.secrets.json..."
+          echo "> Cleaning existing appsettings.secrets.json"
           [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           mkdir ./evanbecker-api/evanbecker-api/secrets/
           chmod 777 ./evanbecker-api/evanbecker-api/secrets/
@@ -96,33 +111,12 @@ jobs:
           echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.Prod_DB_DATABASE }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
           pwd
           cat ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo "Ensuring dotnet-ef is installed..."
+          echo "> Ensuring dotnet-ef is installed"
           dotnet tool install --global dotnet-ef
+
+      - name: Run Entity Framework Migrations on Database
+        working-directory: evanbecker-api/evanbecker-domain/
+        run: |
           dotnet restore
-          dotnet tool restore
-          cd ./evanbecker-api/evanbecker-domain/
-          echo "Updating Database..."
           dotnet ef database update
-
-      - name: Deploy Container to Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.GL_SSH_HOST }}
-          username: ${{ secrets.GL_SSH_USERNAME }}
-          passphrase: ${{ secrets.GL_SSH_PASSPHRASE }}
-          key: ${{ secrets.GL_SSH_SECRET }}
-          port: 22
-          script: |
-            cd ~/prod/www.evanbecker.net/deploy/
-
-            echo "Ensuring we're logged into doctl registry..."
-            doctl registry login
-
-            echo "Pulling latest changes..."
-            git pull
-
-            echo "Ensuring global resources started"
-            docker compose -f docker-compose.global.yaml up -d --build
-
-            echo "Starting prod"
-            docker compose -f docker-compose.prod.yaml -p prod up -d --build
+            

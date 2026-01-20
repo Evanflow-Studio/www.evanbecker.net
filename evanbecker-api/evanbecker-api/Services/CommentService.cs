@@ -1,9 +1,16 @@
-﻿using evanbecker_api.Services.Interfaces;
-using evanbecker_domain;
+﻿using evanbecker_domain;
 using evanbecker_domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace evanbecker_api.Services;
+
+public interface ICommentService
+{
+    Task<Reply?> AddReplyAsync(User user, Guid commentId, string targetLocation, string commentText);
+    Task<List<Comment>> GetCommentsAsync(string targetLocation);
+    Task<CommentBase?> DeleteCommentAsync(User currentUser, Guid id);
+    Task<Comment> AddCommentAsync(User user, string targetLocation, string commentText);
+}
 
 public class CommentService : ICommentService
 {
@@ -14,16 +21,14 @@ public class CommentService : ICommentService
         _context = context;
     }
 
-    public async Task<Comment> AddCommentAsync(User? user, string targetLocation, string commentText)
+    public async Task<Comment> AddCommentAsync(User user, string targetLocation, string commentText)
     {
         
         var comment = new Comment
         {
-            Replies = new List<Reply?>(),
             Author = user,
             Published = DateTime.Now.ToUniversalTime(),
             CommentText = commentText,
-            IsDeleted = false,
             TargetLocation = targetLocation
         };
         var savedComment = await _context.Comments.AddAsync(comment);
@@ -31,7 +36,7 @@ public class CommentService : ICommentService
         return savedComment.Entity;
     }
     
-    public async Task<Reply?> AddReplyAsync(User? user, Guid commentId, string targetLocation, string commentText)
+    public async Task<Reply?> AddReplyAsync(User user, Guid commentId, string targetLocation, string commentText)
     {
         var comment = await _context
             .Comments
@@ -45,7 +50,6 @@ public class CommentService : ICommentService
         {
             Author = user,
             Published = DateTime.Now.ToUniversalTime(),
-            IsDeleted = false,
             CommentText = commentText,
             TargetLocation = targetLocation
         };
@@ -56,7 +60,7 @@ public class CommentService : ICommentService
         }
         else
         {
-            comment.Replies = new List<Reply?> { reply };
+            comment.Replies = [reply];
         }
 
         await _context.SaveChangesAsync();
@@ -78,7 +82,7 @@ public class CommentService : ICommentService
                 CommentText = comment.CommentText,
                 IsDeleted = comment.IsDeleted,
                 Id = comment.Id,
-                Replies = comment.Replies.Where(reply => reply != null && !reply.IsDeleted).ToList()
+                Replies = comment.Replies.Where(reply => !reply.IsDeleted).ToList()
             })
             .OrderBy(x => x.Published)
             .Where(x => x.TargetLocation == targetLocation)
@@ -86,7 +90,7 @@ public class CommentService : ICommentService
             .ToListAsync();
     }
 
-    public async Task<CommentBase?> DeleteCommentAsync(User? currentUser, Guid id)
+    public async Task<CommentBase?> DeleteCommentAsync(User currentUser, Guid id)
     {
         var comment = await _context.Comments.SingleOrDefaultAsync(x => x.Id == id);
 
@@ -106,7 +110,7 @@ public class CommentService : ICommentService
         return removedComment.Entity;
     }
 
-    private async Task<CommentBase?> DeleteReplyAsync(User? currentUser, Guid id)
+    private async Task<CommentBase?> DeleteReplyAsync(User currentUser, Guid id)
     {
         var reply = await _context.Replies.SingleOrDefaultAsync(x => x.Id == id);
 
@@ -122,7 +126,7 @@ public class CommentService : ICommentService
         return removedReply.Entity;
     }
 
-    private static bool HasRightsToChangeComment(User? currentUser, CommentBase comment)
+    private static bool HasRightsToChangeComment(User currentUser, CommentBase comment)
     {
         return comment.Author?.Id == currentUser?.Id ||
                currentUser?.IsAdmin == true || 

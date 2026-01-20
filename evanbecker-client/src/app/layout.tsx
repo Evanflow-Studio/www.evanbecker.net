@@ -1,8 +1,9 @@
-import { Inter, Lexend } from 'next/font/google'
-import clsx from 'clsx'
-import { Providers } from '@/app/providers'
-import '@/styles/tailwind.css'
 import { type Metadata } from 'next'
+import { Inter, Lexend } from 'next/font/google'
+import { Providers } from '@/app/providers'
+import clsx from 'clsx'
+
+import '@/styles/tailwind.css'
 
 export const metadata: Metadata = {
   title: {
@@ -36,17 +37,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className={clsx(
-        'h-full scroll-smooth bg-slate-900 antialiased',
-        inter.variable,
-        lexend.variable,
-      )}
-    >
-      <body className="flex h-full flex-col bg-slate-900">
-        <Providers>{children}</Providers>
-      </body>
-    </html>
+  <html
+    lang="en"
+    className={clsx(
+      'h-full scroll-smooth bg-slate-900 antialiased',
+      inter.variable,
+      lexend.variable,
+    )}
+    suppressHydrationWarning
+  >
+    <body className="flex h-full flex-col bg-slate-900">
+      <Providers>{children}</Providers>
+    </body>
+  </html>
   )
 }

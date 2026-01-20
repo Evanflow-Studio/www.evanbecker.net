@@ -1,10 +1,5 @@
 ﻿namespace evanbecker_api.Dto;
 
-public class UserDto
-{
-    
-}
-
 public class UserPersonalInformationDto
 {
     public string Avatar { get; set; }
@@ -13,9 +8,4 @@ public class UserPersonalInformationDto
     public string Email { get; set; } // are ignored on save
     public string Auth0Id { get; set; } // are ignored on save
     public string TimeZone { get; set; }
-}
-
-public class UserNotificationsDto
-{
-    
 }
