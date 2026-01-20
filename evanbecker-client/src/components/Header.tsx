@@ -95,7 +95,7 @@ function MobileNavigation() {
             as="div"
             className="absolute inset-x-0 top-full mt-4 flex origin-top flex-col rounded-2xl bg-slate-950 p-4 text-lg tracking-tight text-slate-200 shadow-xl ring-1 ring-slate-900/5"
           >
-            <MobileNavLink href="/">Home</MobileNavLink>
+            <MobileNavLink href="/public">Home</MobileNavLink>
             <MobileNavLink href="/about-me">About Me</MobileNavLink>
             <MobileNavLink href="/contact">Contact</MobileNavLink>
             <MobileNavLink href="/articles">Blog</MobileNavLink>
@@ -153,11 +153,11 @@ export function Header() {
       <Container>
         <nav className="relative z-50 flex justify-between">
           <div className="flex items-center md:gap-x-12">
-            <Link href="/" aria-label="Home" className="pt-6">
+            <Link href="/public" aria-label="Home" className="pt-6">
               <Logo className="h-20 w-auto"/>
             </Link>
             <div className="hidden md:flex md:gap-x-6 pt-6">
-              <NavLink href="/">Home</NavLink>
+              <NavLink href="/public">Home</NavLink>
               <NavLink href="/about-me">About Me</NavLink>
               <NavLink href="/contact">Contact</NavLink>
               <NavLink href="/articles">Blog</NavLink>

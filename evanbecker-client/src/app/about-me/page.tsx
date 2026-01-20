@@ -286,7 +286,7 @@ function Newsletter() {
   )
 }
 
-function Role({ role }) {
+function Role({ role }: any) {
   let startLabel =
     typeof role.start === 'string' ? role.start : role.start.label
   let startDate =
@@ -385,7 +385,7 @@ function Resume() {
   )
 }
 
-function MailIcon(props) {
+function MailIcon(props: any) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
       <path
@@ -396,7 +396,7 @@ function MailIcon(props) {
   )
 }
 
-function SocialLink({ className, href, children, icon: Icon }) {
+function SocialLink({ className, href, children, icon: Icon }: any) {
   return (
     <li className={clsx(className, 'flex')}>
       <Link
