@@ -6,14 +6,13 @@ on:
 
 jobs:
   build-and-test-api:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       working-directory: ./evanbecker-api
     steps:
-    - uses: actions/checkout@v3
-    ## Can skip with self-hosted
+    - uses: actions/checkout@v4
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
     - name: Restore dependencies
@@ -25,20 +24,29 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
       working-directory: ${{env.working-directory}}
+
   build-and-test-client:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       working-directory: ./evanbecker-client
     steps:
-    - uses: actions/checkout@v3
-    - name: Restore dependencies
+    - uses: actions/checkout@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Install dependencies
       run: npm install
       working-directory: ${{env.working-directory}}
-    - name: Create env files
+    - name: Create env file
       run: |
-          touch ./evanbecker-client/.env.local
-          echo "Client Build Variables"
-          echo -e "NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/" >> ./evanbecker-client/.env.local
+        cat > .env.local << EOF
+        NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/
+        EOF
+      working-directory: ${{env.working-directory}}
+    - name: Lint
+      run: npm run lint
+      working-directory: ${{env.working-directory}}
     - name: Build
       run: npm run build
       working-directory: ${{env.working-directory}}

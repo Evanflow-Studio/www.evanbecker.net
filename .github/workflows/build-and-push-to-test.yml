@@ -2,134 +2,46 @@ name: Build & Deploy Test
 
 on:
   push:
-    branches: [ "main" ]
-  #pull_request: #Uncomment this for testing purposes
-  #  branches: [ "main" ]
-  #pull_request: #Uncomment this for testing purposes
-  #  branches: [ "release" ]
+    branches: [ "develop" ]
+
+env:
+  REGISTRY: 192.168.0.168:5000
 
 jobs:
-  build_containers_and_push_to_registry:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the repo
-        uses: actions/checkout@v4
-        
-      - name: Create env files
-        run: |
-          touch ./evanbecker-client/.env.local
-          echo "> Generating Client Build Variables"
-          echo -e "NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net/" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_API_URL=https://api-test.evanbecker.net/" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> ./evanbecker-client/.env.local
-          echo -e "NEXT_PUBLIC_AUTH0_REDIRECT_URI=${{ secrets.AUTH0_REDIRECT_URI }}" >> ./evanbecker-client/.env.local
-
-      - name: Update Docker settings
-        run: |
-          sudo touch /etc/docker/daemon.json
-          sudo sed -i 's/ }/, \"max-concurrent-uploads\": 2 }/' /etc/docker/daemon.json
-          sudo systemctl restart docker
-
-      - name: Build image
-        run: docker compose -f docker-compose.test.yaml build --no-cache
-
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          
-      - name: Log in to DO Container Registry
-        run: doctl registry login
-        
-      - name: Push image to DO Container Registry
-        run: docker compose -f docker-compose.test.yaml push
-
-  deploy_database_changes:
-    needs: build_containers_and_push_to_registry
-    runs-on: ubuntu-latest
+  build_and_push:
+    runs-on: self-hosted
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
 
-      - name: Setup Entity Framework Migrations
+      - name: Create client .env.local
         run: |
-          echo "> Cleaning existing appsettings.secrets.json"
-          [ ! -e ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json ] || rm ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          mkdir ./evanbecker-api/evanbecker-api/secrets/
-          chmod 777 ./evanbecker-api/evanbecker-api/secrets/
-          touch ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo ">  Writing contents to new appsettings.secrets.json"
-          echo -e "{\n\t\"ConnectionStrings\": {\n\t\t\"Database\": \"Host=db.evanbecker.net;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}\"\n\t}\n}" >> ./evanbecker-api/evanbecker-api/secrets/appsettings.secrets.json
-          echo "> Ensuring dotnet-ef is installed"
-          dotnet tool install --global dotnet-ef
+          cat > ./evanbecker-client/.env.local << 'EOF'
+          NEXT_PUBLIC_SITE_URL=https://test.evanbecker.net
+          NEXT_PUBLIC_API_URL=https://api-test.evanbecker.net
+          NEXT_PUBLIC_AUTH0_DOMAIN=dev-m3uiopcp.us.auth0.com
+          NEXT_PUBLIC_AUTH0_CLIENT_ID=2evqEjBNUmBVt6fNwcGkicfjNNrYsjV0
+          NEXT_PUBLIC_AUTH0_AUDIENCE=evanbecker.api
+          NEXT_PUBLIC_AUTH0_REDIRECT_URI=https://test.evanbecker.net
+          EOF
 
-      - name: Run Entity Framework Migrations on Database
-        working-directory: evanbecker-api/evanbecker-domain/
+      - name: Build images
         run: |
-          dotnet restore
-          dotnet ef database update
+          docker build \
+            -t ${{ env.REGISTRY }}/evanbecker-api:test \
+            -t ${{ env.REGISTRY }}/evanbecker-api:test-${{ github.sha }} \
+            -f evanbecker-api/Dockerfile .
+          docker build \
+            -t ${{ env.REGISTRY }}/evanbecker-client:test \
+            -t ${{ env.REGISTRY }}/evanbecker-client:test-${{ github.sha }} \
+            -f evanbecker-client/Dockerfile .
 
-  deploy_app_to_server:
-    needs: build_containers_and_push_to_registry
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy Container to Server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.GL_SSH_HOST }}
-          username: ${{ secrets.GL_SSH_USERNAME }}
-          passphrase: ${{ secrets.GL_SSH_PASSPHRASE }}
-          key: ${{ secrets.GL_SSH_SECRET }}
-          port: 22
-          script: |
-            echo "Starting Test Deploy:"
-            mkdir -p ~/website/test/
-            cd ~/website/test/
-            [ ! -d 'www.evanbecker.net' ] && git clone https://github.com/Evanflow-Studio/www.evanbecker.net.git
-            git checkout main
-            git pull
+      - name: Push to local registry
+        run: |
+          docker push ${{ env.REGISTRY }}/evanbecker-api:test
+          docker push ${{ env.REGISTRY }}/evanbecker-api:test-${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/evanbecker-client:test
+          docker push ${{ env.REGISTRY }}/evanbecker-client:test-${{ github.sha }}
 
-            cd ~/website/test/www.evanbecker.net/deploy/
-            echo "> Refreshing Secrets... (.env file in ~/website/test/www.evanbecker.net/deploy/)"
-            [ ! -e .env ] || rm .env
-            echo "> Creating new .env"
-            touch .env
-
-            echo "> Appending API Secrets"
-            echo -e "GitHubConfiguration_Pat=${{ secrets.GH_PAT }}" >> .env
-            echo -e "Auth0_Domain=${{ secrets.Auth0_Domain }}" >> .env
-            echo -e "Auth0_Audience=${{ secrets.Auth0_Audience }}" >> .env
-            echo -e "Auth0_ClientId=${{ secrets.Auth0_ClientId }}" >> .env
-            echo -e "Auth0_ClientSecret=${{ secrets.Auth0_ClientSecret }}" >> .env
-            echo -e "Auth0_Url=${{ secrets.Auth0_Url }}" >> .env
-            echo -e "ReCaptcha_Secret=${{ secrets.ReCaptcha_Secret }}" >> .env
-            echo -e "CONNECTION_STRING=Host=evanbecker-db;Username=${{ secrets.Prod_DB_USER }};Password=${{ secrets.Prod_DB_PASSWORD }};Database=${{ secrets.DB_NAME }}" >> .env
-            echo -e "ASPNETCORE_CERT_PASSWORD=${{ secrets.ASPNETCORE_CERT_PASSWORD }}" >> .env
-
-            echo "> Appending DB Secrets"
-            echo -e "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-            echo -e "Prod_DB_USER=${{ secrets.Prod_DB_USER }}" >> .env
-            echo -e "Prod_DB_PASSWORD=${{ secrets.Prod_DB_PASSWORD }}" >> .env
-            echo "ENVIRONMENT=test" >> .env
-
-            echo "> Appending PG Admin Secrets"
-            echo -e "Prod_DB_PGADMIN_USER=${{ secrets.Prod_DB_PGADMIN_USER }}" >> .env
-            echo -e "Prod_DB_PGADMIN_PASSWORD=${{ secrets.Prod_DB_PGADMIN_PASSWORD }}" >> .env
-
-            echo "> Secrets Refreshed... (.env file in ~/website/test/www.evanbecker.net/deploy/)"
-
-            echo "> Init auth"
-            doctl auth init -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-            echo "> Logging into doctl registry..."
-            doctl registry login
-
-            echo "> Ensuring prod global is started"
-            cd ~/website/prod/www.evanbecker.net/deploy
-            docker compose -f docker-compose.global.yaml up -d --build
-
-            echo "> Starting docker-compose..."
-            cd ~/website/test/www.evanbecker.net/deploy/
-            docker compose -f docker-compose.test.yaml -p test up -d --build
+      - name: Clean up old images
+        run: docker image prune -f

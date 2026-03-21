@@ -1,0 +1,109 @@
+# docker-compose.production.yaml
+# Runs on LXC 109 (website). Single compose for prod + test environments.
+# Watchtower auto-deploys when CI pushes new images to the registry.
+#
+# The .NET API pulls its own secrets from Infisical at startup.
+# Only Infisical bootstrap vars are needed here — no app secrets in this file.
+#
+# Required .env vars: REGISTRY, TUNNEL_TOKEN, INFISICAL_CLIENT_ID,
+#   INFISICAL_CLIENT_SECRET, INFISICAL_ADDRESS, INFISICAL_PROJECT_ID
+
+services:
+  # ── Reverse Proxy ──
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: always
+    environment:
+      - DOCKER_API_VERSION=1.45
+    ports:
+      - "${LXC_IP}:80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+
+  # ── Production ──
+  api-prod:
+    image: ${REGISTRY}/evanbecker-api:latest
+    container_name: evanbecker-api-prod
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - INFISICAL_CLIENT_ID=${INFISICAL_CLIENT_ID}
+      - INFISICAL_CLIENT_SECRET=${INFISICAL_CLIENT_SECRET}
+      - INFISICAL_ADDRESS=${INFISICAL_ADDRESS}
+      - INFISICAL_PROJECT_ID=${INFISICAL_PROJECT_ID}
+      - INFISICAL_ENVIRONMENT=prod
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api-prod.rule=Host(`api.evanbecker.net`)"
+      - "traefik.http.routers.api-prod.entrypoints=web"
+      - "traefik.http.services.api-prod.loadbalancer.server.port=80"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  client-prod:
+    image: ${REGISTRY}/evanbecker-client:latest
+    container_name: evanbecker-client-prod
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.client-prod.rule=Host(`www.evanbecker.net`) || Host(`evanbecker.net`)"
+      - "traefik.http.routers.client-prod.entrypoints=web"
+      - "traefik.http.services.client-prod.loadbalancer.server.port=3000"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Test ──
+  api-test:
+    image: ${REGISTRY}/evanbecker-api:test
+    container_name: evanbecker-api-test
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Test
+      - ASPNETCORE_URLS=http://+:80
+      - INFISICAL_CLIENT_ID=${INFISICAL_CLIENT_ID}
+      - INFISICAL_CLIENT_SECRET=${INFISICAL_CLIENT_SECRET}
+      - INFISICAL_ADDRESS=${INFISICAL_ADDRESS}
+      - INFISICAL_PROJECT_ID=${INFISICAL_PROJECT_ID}
+      - INFISICAL_ENVIRONMENT=test
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api-test.rule=Host(`api-test.evanbecker.net`)"
+      - "traefik.http.routers.api-test.entrypoints=web"
+      - "traefik.http.services.api-test.loadbalancer.server.port=80"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  client-test:
+    image: ${REGISTRY}/evanbecker-client:test
+    container_name: evanbecker-client-test
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.client-test.rule=Host(`test.evanbecker.net`)"
+      - "traefik.http.routers.client-test.entrypoints=web"
+      - "traefik.http.services.client-test.loadbalancer.server.port=3000"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # ── Infrastructure ──
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: always
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    depends_on:
+      - traefik
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=30
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=true
+      - DOCKER_API_VERSION=1.45

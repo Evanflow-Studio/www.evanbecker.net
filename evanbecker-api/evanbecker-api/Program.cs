@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Configuration.AddJsonFile("./secrets/appsettings.Secrets.json", optional: true, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddInfisical();
 
 var environmentName = builder.Environment.EnvironmentName;
 Console.WriteLine($"Starting API with Environment: {environmentName}");
@@ -41,6 +42,31 @@ builder.Services.AddSwaggerGen(o =>
         Description = $"The API for api.evanbecker.net. " +
                       $"This is specifically targeted to the '{environmentName}' environment: " +
                       $"'api-{environmentName}.evanbecker.net' environment."
+    });
+
+    o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Paste your Auth0 JWT token"
+    });
+
+    o.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
     });
 });
 
@@ -78,9 +104,7 @@ app.UseSwaggerUI();
 app.UseCors();
 
 app.UseCors("cors");
-app.UseAuthentication(); // use the Bearer Authentication
-app.UseAuthorization(); // use the Authorization from Auth0
-app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
