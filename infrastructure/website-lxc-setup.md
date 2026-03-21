@@ -28,7 +28,7 @@ All internet traffic enters through the outbound-only Cloudflare Tunnel — no p
 ### 1. Transfer the script to your Proxmox host
 
 ```bash
-scp docs/guides/scripts/setup-website.sh root@<PROXMOX_IP>:/root/
+scp infrastructure/scripts/setup-website.sh root@<PROXMOX_IP>:/root/
 ```
 
 ### 2. Create a Cloudflare Tunnel (before running the script)
@@ -387,7 +387,7 @@ pct config 109 | grep features
 
 | File | Location | Purpose |
 |---|---|---|
-| Install script | `docs/guides/scripts/setup-website.sh` | Run on Proxmox to create LXC 109 |
+| Install script | `infrastructure/scripts/setup-website.sh` | Run on Proxmox to create LXC 109 |
 | Docker Compose | `/opt/docker/docker-compose.yaml` (inside LXC) | Traefik + API + Client + Cloudflared |
 | Environment vars | `/opt/docker/.env` (inside LXC) | Secrets, config, and tunnel token |
 | Git repo | `/opt/app` (inside LXC) | Cloned source for building |

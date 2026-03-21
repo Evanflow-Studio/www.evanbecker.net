@@ -24,7 +24,7 @@ Proxmox Host
 ### 1. Transfer the script to your Proxmox host
 
 ```bash
-scp docs/guides/scripts/setup-infisical.sh root@<PROXMOX_IP>:/root/
+scp infrastructure/scripts/setup-infisical.sh root@<PROXMOX_IP>:/root/
 ```
 
 ### 2. Run the setup
@@ -259,7 +259,7 @@ If you need any of these features, selectively allow outbound traffic to specifi
 
 | File | Location | Purpose |
 |---|---|---|
-| Install script | `docs/guides/scripts/setup-infisical.sh` | Run on Proxmox to create LXC 107 |
+| Install script | `infrastructure/scripts/setup-infisical.sh` | Run on Proxmox to create LXC 107 |
 | Docker Compose | `/opt/docker/docker-compose.yaml` (inside LXC) | Infisical + PostgreSQL + Redis config |
 | Environment file | `/opt/docker/.env` (inside LXC) | Encryption key, DB password, auth secret |
 | PG data | `/opt/pgdata` (inside LXC) | PostgreSQL data, survives container rebuilds |
