@@ -6,7 +6,7 @@ Two LXC containers running PostgreSQL 18 via Docker — prod (backed up) and tes
 
 ```bash
 # From your dev machine — transfer scripts to Proxmox
-scp docs/guides/scripts/setup-db-prod.sh docs/guides/scripts/setup-db-test.sh root@<PROXMOX_IP>:/root/
+scp infrastructure/scripts/setup-db-prod.sh infrastructure/scripts/setup-db-test.sh root@<PROXMOX_IP>:/root/
 
 # On Proxmox host
 chmod +x setup-db-prod.sh setup-db-test.sh
@@ -125,7 +125,7 @@ sed -i 's/policy_out: ACCEPT/policy_out: DROP/' /etc/pve/firewall/105.fw
 
 | File | Location |
 |---|---|
-| Install scripts | `docs/guides/scripts/setup-db-prod.sh`, `setup-db-test.sh` |
+| Install scripts | `infrastructure/scripts/setup-db-prod.sh`, `setup-db-test.sh` |
 | Docker Compose | `/opt/docker/docker-compose.yaml` (inside LXC) |
 | PG data | `/opt/pgdata` (bind mount, survives rebuilds) |
 | Backups | `/opt/backups` (prod only, 14 day retention) |

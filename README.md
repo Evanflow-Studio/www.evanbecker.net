@@ -24,7 +24,7 @@
     &middot;
     <a href="https://www.evanbecker.net/contact">Contact</a>
     &middot;
-    <a href="https://test.evanbecker.net">Test Environment</a>
+    <a href="https://health.evanbecker.net/status/main">Status</a>
   </p>
 </div>
 
@@ -55,9 +55,7 @@ The entire stack is self-hosted on a Proxmox VE homelab with isolated LXC contai
 
 ## Architecture
 
-Four views of the system — from high-level application flow down to network security.
-
-### View 1: Application (How Users Interact)
+### Application Flow
 
 ```mermaid
 graph LR
@@ -71,13 +69,7 @@ graph LR
     Client -->|JWT in header| API
 ```
 
-**What the user sees:**
-- Browse the site, read MDX blog articles, view projects
-- Log in via Auth0 to post comments and replies
-- Submit contact form messages and newsletter signups
-- All served over HTTPS with Cloudflare handling TLS
-
-### View 2: Service Topology (How Containers Connect)
+### Service Topology
 
 ```mermaid
 graph TB
@@ -88,6 +80,7 @@ graph TB
         APITest[API Test<br/>.NET 10]
         ClientProd[Client Prod<br/>Next.js 15]
         ClientTest[Client Test<br/>Next.js 15]
+        Kuma[Uptime Kuma<br/>Monitoring]
         Watchtower[Watchtower<br/>Auto-deploy]
         CFD109[cloudflared<br/>Tunnel]
 
@@ -95,18 +88,14 @@ graph TB
         Traefik --> APITest
         Traefik --> ClientProd
         Traefik --> ClientTest
+        Traefik --> Kuma
     end
 
     subgraph LXC107["LXC 107 — Infisical (192.168.0.107)"]
-        direction TB
         Infisical[Infisical<br/>Secrets API]
-        PG16[PostgreSQL 16<br/>Infisical data]
-        Redis[Redis<br/>Cache]
-        CFD107[cloudflared<br/>Tunnel]
     end
 
     subgraph LXC108["LXC 108 — CI (192.168.0.168)"]
-        direction TB
         Runner[GitHub Actions<br/>Runner]
         Registry[Docker<br/>Registry]
     end
@@ -121,96 +110,34 @@ graph TB
 
     APIProd -->|tcp/5432| PGProd
     APITest -->|tcp/5432| PGTest
-    Runner -->|pull secrets| Infisical
-    Runner -->|run migrations| PGProd
-    Runner -->|run migrations| PGTest
+    APIProd -->|pull secrets| Infisical
+    APITest -->|pull secrets| Infisical
     Runner -->|push image| Registry
     Watchtower -->|pull image| Registry
 ```
 
-### View 3: Deployment Pipeline (How Code Gets to Production)
+### Deployment Pipeline
 
 ```mermaid
 graph LR
     Dev[Developer] -->|git push| GH[GitHub]
     GH -->|webhook| Runner[Self-hosted Runner<br/>LXC 108]
-    Runner -->|1. pull secrets| Infisical[Infisical<br/>LXC 107]
-    Runner -->|2. run migrations| DB[(Database<br/>LXC 105/106)]
-    Runner -->|3. build image| Image[Docker Image]
-    Image -->|4. push| Registry[Registry<br/>LXC 108:5000]
-    Watchtower[Watchtower<br/>LXC 109] -->|5. detect new image| Registry
-    Watchtower -->|6. pull + restart| Website[Website<br/>LXC 109]
+    Runner -->|build + push| Registry[Registry<br/>LXC 108:5000]
+    Watchtower[Watchtower<br/>LXC 109] -->|detect new image| Registry
+    Watchtower -->|pull + restart| Containers[App Containers<br/>LXC 109]
+    Containers -->|startup| Infisical[Pull secrets<br/>from Infisical]
+    Containers -->|startup| Migrate[Run EF Core<br/>migrations]
 
     style Runner fill:#f9f,stroke:#333
     style Watchtower fill:#9f9,stroke:#333
 ```
 
-**Deployment is atomic:** if migrations fail at step 2, the workflow stops. No new image is pushed, Watchtower sees nothing, the old version keeps running.
+| Branch | Deploys To | Image Tag | URL |
+|--------|-----------|-----------|-----|
+| `develop` | Test | `:test` | test.evanbecker.net / api-test.evanbecker.net |
+| `main` | Production | `:latest` | www.evanbecker.net / api.evanbecker.net |
 
-| Branch | Deploys To | URL |
-|---|---|---|
-| `main` | Test | `test.evanbecker.net` / `api-test.evanbecker.net` |
-| `release` | Production | `www.evanbecker.net` / `api.evanbecker.net` |
-
-### View 4: Network Security (What Can Talk to What)
-
-```mermaid
-graph TB
-    Internet((Internet))
-
-    subgraph Cloudflare["Cloudflare (Zero Trust)"]
-        Edge[TLS Termination<br/>DDoS Protection<br/>CDN Cache]
-        Access[Cloudflare Access<br/>Auth0 SSO Gate]
-    end
-
-    subgraph Proxmox["Proxmox VE — 192.168.0.47 — vmbr0 bridge"]
-
-        subgraph Public["policy_in: DROP, policy_out: ACCEPT"]
-            LXC109["LXC 109 website<br/>IN: 80, 443<br/>Outbound: open (npm, git, tunnel)"]
-            LXC108["LXC 108 ci<br/>IN: 5000 from dc/registry-clients<br/>Outbound: open (GitHub, tunnel)"]
-        end
-
-        subgraph Locked["policy_in: DROP, policy_out: ACCEPT, no DNS"]
-            LXC105["LXC 105 db-prod<br/>IN: 5432 from dc/db-prod-clients<br/>No internet"]
-            LXC106["LXC 106 db-test<br/>IN: 5432 from dc/db-test-clients<br/>No internet"]
-        end
-
-        subgraph Secrets["policy_in: DROP, policy_out: ACCEPT"]
-            LXC107["LXC 107 infisical<br/>IN: 8080 from dc/infisical-clients<br/>Outbound: tunnel only"]
-        end
-    end
-
-    Internet -->|HTTPS| Edge
-    Edge -->|tunnel| LXC109
-    Access -->|SSO gate| LXC107
-
-    LXC109 -->|5432 allowed| LXC105
-    LXC109 -->|5432 allowed| LXC106
-    LXC108 -->|8080 allowed| LXC107
-    LXC108 -->|5432 allowed| LXC105
-    LXC108 -->|5432 allowed| LXC106
-
-    style LXC105 fill:#c44,stroke:#333,color:#fff
-    style LXC106 fill:#c44,stroke:#333,color:#fff
-    style LXC107 fill:#cc4,stroke:#333
-```
-
-**Firewall IP Sets (Datacenter level):**
-
-| IP Set | Members | Controls access to |
-|---|---|---|
-| `db-prod-clients` | LXC 109, LXC 108, Dev PC | PostgreSQL prod |
-| `db-test-clients` | LXC 109, LXC 108, Dev PC | PostgreSQL test |
-| `infisical-clients` | LXC 109, LXC 108, Dev PC | Infisical API |
-| `registry-clients` | LXC 109 | Docker Registry |
-
-**Security layers:**
-1. **Cloudflare** — TLS termination, DDoS, WAF, CDN. No ports open on the homelab.
-2. **Cloudflare Access** — SSO gate (Auth0) for private services like Infisical UI.
-3. **Proxmox Firewall** — Per-LXC inbound DROP with explicit allow rules via IP sets.
-4. **Network isolation** — Database LXCs have no DNS and no internet. Cannot initiate outbound connections.
-5. **Auth0 JWT** — API endpoints require valid tokens for write operations.
-6. **Infisical** — Secrets never stored in files or environment variables in repos.
+No secrets in CI. The API pulls all secrets from Infisical at startup. Migrations run automatically at container startup.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -224,11 +151,7 @@ www.evanbecker.net/
 ├── evanbecker-client/              # Next.js frontend
 │   ├── src/
 │   │   ├── app/                    # Pages (App Router)
-│   │   │   ├── articles/           # MDX blog articles
-│   │   │   ├── about-me/           # About page
-│   │   │   ├── contact/            # Contact form
-│   │   │   ├── projects/           # Projects showcase
-│   │   │   └── feed.xml/           # RSS feed generation
+│   │   │   └── articles/           # MDX blog articles
 │   │   ├── components/             # Shared React components
 │   │   ├── hooks/                  # Custom React hooks
 │   │   └── images/                 # Static assets
@@ -239,30 +162,30 @@ www.evanbecker.net/
 │   ├── evanbecker-api/             # API project
 │   │   ├── Controllers/            # REST endpoints
 │   │   ├── Services/               # Business logic
-│   │   ├── Configuration/          # Auth0, GitHub config
+│   │   ├── Configuration/          # Auth0, Infisical config
 │   │   ├── Dto/                    # Data transfer objects
 │   │   └── Program.cs              # Startup & DI
 │   └── evanbecker-domain/          # Data layer
 │       ├── Entities/               # EF Core models
 │       ├── Migrations/             # Database migrations
-│       └── ApplicationContext.cs    # DbContext
+│       └── ApplicationContext.cs   # DbContext
 │
-├── docs/guides/                    # Proxmox homelab setup
+├── infrastructure/                 # Homelab infrastructure
+│   ├── README.md                   # Infrastructure overview
+│   ├── adr/                        # Architecture Decision Records
 │   ├── database-lxc-setup.md       # LXC 105/106 — PostgreSQL
 │   ├── infisical-lxc-setup.md      # LXC 107 — Secrets management
-│   ├── website-lxc-setup.md        # LXC 109 — Traefik + app stack
-│   ├── ci-lxc-setup.md             # LXC 108 — Docker Registry + GitHub Actions Runner
-│   └── scripts/                    # One-shot install scripts
-│       ├── setup-db-prod.sh
-│       ├── setup-db-test.sh
-│       ├── setup-infisical.sh
-│       ├── setup-website.sh
-│       └── setup-ci.sh
+│   ├── ci-lxc-setup.md             # LXC 108 — CI/CD
+│   ├── website-lxc-setup.md        # LXC 109 — App stack
+│   └── scripts/                    # One-shot LXC install scripts
 │
-├── deploy/                         # Docker Compose configs (legacy DO)
 ├── .github/workflows/              # CI/CD pipelines
+│   ├── build-and-push-to-prod.yml  # main → prod (:latest)
+│   ├── build-and-push-to-test.yml  # develop → test (:test)
+│   └── dotnet-pull_request.yml     # PR build validation
+│
 ├── docker-compose.yaml             # Local development
-└── CLAUDE.md                       # Development guide
+└── docker-compose.production.yaml  # Production (LXC 109)
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -343,16 +266,13 @@ Full interactive docs available via Swagger at `/swagger` on any running API ins
 
 ## Deployment
 
-### Branch Strategy
-
-| Branch | Deploys To | URL |
-|---|---|---|
-| `main` | Test environment | https://test.evanbecker.net |
-| `release` | Production | https://www.evanbecker.net |
-
-### Infrastructure
-
-See [Architecture](#architecture) for full diagrams. Setup guides and one-shot install scripts are in [`docs/guides/`](docs/guides/). Architectural decisions are documented in [`docs/adr/`](docs/adr/).
+See [`infrastructure/README.md`](infrastructure/README.md) for full deployment documentation including:
+- LXC container inventory and setup guides
+- Branch strategy and CI/CD pipeline details
+- Secrets management (Infisical)
+- Monitoring (Uptime Kuma)
+- Network security and firewall configuration
+- Architecture Decision Records
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -369,6 +289,7 @@ See [Architecture](#architecture) for full diagrams. Setup guides and one-shot i
 - **RSS Feed** — Auto-generated at `/feed.xml`
 - **Responsive Design** — Tailwind CSS with mobile-first approach
 - **Self-Hosted Infrastructure** — No cloud dependencies beyond DNS and auth
+- **Status Page** — Public uptime monitoring at [health.evanbecker.net](https://health.evanbecker.net/status/main)
 
 ---
 

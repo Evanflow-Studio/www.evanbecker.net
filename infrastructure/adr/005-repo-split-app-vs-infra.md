@@ -5,11 +5,11 @@
 
 ## Context
 
-The current monorepo (`www.evanbecker.net`) contains Next.js, the .NET API, GitHub Actions workflows, Dockerfiles, and a growing `docs/guides/` tree of LXC setup scripts, Proxmox configuration, and ADRs. App code and infrastructure have different change cadences, different audiences, and ideally different access controls.
+The current monorepo (`www.evanbecker.net`) contains Next.js, the .NET API, GitHub Actions workflows, Dockerfiles, and a growing `infrastructure/` tree of LXC setup scripts, Proxmox configuration, and ADRs. App code and infrastructure have different change cadences, different audiences, and ideally different access controls.
 
 ## Decision
 
-Keep all application code in `www.evanbecker.net`: Next.js frontend, .NET API, GitHub Actions workflows, and Dockerfiles. Move all infrastructure into a new `evanbecker-infra` repo: LXC setup scripts (`docs/guides/scripts/`), Proxmox configuration guides, Docker Compose server templates, and ADRs. The two repos live side-by-side locally so Claude Code and other tooling can work across both from a shared parent directory.
+Keep all application code in `www.evanbecker.net`: Next.js frontend, .NET API, GitHub Actions workflows, and Dockerfiles. Move all infrastructure into a new `evanbecker-infra` repo: LXC setup scripts (`infrastructure/scripts/`), Proxmox configuration guides, Docker Compose server templates, and ADRs. The two repos live side-by-side locally so Claude Code and other tooling can work across both from a shared parent directory.
 
 ## Consequences
 

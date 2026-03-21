@@ -6,7 +6,7 @@ LXC 108 runs the CI/CD infrastructure: a Docker registry (registry:2) for hostin
 
 ```bash
 # From your dev machine — transfer script to Proxmox
-scp docs/guides/scripts/setup-ci.sh root@<PROXMOX_IP>:/root/
+scp infrastructure/scripts/setup-ci.sh root@<PROXMOX_IP>:/root/
 
 # On Proxmox host
 chmod +x setup-ci.sh
@@ -180,7 +180,7 @@ cd /opt/docker && docker compose pull && docker compose up -d
 
 | File | Location | Purpose |
 |---|---|---|
-| Install script | `docs/guides/scripts/setup-ci.sh` | Run on Proxmox to create LXC 108 |
+| Install script | `infrastructure/scripts/setup-ci.sh` | Run on Proxmox to create LXC 108 |
 | Docker Compose | `/opt/docker/docker-compose.yaml` (inside LXC) | Registry + Runner config |
 | Environment file | `/opt/docker/.env` (inside LXC) | GitHub PAT, repo URL |
 | Registry data | `/opt/registry-data` (inside LXC) | Image blobs, survives container rebuilds |
