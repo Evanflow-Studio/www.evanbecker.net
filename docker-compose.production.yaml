@@ -87,6 +87,19 @@ services:
       - "traefik.http.services.client-test.loadbalancer.server.port=3000"
       - "com.centurylinklabs.watchtower.enable=true"
 
+  # ── Monitoring ──
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: always
+    volumes:
+      - uptime-kuma-data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.uptime-kuma.rule=Host(`health.evanbecker.net`)"
+      - "traefik.http.routers.uptime-kuma.entrypoints=web"
+      - "traefik.http.services.uptime-kuma.loadbalancer.server.port=3001"
+
   # ── Infrastructure ──
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -107,3 +120,6 @@ services:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_LABEL_ENABLE=true
       - DOCKER_API_VERSION=1.45
+
+volumes:
+  uptime-kuma-data:
