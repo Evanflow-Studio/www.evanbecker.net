@@ -60,6 +60,7 @@ REMOTE=$(git rev-parse origin/develop)
 if [ "$LOCAL" != "$REMOTE" ]; then
     echo "$(date): Changes detected, updating..."
     git reset --hard origin/develop
+    docker compose -f docker-compose.production.yaml --env-file /opt/docker/.env pull --quiet
     docker compose -f docker-compose.production.yaml --env-file /opt/docker/.env up -d --remove-orphans
 else
     echo "$(date): No changes."

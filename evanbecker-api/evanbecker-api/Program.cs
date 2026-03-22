@@ -32,7 +32,7 @@ builder.Services.Configure<GitHubConfiguration>(gitHubSection);
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddEndpointsApiExplorer(); 
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o =>
 {
     o.SwaggerDoc("v1", new OpenApiInfo
@@ -44,14 +44,23 @@ builder.Services.AddSwaggerGen(o =>
                       $"'api-{environmentName}.evanbecker.net' environment."
     });
 
-    o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    o.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Paste your Auth0 JWT token"
+        Type = SecuritySchemeType.OAuth2,
+        Flows = new OpenApiOAuthFlows
+        {
+            AuthorizationCode = new OpenApiOAuthFlow
+            {
+                AuthorizationUrl = new Uri($"https://{auth0Settings.Domain}/authorize"),
+                TokenUrl = new Uri($"https://{auth0Settings.Domain}/oauth/token"),
+                Scopes = new Dictionary<string, string>
+                {
+                    { "openid", "OpenID Connect" },
+                    { "profile", "User profile" },
+                    { "email", "Email address" }
+                }
+            }
+        }
     });
 
     o.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -62,10 +71,10 @@ builder.Services.AddSwaggerGen(o =>
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    Id = "oauth2"
                 }
             },
-            Array.Empty<string>()
+            new[] { "openid", "profile", "email" }
         }
     });
 });
@@ -99,7 +108,15 @@ app.Use((context, next) =>
 });
 
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(o =>
+{
+    o.OAuthClientId(auth0Settings.ClientId);
+    o.OAuthAdditionalQueryStringParams(new Dictionary<string, string>
+    {
+        { "audience", auth0Settings.Audience ?? "" }
+    });
+    o.OAuthUsePkce();
+});
 
 app.UseCors();
 
