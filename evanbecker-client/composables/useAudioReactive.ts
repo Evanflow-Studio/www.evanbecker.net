@@ -33,8 +33,12 @@ export function useAudioReactive() {
   let dataArray: Uint8Array | null = null
 
   function ensureContext() {
-    if (!audioCtx) {
+    if (!audioCtx || audioCtx.state === 'closed') {
       audioCtx = new AudioContext()
+    }
+    // Resume if suspended (browsers require user gesture)
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume()
     }
     return audioCtx
   }
@@ -112,10 +116,8 @@ export function useAudioReactive() {
       analyser = null
     }
 
-    // Close and recreate audio context to avoid stale state
-    if (wasActive && audioCtx) {
-      audioCtx.close().catch(() => {})
-      audioCtx = null
+    // Keep audioCtx alive — browsers block new contexts created outside user gestures.
+    // Only fullStop() (on unmount) closes it.
     }
   }
 
