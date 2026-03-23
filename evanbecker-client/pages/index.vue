@@ -1,5 +1,10 @@
 <script setup lang="ts">
 useHead({ title: 'Evan Becker - Software Architect & Writer' })
+
+const { data: articles } = await useAsyncData('article-count', () =>
+  queryContent('articles').only(['_path']).find()
+)
+const articleCount = computed(() => articles.value?.length ?? 0)
 </script>
 
 <template>
@@ -12,38 +17,61 @@ useHead({ title: 'Evan Becker - Software Architect & Writer' })
         <!-- Text -->
         <div class="lg:pr-8">
           <h1 class="font-serif text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-slate-50">
-            Hello, World!
+            Evan Becker
           </h1>
           <p class="mt-4 text-xl text-slate-700 dark:text-slate-300">
-            Welcome to <span class="font-medium text-[#0C65E5] dark:text-[#2D95FC]">evanbecker.net</span>.
+            Software Architect, Writer, <span class="text-[#0C65E5] dark:text-[#2D95FC]">&amp;</span> Builder
           </p>
           <p class="mt-6 text-lg leading-relaxed text-slate-600 dark:text-slate-400">
-            This site is built with
-            <a href="https://tailwindcss.com/" class="link-underline">Tailwind CSS</a> and
-            <a href="https://nuxt.com/" class="link-underline">Nuxt</a>, backed by
-            <a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0" class="link-underline">.NET 10</a> with
-            <a href="https://learn.microsoft.com/en-us/ef/" class="link-underline">Entity Framework</a>,
-            <a href="https://www.postgresql.org/" class="link-underline">PostgreSQL</a>,
-            <a href="https://traefik.io/traefik/" class="link-underline">Traefik</a>,
-            <a href="https://github.com/features/actions" class="link-underline">GitHub Actions</a>,
-            <a href="https://www.docker.com/" class="link-underline">Docker</a>, and self-hosted on a
+            I design scalable systems and solve complex problems for enterprises across
+            energy, manufacturing, and chemicals. I write about
+            software architecture, game design, physics, and whatever else I'm exploring.
+            This site is self-hosted on a
             <a href="https://www.proxmox.com/" class="link-underline">Proxmox</a> homelab.
           </p>
 
-          <div class="mt-10 flex flex-wrap gap-4">
+          <div class="mt-10 flex flex-wrap items-center gap-4">
             <NuxtLink
-              to="/articles/building-evanbecker-net"
+              to="/about-me"
               class="rounded-xl bg-[#0C65E5] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2D95FC]"
             >
-              So, how'd you do it?
+              About Me
             </NuxtLink>
-            <a
-              href="https://github.com/evanjbecker"
-              target="_blank"
+            <NuxtLink
+              to="/articles"
               class="rounded-xl bg-slate-800 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-300"
             >
-              View GitHub
-            </a>
+              Read the Blog
+            </NuxtLink>
+          </div>
+
+          <!-- Stats -->
+          <div class="mt-12 grid grid-cols-3 gap-4">
+            <div class="rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 dark:border-slate-700/40 dark:bg-slate-800/30">
+              <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">10<span class="text-[#2D95FC]">+</span></p>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Years of experience</p>
+            </div>
+            <div class="rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 dark:border-slate-700/40 dark:bg-slate-800/30">
+              <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">{{ articleCount }}<span class="text-[#2D95FC]"></span></p>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ articleCount === 1 ? 'Blog post' : 'Blog posts' }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 dark:border-slate-700/40 dark:bg-slate-800/30">
+              <p class="text-2xl font-bold text-slate-900 dark:text-slate-50">5<span class="text-[#2D95FC]">+</span></p>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Industries served</p>
+            </div>
+          </div>
+
+          <!-- Tech stack -->
+          <div class="mt-6">
+            <p class="text-xs font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Core stack</p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <span v-for="tech in ['C# / .NET', 'TypeScript', 'Vue / Nuxt', 'PostgreSQL', 'Docker', 'Proxmox', 'Traefik', 'GitHub Actions']"
+                :key="tech"
+                class="rounded-md border border-slate-200/60 bg-white/40 px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700/40 dark:bg-slate-800/20 dark:text-slate-400"
+              >
+                {{ tech }}
+              </span>
+            </div>
           </div>
         </div>
 

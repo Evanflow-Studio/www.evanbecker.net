@@ -21,3 +21,20 @@
            dark:text-[#2D95FC] dark:decoration-[#2D95FC]/30 dark:hover:text-[#41A5F7] dark:hover:decoration-[#41A5F7];
   }
 }
+
+/* Print styles — hide chrome, force light colors */
+@media print {
+  header, footer, nav, .print\:hidden { display: none !important; }
+  body {
+    background: white !important;
+    color: #1e293b !important;
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @page {
+    margin: 0.5in 0.6in;
+    size: letter;
+  }
+  a { color: inherit !important; text-decoration: none !important; }
+}

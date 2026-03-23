@@ -3,55 +3,62 @@ import { ref } from 'vue'
 
 const tabs = [
   {
-    name: 'ProjectController.cs',
+    name: 'InfisicalConfigProvider.cs',
     language: 'csharp',
-    code: `[ApiController]
-[Route("api/v1/project")]
-public class ProjectController : ControllerBase
+    code: `// Custom .NET config provider — pulls secrets at startup
+public class InfisicalConfigurationProvider : ConfigurationProvider
 {
-    private readonly IUserService _userService;
-    private readonly IProjectService _projectService;
-
-    public ProjectController(IUserService userService,
-       IProjectService projectService)
+    private static readonly Dictionary<string, string> KeyMap = new()
     {
-        _userService = userService;
-        _projectService = projectService;
-    }
+        ["DB_CONNECTION_STRING"] = "ConnectionStrings:Database",
+        ["AUTH0_DOMAIN"]         = "Auth0:Domain",
+        ["AUTH0_AUDIENCE"]       = "Auth0:Audience",
+        ["AUTH0_CLIENT_SECRET"]  = "Auth0:ClientSecret",
+    };
 
-    [HttpGet]
-    public async Task<IActionResult> GetAllProjects()
+    public override void Load()
     {
-        var projects = await _projectService.GetAllProjectsAsync();
-        return Ok(projects);
-    }
+        var clientId = Environment.GetEnvironmentVariable(
+            "INFISICAL_CLIENT_ID");
+        if (string.IsNullOrEmpty(clientId)) return; // local dev
 
-    ...`,
+        var token = Authenticate(address, clientId, clientSecret);
+        var secrets = FetchSecrets(token, projectId, environment);
+
+        foreach (var secret in secrets)
+            if (KeyMap.TryGetValue(secret.Key, out var path))
+                Data[path] = secret.Value;
+    }
+}`,
   },
   {
-    name: 'Stats.cpp',
-    language: 'cpp',
-    code: `float UStats::ApplyStatMultiplier(const float StatValue,
-    const float StatMultiplier)
-{
-    return StatValue * StatMultiplier + StatValue;
-}
+    name: 'deploy.yml',
+    language: 'yaml',
+    code: `# Self-hosted CI — push to main, Watchtower picks it up
+name: Build & Deploy Prod
 
-UStatsCalculated* UStats::Calculate()
-{
-    UStatsCalculated* Calculated = NewObject<UStatsCalculated>();
+on:
+  push:
+    branches: [ "main" ]
 
-    Calculated->Vitality = Vitality * Vitality_Multiplier + Vitality;
+jobs:
+  build_and_push:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
 
-    const float MaximumHealthInner = ExtraMaximumHealth +
-        HealthPerVitality * Calculated->Vitality;
+      - name: Build images
+        run: |
+          docker build -t evanbecker-api:latest .
+          docker build -t evanbecker-client:latest .
 
-    Calculated->MaximumHealth = ApplyStatMultiplier(
-        MaximumHealthInner,
-        ExtraMaximumHealth_Multiplier
-    );
-  //...
-}`,
+      - name: Push to local registry
+        run: |
+          docker push registry/evanbecker-api:latest
+          docker push registry/evanbecker-client:latest
+
+      # Watchtower detects new images within 30s
+      # No SSH, no kubectl, no manual deploys`,
   },
 ]
 
@@ -68,8 +75,8 @@ function highlightCode(code: string, language: string) {
 }
 
 function highlightLine(line: string, language: string): string {
-  // Handle full-line comments first
-  const commentMatch = line.match(/^(\s*)(\/\/.*)$/)
+  // Handle full-line comments first (// for C#, # for yaml)
+  const commentMatch = line.match(/^(\s*)(\/\/.*)$/) || line.match(/^(\s*)(#.*)$/)
   if (commentMatch) {
     return commentMatch[1] + '<span class="text-slate-500">' + esc(commentMatch[2]) + '</span>'
   }
@@ -103,12 +110,15 @@ const KEYWORDS = new Set([
   'public', 'private', 'readonly', 'class', 'async', 'await', 'return',
   'var', 'const', 'new', 'void', 'using', 'namespace', 'static',
   'override', 'virtual', 'abstract', 'interface', 'float', 'int',
-  'string', 'bool', 'struct', 'auto',
+  'string', 'bool', 'struct', 'auto', 'where', 'default', 'init',
+  'if', 'out', 'foreach', 'in',
+  'name', 'on', 'push', 'branches', 'jobs', 'steps', 'uses', 'run',
+  'true', 'false',
 ])
 
 const TYPES = new Set([
-  'Task', 'IActionResult', 'IUserService', 'IProjectService',
-  'ControllerBase', 'UStats', 'UStatsCalculated',
+  'ConfigurationProvider', 'Dictionary', 'Environment',
+  'InfisicalConfigurationProvider', 'Data', 'KeyMap',
 ])
 
 const ATTRS = new Set([
