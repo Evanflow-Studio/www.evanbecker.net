@@ -14,17 +14,6 @@ jobs:
       - name: Checkout the repo
         uses: actions/checkout@v4
 
-      - name: Create client .env.local
-        run: |
-          cat > ./evanbecker-client/.env.local << 'EOF'
-          NEXT_PUBLIC_SITE_URL=https://www.evanbecker.net
-          NEXT_PUBLIC_API_URL=https://api.evanbecker.net
-          NEXT_PUBLIC_AUTH0_DOMAIN=evanbecker.us.auth0.com
-          NEXT_PUBLIC_AUTH0_CLIENT_ID=JOV7J3Qv3XzFD3xyQjDEW03PtaU8bpqc
-          NEXT_PUBLIC_AUTH0_AUDIENCE=api.evanbecker.net
-          NEXT_PUBLIC_AUTH0_REDIRECT_URI=https://www.evanbecker.net
-          EOF
-
       - name: Build images
         run: |
           docker build \
@@ -32,9 +21,15 @@ jobs:
             -t ${{ env.REGISTRY }}/evanbecker-api:${{ github.sha }} \
             -f evanbecker-api/Dockerfile .
           docker build \
+            --build-arg NUXT_PUBLIC_SITE_URL=https://www.evanbecker.net \
+            --build-arg NUXT_PUBLIC_API_URL=https://api.evanbecker.net \
+            --build-arg NUXT_PUBLIC_AUTH0_DOMAIN=evanbecker.us.auth0.com \
+            --build-arg NUXT_PUBLIC_AUTH0_CLIENT_ID=JOV7J3Qv3XzFD3xyQjDEW03PtaU8bpqc \
+            --build-arg NUXT_PUBLIC_AUTH0_AUDIENCE=api.evanbecker.net \
+            --build-arg NUXT_PUBLIC_AUTH0_REDIRECT_URI=https://www.evanbecker.net \
             -t ${{ env.REGISTRY }}/evanbecker-client:latest \
             -t ${{ env.REGISTRY }}/evanbecker-client:${{ github.sha }} \
-            -f evanbecker-client/Dockerfile .
+            evanbecker-client
 
       - name: Push to local registry
         run: |

@@ -50,12 +50,12 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002/',
-      auth0Domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || '',
-      auth0ClientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || '',
-      auth0Audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || '',
-      auth0RedirectUri: process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI || 'http://localhost:3000/',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+      apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:5002/',
+      auth0Domain: process.env.NUXT_PUBLIC_AUTH0_DOMAIN || '',
+      auth0ClientId: process.env.NUXT_PUBLIC_AUTH0_CLIENT_ID || '',
+      auth0Audience: process.env.NUXT_PUBLIC_AUTH0_AUDIENCE || '',
+      auth0RedirectUri: process.env.NUXT_PUBLIC_AUTH0_REDIRECT_URI || 'http://localhost:3000/',
     },
   },
 })

@@ -1,6 +1,6 @@
-# Website LXC Setup Guide (Next.js + .NET API + Traefik + Cloudflare Tunnel)
+# Website LXC Setup Guide (Nuxt 3 + .NET API + Traefik + Cloudflare Tunnel)
 
-LXC 109 runs the full website stack via Docker Compose: Traefik reverse proxy, Next.js 15 client, .NET 10 API, and Cloudflare Tunnel (cloudflared). The API connects to PostgreSQL on LXC 105. Cloudflared runs as a sidecar container — no separate LXC needed.
+LXC 109 runs the full website stack via Docker Compose: Traefik reverse proxy, Nuxt 3 client, .NET 10 API, and Cloudflare Tunnel (cloudflared). The API connects to PostgreSQL on LXC 105. Cloudflared runs as a sidecar container — no separate LXC needed.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ graph TB
 
     subgraph LXC109["LXC 109: website"]
         Cloudflared[cloudflared] -->|localhost:80| Traefik
-        Traefik -->|Host: www/evanbecker.net| Client[Next.js :3000]
+        Traefik -->|Host: www/evanbecker.net| Client[Nuxt 3 :3000]
         Traefik -->|Host: api.evanbecker.net| API[.NET API :80]
     end
 
@@ -100,10 +100,10 @@ After the stack is running, configure public hostname routes in the **Cloudflare
 
 | Public hostname | Service | Notes |
 |---|---|---|
-| `www.evanbecker.net` | `http://cloudflared:80` | Traefik routes to Next.js |
-| `evanbecker.net` | `http://cloudflared:80` | Traefik routes to Next.js |
+| `www.evanbecker.net` | `http://cloudflared:80` | Traefik routes to Nuxt 3 |
+| `evanbecker.net` | `http://cloudflared:80` | Traefik routes to Nuxt 3 |
 | `api.evanbecker.net` | `http://cloudflared:80` | Traefik routes to .NET API |
-| `test.evanbecker.net` | `http://cloudflared:80` | Traefik routes to test Next.js |
+| `test.evanbecker.net` | `http://cloudflared:80` | Traefik routes to test Nuxt 3 |
 | `api-test.evanbecker.net` | `http://cloudflared:80` | Traefik routes to test .NET API |
 
 > Since cloudflared and Traefik are on the same Docker network, routes point to Traefik's container. Use `http://traefik:80` or the LXC's internal IP. Traefik handles hostname-based routing to the correct backend.
@@ -142,7 +142,7 @@ Then: **Datacenter → Firewall → IPSet → db-prod-clients → Add** the IP.
 |---|---|---|
 | `traefik` | traefik:v3.3 | Reverse proxy, hostname-based routing |
 | `evanbecker-api` | Built from repo | .NET 10 REST API |
-| `evanbecker-client` | Built from repo | Next.js 15 frontend |
+| `evanbecker-client` | Built from repo | Nuxt 3 15 frontend |
 | `cloudflared` | cloudflare/cloudflared:latest | Tunnel to Cloudflare edge (outbound-only) |
 
 ### Installed software (directly in LXC)

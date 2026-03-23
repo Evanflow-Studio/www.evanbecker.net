@@ -53,8 +53,8 @@ services:
   evanbecker-client:
     container_name: evanbecker-client
     build:
-      context: .
-      dockerfile: evanbecker-client/Dockerfile
+      context: evanbecker-client
+      dockerfile: Dockerfile
     image: ${DOCKER_REGISTRY-}evanbecker-client
     depends_on:
       - evanbecker-db

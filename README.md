@@ -9,7 +9,7 @@
 <br />
 <div align="center">
   <a href="https://www.evanbecker.net">
-    <img src="evanbecker-client/src/images/logos/evanbecker-icon.svg" alt="Logo" width="120" height="120">
+    <img src="evanbecker-client/assets/images/logos/evanbecker-icon.svg" alt="Logo" width="120" height="120">
   </a>
 
   <h3 align="center">www.evanbecker.net</h3>
@@ -32,14 +32,14 @@
 
 ## About
 
-This is the monorepo powering [evanbecker.net](https://www.evanbecker.net) — a personal site with blog articles (written in MDX), an authenticated commenting system, a contact form, newsletter signup, and a projects showcase. The frontend is a Next.js application and the backend is a .NET API backed by PostgreSQL.
+This is the monorepo powering [evanbecker.net](https://www.evanbecker.net) — a personal site with blog articles (written in Markdown), an authenticated commenting system, a contact form, newsletter signup, and a projects showcase. The frontend is a Nuxt 3 application and the backend is a .NET API backed by PostgreSQL.
 
 The entire stack is self-hosted on a Proxmox VE homelab with isolated LXC containers, Cloudflare Tunnel for zero-open-port ingress, and Infisical for secrets management.
 
 ## Built With
 
-* [![Next][Next.js]][Next-url]
-* [![React][React.js]][React-url]
+* [![Nuxt][Nuxt.js]][Nuxt-url]
+* [![Vue][Vue.js]][Vue-url]
 * [![TypeScript][TypeScript]][TypeScript-url]
 * [![TailwindCSS][TailwindCSS]][TailwindCSS-url]
 * [![Dotnet][Dotnet]][Dotnet-url]
@@ -60,7 +60,7 @@ The entire stack is self-hosted on a Proxmox VE homelab with isolated LXC contai
 ```mermaid
 graph LR
     User((User)) -->|browser| CF[Cloudflare Edge<br/>TLS + CDN]
-    CF -->|www / test| Client[Next.js<br/>Frontend]
+    CF -->|www / test| Client[Nuxt 3<br/>Frontend]
     CF -->|api / api-test| API[.NET API]
     Client -->|fetch| API
     API -->|read/write| DB[(PostgreSQL)]
@@ -78,8 +78,8 @@ graph TB
         Traefik[Traefik<br/>Reverse Proxy]
         APIProd[API Prod<br/>.NET 10]
         APITest[API Test<br/>.NET 10]
-        ClientProd[Client Prod<br/>Next.js 15]
-        ClientTest[Client Test<br/>Next.js 15]
+        ClientProd[Client Prod<br/>Nuxt 3]
+        ClientTest[Client Test<br/>Nuxt 3]
         Kuma[Uptime Kuma<br/>Monitoring]
         Watchtower[Watchtower<br/>Auto-deploy]
         CFD109[cloudflared<br/>Tunnel]
@@ -148,13 +148,13 @@ No secrets in CI. The API pulls all secrets from Infisical at startup. Migration
 ```
 www.evanbecker.net/
 │
-├── evanbecker-client/              # Next.js frontend
-│   ├── src/
-│   │   ├── app/                    # Pages (App Router)
-│   │   │   └── articles/           # MDX blog articles
-│   │   ├── components/             # Shared React components
-│   │   ├── hooks/                  # Custom React hooks
-│   │   └── images/                 # Static assets
+├── evanbecker-client/              # Nuxt 3 frontend
+│   ├── pages/                      # File-based routing
+│   ├── components/                 # Vue components (auto-imported)
+│   ├── composables/                # Vue composables
+│   ├── content/articles/           # Markdown blog articles
+│   ├── layouts/                    # Page layouts
+│   ├── assets/                     # CSS, images
 │   ├── Dockerfile
 │   └── package.json
 │
@@ -280,12 +280,12 @@ See [`infrastructure/README.md`](infrastructure/README.md) for full deployment d
 
 ## Features
 
-- **Blog** — MDX-powered articles with syntax-highlighted code blocks and GitHub-flavored markdown
+- **Blog** — Markdown-powered articles with syntax-highlighted code blocks via Nuxt Content
 - **Commenting System** — Auth0-authenticated comments with nested replies on articles
 - **Contact Form** — Submissions stored in PostgreSQL
 - **Newsletter** — Email subscription signup
 - **Projects Showcase** — Portfolio of work
-- **Dark/Light Mode** — Theme toggle via next-themes
+- **Dark/Light Mode** — Theme toggle via @nuxtjs/color-mode
 - **RSS Feed** — Auto-generated at `/feed.xml`
 - **Responsive Design** — Tailwind CSS with mobile-first approach
 - **Self-Hosted Infrastructure** — No cloud dependencies beyond DNS and auth
@@ -316,10 +316,10 @@ Project Link: [https://github.com/Evanflow-Studio/www.evanbecker.net](https://gi
 [linkedin-url]: https://www.linkedin.com/in/evanbeckerdotnet/
 
 <!-- Tech badges -->
-[Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
-[Next-url]: https://nextjs.org/
-[React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-[React-url]: https://reactjs.org/
+[Nuxt.js]: https://img.shields.io/badge/Nuxt-00DC82?style=for-the-badge&logo=nuxtdotjs&logoColor=white
+[Nuxt-url]: https://nuxt.com/
+[Vue.js]: https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white
+[Vue-url]: https://vuejs.org/
 [TypeScript]: https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white
 [TypeScript-url]: https://www.typescriptlang.org/
 [TailwindCSS]: https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white

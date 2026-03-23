@@ -1,86 +1,83 @@
 # evanbecker-client
 
-The Next.js frontend for [www.evanbecker.net](https://www.evanbecker.net).
+Nuxt 3 frontend for [www.evanbecker.net](https://www.evanbecker.net).
 
 ## Tech Stack
 
-- **Next.js 15** with App Router
-- **React 19** + TypeScript
-- **Tailwind CSS 4.x**
-- **MDX** for blog articles (with syntax highlighting via prism-react-renderer)
-- **Auth0** for authentication (commenting system)
-- **Headless UI** + **Heroicons** for accessible components
-
-## Getting Started
-
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Create a `.env.local`** (see `.env.example`):
-   ```
-   NEXT_PUBLIC_SITE_URL=http://localhost:3000
-   NEXT_PUBLIC_API_URL=http://localhost:5002
-   NEXT_PUBLIC_AUTH0_DOMAIN=your-auth0-domain
-   NEXT_PUBLIC_AUTH0_CLIENT_ID=your-client-id
-   NEXT_PUBLIC_AUTH0_AUDIENCE=your-audience
-   NEXT_PUBLIC_AUTH0_REDIRECT_URI=http://localhost:3000
-   ```
-
-3. **Run the dev server:**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open** [http://localhost:3000](http://localhost:3000)
+- **Nuxt 3** — Vue 3 meta-framework with SSR/SSG, file-based routing, auto-imports
+- **TypeScript** — Type-safe Vue components and composables
+- **Tailwind CSS** — Utility-first styling
+- **Nuxt Content** — Markdown-based blog articles with syntax highlighting
+- **Auth0** — Authentication via `@auth0/auth0-spa-js` plugin
+- **@nuxtjs/color-mode** — Dark/light theme toggle
 
 ## Project Structure
 
 ```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── articles/           # MDX blog articles
-│   ├── about-me/           # About page
-│   ├── contact/            # Contact form
-│   ├── projects/           # Projects showcase
-│   ├── feed.xml/           # RSS feed generation
-│   ├── layout.tsx          # Root layout (fonts, metadata)
-│   ├── page.tsx            # Home page
-│   └── providers.tsx       # Auth0Provider wrapper
-├── components/             # Shared React components
-│   ├── Header.tsx          # Site header/nav
-│   ├── Footer.tsx          # Site footer
-│   ├── Comment.jsx         # Comment display
-│   ├── CommentSection.jsx  # Comment list + form
-│   ├── CodeEditor.tsx      # Syntax-highlighted code blocks
-│   └── ...
-├── hooks/                  # Custom React hooks
-├── images/                 # Static images and logos
-└── styles/                 # Global CSS
+evanbecker-client/
+├── pages/                  # File-based routing (index, about-me, articles, etc.)
+├── components/             # Vue components (auto-imported, no prefix)
+│   ├── demos/              # 3D demo components (WebGL, Three.js)
+│   └── icons/              # Icon components
+├── composables/            # Vue composables (useApi, useDemoTests)
+├── content/articles/       # Markdown blog posts
+├── layouts/                # Page layouts (default, article)
+├── assets/
+│   ├── css/main.css        # Global styles + print styles
+│   └── images/             # Static images and logos
+├── plugins/                # Nuxt plugins (auth0.client.ts)
+├── server/routes/          # Server routes (feed.xml)
+├── public/                 # Static public assets
+├── nuxt.config.ts          # Nuxt configuration
+├── tailwind.config.ts      # Tailwind configuration
+├── Dockerfile              # Multi-stage production build
+└── package.json
 ```
 
-## Scripts
+## Development
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start development server |
-| `npm run build` | Production build |
-| `npm start` | Start production server |
-| `npm run lint` | Run ESLint |
+```bash
+npm install
+npm run dev
+```
 
-## Writing Articles
+Opens at [http://localhost:3000](http://localhost:3000).
 
-Blog articles are MDX files in `src/app/articles/`. Each article is a directory with a `page.mdx` file. MDX supports JSX components inline with markdown and code blocks with syntax highlighting.
+## Build
+
+```bash
+npm run build
+```
+
+Produces `.output/` directory with Nitro server bundle.
 
 ## Docker
 
-The Dockerfile uses a multi-stage Node.js 20 Alpine build. In production, the container runs on port 3000 behind Traefik.
+Multi-stage build: deps → builder → runner. Runs as non-root `nuxtjs` user on port 3000.
 
 ```bash
-docker build -f Dockerfile -t evanbecker-client .
+docker build -t evanbecker-client .
+docker run -p 3000:3000 evanbecker-client
 ```
 
-## License
+Build-time env vars are passed as `--build-arg`:
 
-This site template is based on a [Tailwind Plus](https://tailwindcss.com/plus) template, licensed under the Tailwind Plus license.
+```bash
+docker build \
+  --build-arg NUXT_PUBLIC_SITE_URL=https://www.evanbecker.net \
+  --build-arg NUXT_PUBLIC_API_URL=https://api.evanbecker.net \
+  -t evanbecker-client .
+```
+
+## Environment Variables
+
+All public config uses `NUXT_PUBLIC_*` prefix, accessed via `useRuntimeConfig().public` in components:
+
+| Variable | Purpose |
+|---|---|
+| `NUXT_PUBLIC_SITE_URL` | Base URL of the site |
+| `NUXT_PUBLIC_API_URL` | API base URL |
+| `NUXT_PUBLIC_AUTH0_DOMAIN` | Auth0 tenant domain |
+| `NUXT_PUBLIC_AUTH0_CLIENT_ID` | Auth0 application ID |
+| `NUXT_PUBLIC_AUTH0_AUDIENCE` | Auth0 API audience |
+| `NUXT_PUBLIC_AUTH0_REDIRECT_URI` | Post-login redirect URL |
