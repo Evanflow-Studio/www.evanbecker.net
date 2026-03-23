@@ -118,7 +118,6 @@ export function useAudioReactive() {
 
     // Keep audioCtx alive — browsers block new contexts created outside user gestures.
     // Only fullStop() (on unmount) closes it.
-    }
   }
 
   // Scene-reactive tone presets for the generative drone
