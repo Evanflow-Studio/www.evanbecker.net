@@ -4,6 +4,7 @@ import { useRayMarchGL, type QualityPreset, type PlacedObject, type SceneDefault
 import { useAudioReactive } from '~/composables/useAudioReactive'
 import { useUrlState } from '~/composables/useUrlState'
 import { LATTICE_PRESETS, type LatticePreset } from '~/utils/shaders/lattice-presets'
+import { ANIMATION, CAMERA_DEFAULTS } from '~/utils/shaders/constants'
 
 // Canvas
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -21,7 +22,7 @@ const cameraPosY = ref(0)
 const cameraPosZ = ref(3)
 const cameraYaw = ref(0.8)
 const cameraPitch = ref(0.0)
-const autoRotate = ref(true)
+const autoRotate = ref(false)
 const lastInteraction = ref(0)
 
 // Quality
@@ -81,7 +82,7 @@ function applyCustomGlsl() {
   const success = recompileWithCustomGlsl(code)
   if (success) {
     glslError.value = ''
-    animation.value = 9 // Switch to Custom animation
+    animation.value = ANIMATION.Custom
   } else {
     glslError.value = 'Compilation failed — check your GLSL syntax'
   }
@@ -146,13 +147,16 @@ const {
   cameraPosX, cameraPosY, cameraPosZ, cameraYaw, cameraPitch,
   autoRotate, lastInteraction,
   cellSpacing, wallThickness, geoPreset, animation, quality,
-  placedObjects, placeMode, wireframe, animOffset, placeShape, placeDistance: 3.0,
+  placedObjects, placeMode, wireframe, animOffset, placeShape,
+  placeDistance: CAMERA_DEFAULTS.PLACE_DISTANCE,
   timePaused, timeSpeed,
   bloomStrength, chromaticAmount, vignetteStrength,
   audioBass: audio.bass, audioMid: audio.mid, audioTreble: audio.treble, audioAmplitude: audio.amplitude,
   colorReact, customGlsl, customJs,
-  qualityPresets, sceneDefaults, orbitDelay: 2000,
-  moveSpeed: 0.08, lookSpeed: 0.005,
+  qualityPresets, sceneDefaults,
+  orbitDelay: CAMERA_DEFAULTS.ORBIT_DELAY_MS,
+  moveSpeed: CAMERA_DEFAULTS.MOVE_SPEED,
+  lookSpeed: CAMERA_DEFAULTS.LOOK_SPEED,
 })
 
 // Expose for tests
@@ -190,11 +194,15 @@ function handleMouseUp() {
   isDragging.value = false
 }
 
+const audioHandlers: Record<string, () => void> = {
+  none: () => audio.stop(),
+  generated: () => audio.startDefault(scene.value),
+  track: () => audio.startTrack('/audio/chill-ambient-loop.mp3', 'Chill Ambient Loop'),
+  mic: () => audio.startMic(),
+}
+
 function handleAudioSource(source: string) {
-  if (source === 'none') audio.stop()
-  else if (source === 'generated') audio.startDefault(scene.value)
-  else if (source === 'track') audio.startTrack('/audio/chill-ambient-loop.mp3', 'Chill Ambient Loop')
-  else if (source === 'mic') audio.startMic()
+  audioHandlers[source]?.()
 }
 
 // Restart drone with new tones when scene changes (if drone is active)

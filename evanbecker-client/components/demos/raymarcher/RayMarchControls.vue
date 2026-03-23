@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { MAX_PLACED_OBJECTS, SHAPE_NAMES } from '~/composables/useRayMarchGL'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
 import { AUDIO_SOURCE_NAMES, type AudioSource } from '~/composables/useAudioReactive'
+import { SCENE_NAMES, PALETTE_NAMES, QUALITY_NAMES, GEO_PRESET_NAMES, ANIMATION_NAMES } from '~/utils/shaders/constants'
 
 const presetNames = LATTICE_PRESETS.map(p => p.name)
 const audioSourceOptions = Object.entries(AUDIO_SOURCE_NAMES).map(([, name]) => name)
@@ -72,11 +73,11 @@ const emit = defineEmits<{
   'applyGlsl': []
 }>()
 
-const sceneNames = ['Infinite Lattice', 'Mandelbulb', 'CSG Operations', 'Fractal Descent']
-const paletteNames = ['Aether', 'Cosmic', 'Inferno', 'Ocean', 'Electric', 'Prismatic', 'Neon', 'Sunset', 'Ice', 'Vapor', 'Forest', 'Mono']
-const qualityNames = ['Performance', 'Balanced', 'High', 'Ultra']
-const geoPresetNames = ['Hollow Cube', 'Cross Beams', 'Nested Spheres', 'Frame Only', 'Torus Lattice']
-const animationNames = ['None', 'Wave', 'Twist', 'Pulse', 'Kaleidoscope', 'Orbit', 'Ripple', 'Shatter', 'Morph', 'Custom']
+const sceneNames = [...SCENE_NAMES]
+const paletteNames = [...PALETTE_NAMES]
+const qualityNames = [...QUALITY_NAMES]
+const geoPresetNames = [...GEO_PRESET_NAMES]
+const animationNames = [...ANIMATION_NAMES]
 
 // Tabs
 const activeTab = ref<'scene' | 'fx' | 'audio' | 'tools'>('scene')

@@ -1,4 +1,5 @@
 import { ref, onUnmounted } from 'vue'
+import { AUDIO, NOTES } from '~/utils/shaders/constants'
 
 export type AudioSource = 'none' | 'generated' | 'track' | 'mic' | 'file'
 
@@ -46,8 +47,8 @@ export function useAudioReactive() {
   function createAnalyser() {
     const ctx = ensureContext()
     analyser = ctx.createAnalyser()
-    analyser.fftSize = 256
-    analyser.smoothingTimeConstant = 0.8
+    analyser.fftSize = AUDIO.FFT_SIZE
+    analyser.smoothingTimeConstant = AUDIO.SMOOTHING
     dataArray = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
   }
 
@@ -56,8 +57,8 @@ export function useAudioReactive() {
     analyser.getByteFrequencyData(dataArray)
 
     const binCount = dataArray.length
-    const bassEnd = Math.floor(binCount * 0.1)
-    const midEnd = Math.floor(binCount * 0.4)
+    const bassEnd = Math.floor(binCount * AUDIO.BASS_END_RATIO)
+    const midEnd = Math.floor(binCount * AUDIO.MID_END_RATIO)
 
     let bassSum = 0, midSum = 0, trebleSum = 0, totalSum = 0
     for (let i = 0; i < binCount; i++) {
@@ -132,10 +133,10 @@ export function useAudioReactive() {
   }
 
   const sceneVibes: Record<number, DroneConfig> = {
-    0: { droneFreq: 55, detune: 0.5, chord: [220, 277.18, 329.63], shimmerFreq: 880, filterCutoff: 800, lfoSpeed: 0.08, waveType: 'triangle' }, // Lattice — warm A minor
-    1: { droneFreq: 41.2, detune: 0.3, chord: [164.81, 207.65, 246.94], shimmerFreq: 659, filterCutoff: 600, lfoSpeed: 0.05, waveType: 'sine' }, // Mandelbulb — deep E minor, darker
-    2: { droneFreq: 65.41, detune: 0.8, chord: [261.63, 329.63, 392.0], shimmerFreq: 1046, filterCutoff: 1000, lfoSpeed: 0.12, waveType: 'triangle' }, // CSG — bright C major
-    3: { droneFreq: 49, detune: 0.4, chord: [196, 233.08, 293.66], shimmerFreq: 783, filterCutoff: 500, lfoSpeed: 0.04, waveType: 'sine' }, // Fractal — eerie G minor, slow
+    0: { droneFreq: NOTES.A1, detune: 0.5, chord: [NOTES.A3, NOTES.Cs4, NOTES.E4], shimmerFreq: NOTES.A5, filterCutoff: 800, lfoSpeed: 0.08, waveType: 'triangle' },
+    1: { droneFreq: NOTES.E1, detune: 0.3, chord: [NOTES.E3, NOTES.Gs3, NOTES.B3], shimmerFreq: NOTES.E5, filterCutoff: 600, lfoSpeed: 0.05, waveType: 'sine' },
+    2: { droneFreq: NOTES.C2, detune: 0.8, chord: [NOTES.C4, NOTES.E4, NOTES.G4], shimmerFreq: NOTES.C6, filterCutoff: 1000, lfoSpeed: 0.12, waveType: 'triangle' },
+    3: { droneFreq: NOTES.G1, detune: 0.4, chord: [NOTES.G3, NOTES.Bb3, NOTES.D4], shimmerFreq: NOTES.G5, filterCutoff: 500, lfoSpeed: 0.04, waveType: 'sine' },
   }
 
   function startDefault(sceneIndex = 0) {
@@ -148,7 +149,7 @@ export function useAudioReactive() {
 
     // Procedural ambient drone — tones driven by scene
     const masterGain = ctx.createGain()
-    masterGain.gain.value = 0.15
+    masterGain.gain.value = AUDIO.MASTER_VOLUME
     generatorNodes.push(masterGain)
 
     // Low drone — two detuned sines
@@ -239,7 +240,7 @@ export function useAudioReactive() {
 
     audioElement = new Audio(path)
     audioElement.loop = true
-    audioElement.volume = 0.5
+    audioElement.volume = AUDIO.TRACK_VOLUME
     audioElement.crossOrigin = 'anonymous'
     sourceNode = ctx.createMediaElementSource(audioElement)
     sourceNode.connect(analyser)
