@@ -74,18 +74,30 @@ export function useAudioReactive() {
 
   function stopCurrent() {
     cancelAnimationFrame(rafId)
+
+    // Reset state immediately so UI updates
+    const wasActive = isActive.value
+    isActive.value = false
+    source.value = 'none'
+    fileName.value = ''
+    bass.value = 0
+    mid.value = 0
+    treble.value = 0
+    amplitude.value = 0
+
+    // Then clean up audio nodes (can be slow)
     if (sourceNode) {
-      sourceNode.disconnect()
+      try { sourceNode.disconnect() } catch { /* ok */ }
       sourceNode = null
     }
-    // Stop generator nodes
-    for (const node of generatorNodes) {
+    const nodesToStop = [...generatorNodes]
+    generatorNodes = []
+    for (const node of nodesToStop) {
       try {
         if (node instanceof OscillatorNode) node.stop()
         node.disconnect()
       } catch { /* already stopped */ }
     }
-    generatorNodes = []
     if (audioElement) {
       audioElement.pause()
       audioElement.src = ''
@@ -96,16 +108,15 @@ export function useAudioReactive() {
       mediaStream = null
     }
     if (analyser) {
-      analyser.disconnect()
+      try { analyser.disconnect() } catch { /* ok */ }
       analyser = null
     }
-    isActive.value = false
-    source.value = 'none'
-    fileName.value = ''
-    bass.value = 0
-    mid.value = 0
-    treble.value = 0
-    amplitude.value = 0
+
+    // Close and recreate audio context to avoid stale state
+    if (wasActive && audioCtx) {
+      audioCtx.close().catch(() => {})
+      audioCtx = null
+    }
   }
 
   // Scene-reactive tone presets for the generative drone
