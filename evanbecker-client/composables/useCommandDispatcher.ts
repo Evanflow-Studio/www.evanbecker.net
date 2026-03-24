@@ -1,6 +1,4 @@
 import { ref, type Ref } from 'vue'
-import type { PlacedObject } from '~/composables/useRayMarchGL'
-import type { AudioSource } from '~/composables/useAudioReactive'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
 
 // === Command Types ===
@@ -21,24 +19,13 @@ export type RayMarchCommand =
   // FX
   | { type: 'setBloomStrength'; value: number }
   | { type: 'setChromaticAmount'; value: number }
-  | { type: 'setVignetteStrength'; value: number }
   | { type: 'setFogDensity'; value: number }
-  | { type: 'setColorReact'; value: number }
-  // Audio
-  | { type: 'setAudioSource'; value: AudioSource }
-  | { type: 'setAudioFile'; file: File }
   // Camera
   | { type: 'setAutoRotate'; value: boolean }
   | { type: 'setMoveSpeed'; value: number }
   // Time
   | { type: 'setTimePaused'; value: boolean }
   | { type: 'setTimeSpeed'; value: number }
-  // Placement
-  | { type: 'setPlaceMode'; value: boolean }
-  | { type: 'setPlaceShape'; value: number }
-  | { type: 'placeObject' }
-  | { type: 'clearPlaced' }
-  | { type: 'undoPlaced' }
   // Tools
   | { type: 'screenshot' }
   | { type: 'copyUrl' }
@@ -74,15 +61,11 @@ export interface DispatcherRefs {
   wireframe: Ref<boolean>
   bloomStrength: Ref<number>
   chromaticAmount: Ref<number>
-  vignetteStrength: Ref<number>
   fogDensity: Ref<number>
-  colorReact: Ref<number>
   autoRotate: Ref<boolean>
   moveSpeed: Ref<number>
   timePaused: Ref<boolean>
   timeSpeed: Ref<number>
-  placeMode: Ref<boolean>
-  placeShape: Ref<number>
   customGlsl: Ref<string>
   customJs: Ref<string>
   paletteA: Ref<[number, number, number]>
@@ -93,22 +76,17 @@ export interface DispatcherRefs {
 }
 
 export interface DispatcherActions {
-  placeObjectAhead: () => void
-  clearPlacedObjects: () => void
-  undoLastPlacement: () => void
   captureScreenshot: () => void
   copyShareUrl: () => string
   toggleFullscreen: () => void
   applyCustomGlsl: () => void
-  handleAudioSource: (source: string) => void
-  handleAudioFile: (file: File) => void
   applyLatticePreset: (index: number) => void
 }
 
 // Commands that should NOT update lastInteraction (passive/display-only)
 const PASSIVE_COMMANDS = new Set<RayMarchCommand['type']>([
   'screenshot', 'copyUrl', 'setCustomGlsl', 'setCustomJs',
-  'setTimePaused', 'setTimeSpeed', 'setAudioSource', 'setAudioFile',
+  'setTimePaused', 'setTimeSpeed',
 ])
 
 export function useCommandDispatcher(refs: DispatcherRefs, actions: DispatcherActions) {
@@ -130,26 +108,17 @@ export function useCommandDispatcher(refs: DispatcherRefs, actions: DispatcherAc
     setWireframe:        (c) => { refs.wireframe.value = c.value },
     setBloomStrength:    (c) => { refs.bloomStrength.value = c.value },
     setChromaticAmount:  (c) => { refs.chromaticAmount.value = c.value },
-    setVignetteStrength: (c) => { refs.vignetteStrength.value = c.value },
     setFogDensity:       (c) => { refs.fogDensity.value = c.value },
-    setColorReact:       (c) => { refs.colorReact.value = c.value },
     setAutoRotate:       (c) => { refs.autoRotate.value = c.value },
     setMoveSpeed:        (c) => { refs.moveSpeed.value = c.value },
     setTimePaused:       (c) => { refs.timePaused.value = c.value },
     setTimeSpeed:        (c) => { refs.timeSpeed.value = c.value },
-    setPlaceMode:        (c) => { refs.placeMode.value = c.value },
-    setPlaceShape:       (c) => { refs.placeShape.value = c.value },
     setCustomGlsl:       (c) => { refs.customGlsl.value = c.value },
     setCustomJs:         (c) => { refs.customJs.value = c.value },
     setCustomPaletteA:   (c) => { refs.paletteA.value = c.value },
     setCustomPaletteB:   (c) => { refs.paletteB.value = c.value },
     setCustomPaletteC:   (c) => { refs.paletteC.value = c.value },
     setCustomPaletteD:   (c) => { refs.paletteD.value = c.value },
-    setAudioSource:      (c) => { actions.handleAudioSource(c.value) },
-    setAudioFile:        (c) => { actions.handleAudioFile(c.file) },
-    placeObject:         ()  => { actions.placeObjectAhead() },
-    clearPlaced:         ()  => { actions.clearPlacedObjects() },
-    undoPlaced:          ()  => { actions.undoLastPlacement() },
     screenshot:          ()  => { actions.captureScreenshot() },
     copyUrl:             ()  => { actions.copyShareUrl() },
     toggleFullscreen:    ()  => { actions.toggleFullscreen() },

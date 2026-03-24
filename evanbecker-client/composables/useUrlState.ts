@@ -1,6 +1,4 @@
-import { watch, type Ref } from 'vue'
-
-const DEBOUNCE_MS = 500
+import { type Ref } from 'vue'
 
 // Schema-driven serialization — each field has a short key and a type
 type FieldType = 'int' | 'float' | 'bool'
@@ -22,7 +20,6 @@ export interface UrlStateConfig {
   wireframe: Ref<boolean>
   bloomStrength: Ref<number>
   chromaticAmount: Ref<number>
-  colorReact: Ref<number>
   timeSpeed: Ref<number>
   cameraPosX: Ref<number>
   cameraPosY: Ref<number>
@@ -45,7 +42,6 @@ const SCHEMA: Record<keyof UrlStateConfig, FieldSchema> = {
   wireframe:       { key: 'w',  type: 'bool' },
   bloomStrength:   { key: 'bl', type: 'float' },
   chromaticAmount: { key: 'ca', type: 'float' },
-  colorReact:      { key: 'cr', type: 'float' },
   timeSpeed:       { key: 'ts', type: 'float' },
   cameraPosX:      { key: 'cx', type: 'float' },
   cameraPosY:      { key: 'cy', type: 'float' },
@@ -58,7 +54,7 @@ const SCHEMA: Record<keyof UrlStateConfig, FieldSchema> = {
 
 const serializers: Record<FieldType, (val: unknown) => string> = {
   int: (v) => String(v),
-  float: (v) => (v as number).toFixed(2),
+  float: (v) => (v as number).toFixed(4),
   bool: (v) => v ? '1' : '0',
 }
 
@@ -82,27 +78,26 @@ function deserialize(hash: string, config: UrlStateConfig): boolean {
   for (const [prop, { key, type }] of Object.entries(SCHEMA)) {
     const val = params.get(key)
     if (val === null) continue
+    const parsed = deserializers[type](val)
+    // Validate: skip NaN / undefined
+    if (typeof parsed === 'number' && isNaN(parsed)) continue
     const ref = config[prop as keyof UrlStateConfig]
-    ;(ref as Ref<unknown>).value = deserializers[type](val)
+    ;(ref as Ref<unknown>).value = parsed
     applied = true
   }
   return applied
 }
 
 export function useUrlState(config: UrlStateConfig) {
+  // Import from URL hash on load, then immediately clear it.
+  // The hash acts as a one-time import — not a live sync.
   const restored = deserialize(window.location.hash, config)
-
-  let updateTimeout: ReturnType<typeof setTimeout> | null = null
-  function scheduleUpdate() {
-    if (updateTimeout) clearTimeout(updateTimeout)
-    updateTimeout = setTimeout(() => {
-      window.history.replaceState(null, '', `#${serialize(config)}`)
-    }, DEBOUNCE_MS)
+  if (restored) {
+    // Clear the hash so the URL stays clean after import
+    window.history.replaceState(null, '', window.location.pathname)
   }
 
-  const refs = Object.keys(SCHEMA).map(prop => config[prop as keyof UrlStateConfig])
-  watch(refs, scheduleUpdate)
-
+  // No watcher — URL is NOT updated live. Only updated on explicit share.
   function copyShareUrl() {
     const url = `${window.location.origin}${window.location.pathname}#${serialize(config)}`
     navigator.clipboard.writeText(url)

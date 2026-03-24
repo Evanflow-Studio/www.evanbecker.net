@@ -5,7 +5,6 @@ import { SCENE_LATTICE } from './fragments/scene-lattice.glsl'
 import { SCENE_MANDELBULB } from './fragments/scene-mandelbulb.glsl'
 import { SCENE_CSG } from './fragments/scene-csg.glsl'
 import { SCENE_FRACTAL } from './fragments/scene-fractal.glsl'
-import { LOCAL_GEOMETRY } from './fragments/local-geometry.glsl'
 import { SCENE_DISPATCHER } from './fragments/scene-dispatcher.glsl'
 import { LIGHTING } from './fragments/lighting.glsl'
 import { MAIN_LOOP } from './fragments/main-loop.glsl'
@@ -36,15 +35,10 @@ uniform float u_warpCorrection;
 uniform int u_wireframe;
 uniform float u_animOffset;
 
-// Audio reactivity (0.0-1.0)
-uniform float u_bass;
-uniform float u_mid;
-uniform float u_treble;
-uniform float u_amplitude;
-uniform float u_colorReact;
-
-// Fog
+// Fog & zoom
 uniform float u_fogDensity;
+uniform float u_zoom; // 1.0 = default FOV, >1 = zoomed in
+uniform int u_showMinimap; // 0 = off, 1 = on
 
 // Custom palette vectors (IQ cosine formula: a + b * cos(2pi * (c*t + d)))
 uniform vec3 u_paletteA;
@@ -52,14 +46,6 @@ uniform vec3 u_paletteB;
 uniform vec3 u_paletteC;
 uniform vec3 u_paletteD;
 
-// Local placed objects: xyz = position, w = shape type
-uniform vec4 u_localObjects[8];
-uniform int u_localObjectCount;
-
-// Preview indicator
-uniform vec3 u_previewPos;
-uniform int u_previewShape;
-uniform int u_showPreview;
 `
 
 // Custom GLSL injection point for animation index 9
@@ -71,15 +57,13 @@ function buildSceneLatticeWithCustom(customGlsl?: string): string {
   // Inject custom GLSL as animation == 9
   const injection = `} else if (u_animation == 9) {
     // Custom user GLSL transform
-    vec3 rp = p - animCenter;
     ${customGlsl}
-    p = rp + animCenter;
   `
 
-  // Insert before the closing of the animation block
+  // Replace the marker comment with the custom animation branch
   return SCENE_LATTICE.replace(
-    'p = rp + animCenter; // transform back to world space\n  }',
-    `p = rp + animCenter; // transform back to world space\n  ${injection}}`
+    '// __CUSTOM_ANIMATION_INJECT__',
+    injection,
   )
 }
 
@@ -94,7 +78,6 @@ export function buildFragmentShader(customGlsl?: string): string {
     SCENE_MANDELBULB,
     SCENE_CSG,
     SCENE_FRACTAL,
-    LOCAL_GEOMETRY,
     SCENE_DISPATCHER,
     LIGHTING,
     MAIN_LOOP,

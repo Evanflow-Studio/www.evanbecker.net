@@ -1,8 +1,12 @@
 export const MAIN_LOOP = `
 // === MAIN RAY MARCH LOOP ===
 
-void main() {
-  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
+// Shared ray march + shading logic used for both main view and minimap
+vec4 marchView(vec2 pixelCoord, vec2 resolution, float zoom) {
+  vec2 uv = (pixelCoord - 0.5 * resolution) / resolution.y;
+
+  // Apply zoom — dividing uv narrows the FOV (telephoto effect)
+  uv /= zoom;
 
   // FPS camera — position + look direction from yaw/pitch
   float cy = cos(u_cameraYaw), sy = sin(u_cameraYaw);
@@ -25,26 +29,12 @@ void main() {
   float minDist = 1e10;
   vec2 result;
   bool hit = false;
-  bool hitPreview = false;
 
   for (int i = 0; i < 512; i++) {
     if (i >= u_maxSteps) break;
     vec3 p = ro + rd * t;
     result = sceneSDF(p);
     float d = result.x;
-
-    // Check preview sphere (closer = higher priority)
-    if (u_showPreview == 1) {
-      float previewD = sdSphere(p - u_previewPos, 0.25);
-      if (previewD < d) {
-        d = previewD;
-        if (previewD < u_hitThreshold) {
-          hitPreview = true;
-          hit = true;
-          break;
-        }
-      }
-    }
 
     minDist = min(minDist, d);
     if (d < u_hitThreshold) { hit = true; break; }
@@ -68,19 +58,12 @@ void main() {
     // Fresnel rim
     float fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
 
-    // Color — red tint for preview, palette for everything else
-    vec3 baseColor;
-    vec3 rimColor;
-    if (hitPreview) {
-      baseColor = vec3(0.9, 0.15, 0.1);
-      rimColor = vec3(1.0, 0.3, 0.2);
-    } else {
-      float colorT = result.y + u_time * 0.02 + u_mid * 0.4 * u_colorReact;
-      baseColor = getColor(colorT);
-      rimColor = getColor(colorT + 0.3);
-    }
+    // Color from palette
+    float colorT = result.y + u_time * 0.02;
+    vec3 baseColor = getColor(colorT);
+    vec3 rimColor = getColor(colorT + 0.3);
 
-    if (u_wireframe == 1 && !hitPreview) {
+    if (u_wireframe == 1) {
       // Wireframe mode — silhouette edges + structural edges
       float silhouette = pow(1.0 - abs(dot(n, -rd)), 1.5);
       // Structural edges where normal sharply changes axis
@@ -104,32 +87,53 @@ void main() {
 
       col = ambient + diffCol + specCol + rimCol;
 
-      // Audio-driven color reactivity
-      col *= 1.0 + u_bass * 0.3 * u_colorReact;
-      col += vec3(u_treble * 0.15 * u_colorReact);
-
-      // Preview pulsing glow
-      if (hitPreview) {
-        col += vec3(0.3, 0.05, 0.02) * (0.5 + 0.5 * sin(u_time * 4.0));
-      }
-
       // Depth fog
       float fog = exp(-u_fogDensity * t * t);
       col = mix(bgColor, col, fog);
     }
   } else {
-    // Near-miss glow — boosted by treble, faded by distance fog
-    float glowIntensity = 0.08 + u_treble * 0.3;
+    // Near-miss glow, faded by distance fog
+    float glowIntensity = 0.08;
     float glow = exp(-16.0 * minDist) * step(0.0, 0.5 - minDist);
     // Fade glow with same fog as geometry — prevents bright spots at far distances
     float glowFog = exp(-u_fogDensity * t * t);
-    col += getColor(0.5 + u_time * 0.02 + u_mid * 0.3) * glow * glowIntensity * glowFog;
+    col += getColor(0.5 + u_time * 0.02) * glow * glowIntensity * glowFog;
   }
 
   // Reinhard tone mapping + gamma
   col = col / (col + 1.0);
   col = pow(col, vec3(0.4545));
 
-  fragColor = vec4(col, 1.0);
+  return vec4(col, 1.0);
+}
+
+void main() {
+  // Main view — uses zoom level
+  fragColor = marchView(gl_FragCoord.xy, u_resolution, u_zoom);
+
+  // Minimap inset — bottom-left corner, shows 1x zoom (wide angle overview)
+  if (u_showMinimap == 1 && u_zoom > 1.05) {
+    float mapScale = 0.2; // 20% of screen size
+    vec2 mapSize = u_resolution * mapScale;
+    vec2 mapOrigin = vec2(12.0, 12.0); // pixels from bottom-left
+    vec2 localCoord = gl_FragCoord.xy - mapOrigin;
+
+    if (localCoord.x >= 0.0 && localCoord.x < mapSize.x &&
+        localCoord.y >= 0.0 && localCoord.y < mapSize.y) {
+      // Remap local coord to full-screen equivalent for 1x zoom
+      vec2 remapped = localCoord / mapScale;
+      vec4 mapColor = marchView(remapped, u_resolution, 1.0);
+
+      // Border
+      float borderDist = min(min(localCoord.x, localCoord.y),
+                             min(mapSize.x - localCoord.x, mapSize.y - localCoord.y));
+      float border = 1.0 - smoothstep(0.0, 2.0, borderDist);
+      mapColor.rgb = mix(mapColor.rgb, vec3(0.2, 0.6, 1.0), border * 0.8);
+
+      // Slight dim to distinguish from main view
+      mapColor.rgb *= 0.85;
+      fragColor = mapColor;
+    }
+  }
 }
 `

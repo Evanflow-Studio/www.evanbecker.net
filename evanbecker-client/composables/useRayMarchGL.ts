@@ -9,6 +9,16 @@ import {
 
 // === Types ===
 
+type UniformCache = Record<string, WebGLUniformLocation | null>
+
+function buildUniformCache(gl: WebGL2RenderingContext, program: WebGLProgram, names: string[]): UniformCache {
+  const cache: UniformCache = {}
+  for (const name of names) {
+    cache[name] = gl.getUniformLocation(program, name)
+  }
+  return cache
+}
+
 export interface QualityPreset {
   name: string
   steps: number
@@ -17,14 +27,6 @@ export interface QualityPreset {
   warpCorrection: number
   bloom: number
   chroma: number
-  vignette: number
-}
-
-export interface PlacedObject {
-  x: number
-  y: number
-  z: number
-  shape: number
 }
 
 export interface SceneDefault {
@@ -32,9 +34,6 @@ export interface SceneDefault {
   yaw: number
   pitch: number
 }
-
-export const MAX_PLACED_OBJECTS = 8
-export const SHAPE_NAMES = ['Sphere', 'Cube', 'Torus', 'Octahedron']
 
 interface GLState {
   gl: WebGL2RenderingContext | null
@@ -44,6 +43,10 @@ interface GLState {
   fboTexture: WebGLTexture | null
   fboWidth: number
   fboHeight: number
+  mainCache: UniformCache
+  postCache: UniformCache
+  vao: WebGLVertexArrayObject | null
+  quadBuffer: WebGLBuffer | null
 }
 
 interface FrameState {
@@ -90,23 +93,15 @@ export interface RayMarchGLOptions {
   geoPreset: Ref<number>
   animation: Ref<number>
   quality: Ref<number>
-  placedObjects: Ref<PlacedObject[]>
-  placeMode: Ref<boolean>
   wireframe: Ref<boolean>
   animOffset: Ref<number>
-  placeShape: Ref<number>
-  placeDistance: number
   timePaused: Ref<boolean>
   timeSpeed: Ref<number>
   bloomStrength: Ref<number>
   chromaticAmount: Ref<number>
-  vignetteStrength: Ref<number>
-  audioBass: Ref<number>
-  audioMid: Ref<number>
-  audioTreble: Ref<number>
-  audioAmplitude: Ref<number>
-  colorReact: Ref<number>
   fogDensity: Ref<number>
+  zoom: Ref<number>
+  showMinimap: Ref<boolean>
   paletteA: Ref<[number, number, number]>
   paletteB: Ref<[number, number, number]>
   paletteC: Ref<[number, number, number]>
@@ -128,11 +123,10 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     cameraPosX, cameraPosY, cameraPosZ, cameraYaw, cameraPitch,
     autoRotate, lastInteraction,
     cellSpacing, wallThickness, geoPreset, animation, quality,
-    placedObjects, placeMode, wireframe, animOffset, placeShape, placeDistance,
+    wireframe, animOffset,
     timePaused, timeSpeed,
-    bloomStrength, chromaticAmount, vignetteStrength,
-    audioBass, audioMid, audioTreble, audioAmplitude, colorReact,
-    fogDensity, paletteA, paletteB, paletteC, paletteD,
+    bloomStrength, chromaticAmount,
+    fogDensity, zoom, showMinimap, paletteA, paletteB, paletteC, paletteD,
     customGlsl, customJs,
     qualityPresets, sceneDefaults, orbitDelay, moveSpeed, lookSpeed,
   } = options
@@ -149,6 +143,8 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   const glState: GLState = {
     gl: null, program: null, postProgram: null,
     fbo: null, fboTexture: null, fboWidth: 0, fboHeight: 0,
+    mainCache: {}, postCache: {},
+    vao: null, quadBuffer: null,
   }
 
   const frame: FrameState = {
@@ -178,15 +174,6 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   function getRight(): [number, number, number] {
     const cy = Math.cos(cameraYaw.value), sy = Math.sin(cameraYaw.value)
     return [-cy, 0, sy]
-  }
-
-  function getPreviewPos(): [number, number, number] {
-    const fw = getForward()
-    return [
-      cameraPosX.value + fw[0] * placeDistance,
-      cameraPosY.value + fw[1] * placeDistance,
-      cameraPosZ.value + fw[2] * placeDistance,
-    ]
   }
 
   function applyMovement(dir: [number, number, number], speed: number) {
@@ -281,17 +268,32 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     // Fullscreen quad VAO
     const { gl } = glState
     const quad = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1])
-    const vao = gl.createVertexArray()
-    gl.bindVertexArray(vao)
-    const buf = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+    glState.vao = gl.createVertexArray()
+    gl.bindVertexArray(glState.vao)
+    glState.quadBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, glState.quadBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW)
     const loc = gl.getAttribLocation(glState.program, 'a_position')
     gl.enableVertexAttribArray(loc)
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
 
+    // Build main program uniform cache
+    glState.mainCache = buildUniformCache(gl, glState.program, [
+      'u_resolution', 'u_time', 'u_cameraYaw', 'u_cameraPitch', 'u_cameraPos',
+      'u_iterations', 'u_scene', 'u_palette', 'u_lightDir',
+      'u_cellSpacing', 'u_wallThickness', 'u_geoPreset', 'u_animation',
+      'u_animOffset', 'u_wireframe', 'u_maxSteps', 'u_hitThreshold',
+      'u_maxDist', 'u_warpCorrection', 'u_fogDensity', 'u_zoom',
+      'u_showMinimap', 'u_paletteA', 'u_paletteB', 'u_paletteC', 'u_paletteD',
+    ])
+
     // Post-processing program (optional — fails gracefully)
     glState.postProgram = createProgram(POST_VERTEX, POST_FRAGMENT)
+    if (glState.postProgram) {
+      glState.postCache = buildUniformCache(gl, glState.postProgram, [
+        'u_sceneTexture', 'u_resolution', 'u_bloomStrength', 'u_chromaticAmount',
+      ])
+    }
 
     gl.useProgram(glState.program)
     frame.startTime = performance.now()
@@ -375,9 +377,8 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     if (!scriptCache.fn) return
     const ctx: Record<string, number> = {
       time: elapsed,
-      bass: audioBass.value, mid: audioMid.value, treble: audioTreble.value, amplitude: audioAmplitude.value,
       spacing: cellSpacing.value, thickness: wallThickness.value, animOffset: animOffset.value,
-      bloom: bloomStrength.value, chroma: chromaticAmount.value, vignette: vignetteStrength.value,
+      bloom: bloomStrength.value, chroma: chromaticAmount.value,
     }
     try {
       scriptCache.fn(ctx)
@@ -386,7 +387,6 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
       animOffset.value = ctx.animOffset
       bloomStrength.value = ctx.bloom
       chromaticAmount.value = ctx.chroma
-      vignetteStrength.value = ctx.vignette
     } catch { /* ignore runtime errors */ }
   }
 
@@ -396,6 +396,14 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     const newProgram = createProgram(VERTEX_SHADER, buildFragmentShader(customGlslCode))
     if (!newProgram) return false
     glState.program = newProgram
+    glState.mainCache = buildUniformCache(gl, newProgram, [
+      'u_resolution', 'u_time', 'u_cameraYaw', 'u_cameraPitch', 'u_cameraPos',
+      'u_iterations', 'u_scene', 'u_palette', 'u_lightDir',
+      'u_cellSpacing', 'u_wallThickness', 'u_geoPreset', 'u_animation',
+      'u_animOffset', 'u_wireframe', 'u_maxSteps', 'u_hitThreshold',
+      'u_maxDist', 'u_warpCorrection', 'u_fogDensity', 'u_zoom',
+      'u_showMinimap', 'u_paletteA', 'u_paletteB', 'u_paletteC', 'u_paletteD',
+    ])
     gl.useProgram(glState.program)
     return true
   }
@@ -432,80 +440,55 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   }
 
   function uploadUniforms(elapsed: number, width: number, height: number) {
-    const { gl, program } = glState
+    const { gl, program, mainCache } = glState
     if (!gl || !program) return
 
     const light = computeLightDir(elapsed)
     const qPreset = qualityPresets[quality.value]
 
     // Core
-    gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_time'), elapsed)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_cameraYaw'), cameraYaw.value)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_cameraPitch'), cameraPitch.value)
-    gl.uniform3f(gl.getUniformLocation(program, 'u_cameraPos'), cameraPosX.value, cameraPosY.value, cameraPosZ.value)
-    gl.uniform1i(gl.getUniformLocation(program, 'u_iterations'), iterations.value)
-    gl.uniform1i(gl.getUniformLocation(program, 'u_scene'), scene.value)
-    gl.uniform1i(gl.getUniformLocation(program, 'u_palette'), palette.value)
-    gl.uniform3f(gl.getUniformLocation(program, 'u_lightDir'), light[0], light[1], light[2])
+    gl.uniform2f(mainCache['u_resolution'], width, height)
+    gl.uniform1f(mainCache['u_time'], elapsed)
+    gl.uniform1f(mainCache['u_cameraYaw'], cameraYaw.value)
+    gl.uniform1f(mainCache['u_cameraPitch'], cameraPitch.value)
+    gl.uniform3f(mainCache['u_cameraPos'], cameraPosX.value, cameraPosY.value, cameraPosZ.value)
+    gl.uniform1i(mainCache['u_iterations'], iterations.value)
+    gl.uniform1i(mainCache['u_scene'], scene.value)
+    gl.uniform1i(mainCache['u_palette'], palette.value)
+    gl.uniform3f(mainCache['u_lightDir'], light[0], light[1], light[2])
 
     // Lattice
-    gl.uniform1f(gl.getUniformLocation(program, 'u_cellSpacing'), cellSpacing.value)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_wallThickness'), wallThickness.value)
-    gl.uniform1i(gl.getUniformLocation(program, 'u_geoPreset'), geoPreset.value)
-    gl.uniform1i(gl.getUniformLocation(program, 'u_animation'), animation.value)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_animOffset'), animOffset.value)
-    gl.uniform1i(gl.getUniformLocation(program, 'u_wireframe'), wireframe.value ? 1 : 0)
+    gl.uniform1f(mainCache['u_cellSpacing'], cellSpacing.value)
+    gl.uniform1f(mainCache['u_wallThickness'], wallThickness.value)
+    gl.uniform1i(mainCache['u_geoPreset'], geoPreset.value)
+    gl.uniform1i(mainCache['u_animation'], animation.value)
+    gl.uniform1f(mainCache['u_animOffset'], animOffset.value)
+    gl.uniform1i(mainCache['u_wireframe'], wireframe.value ? 1 : 0)
 
     // Quality
-    gl.uniform1i(gl.getUniformLocation(program, 'u_maxSteps'), qPreset.steps)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_hitThreshold'), qPreset.threshold)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_maxDist'), qPreset.maxDist)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_warpCorrection'), qPreset.warpCorrection)
+    gl.uniform1i(mainCache['u_maxSteps'], qPreset.steps)
+    gl.uniform1f(mainCache['u_hitThreshold'], qPreset.threshold)
+    gl.uniform1f(mainCache['u_maxDist'], qPreset.maxDist)
+    gl.uniform1f(mainCache['u_warpCorrection'], qPreset.warpCorrection)
 
-    // Fog
-    gl.uniform1f(gl.getUniformLocation(program, 'u_fogDensity'), fogDensity.value)
+    // Fog & zoom
+    gl.uniform1f(mainCache['u_fogDensity'], fogDensity.value)
+    gl.uniform1f(mainCache['u_zoom'], zoom.value)
+    gl.uniform1i(mainCache['u_showMinimap'], showMinimap.value ? 1 : 0)
 
     // Custom palette
-    gl.uniform3f(gl.getUniformLocation(program, 'u_paletteA'), paletteA.value[0], paletteA.value[1], paletteA.value[2])
-    gl.uniform3f(gl.getUniformLocation(program, 'u_paletteB'), paletteB.value[0], paletteB.value[1], paletteB.value[2])
-    gl.uniform3f(gl.getUniformLocation(program, 'u_paletteC'), paletteC.value[0], paletteC.value[1], paletteC.value[2])
-    gl.uniform3f(gl.getUniformLocation(program, 'u_paletteD'), paletteD.value[0], paletteD.value[1], paletteD.value[2])
+    gl.uniform3f(mainCache['u_paletteA'], paletteA.value[0], paletteA.value[1], paletteA.value[2])
+    gl.uniform3f(mainCache['u_paletteB'], paletteB.value[0], paletteB.value[1], paletteB.value[2])
+    gl.uniform3f(mainCache['u_paletteC'], paletteC.value[0], paletteC.value[1], paletteC.value[2])
+    gl.uniform3f(mainCache['u_paletteD'], paletteD.value[0], paletteD.value[1], paletteD.value[2])
 
-    // Audio
-    gl.uniform1f(gl.getUniformLocation(program, 'u_bass'), audioBass.value)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_mid'), audioMid.value)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_treble'), audioTreble.value)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_amplitude'), audioAmplitude.value)
-    gl.uniform1f(gl.getUniformLocation(program, 'u_colorReact'), colorReact.value)
-
-    // Placed objects
-    gl.uniform1i(gl.getUniformLocation(program, 'u_localObjectCount'), placedObjects.value.length)
-    for (let i = 0; i < MAX_PLACED_OBJECTS; i++) {
-      const loc = gl.getUniformLocation(program, `u_localObjects[${i}]`)
-      if (i < placedObjects.value.length) {
-        const obj = placedObjects.value[i]
-        gl.uniform4f(loc, obj.x, obj.y, obj.z, obj.shape)
-      } else {
-        gl.uniform4f(loc, 0, 0, 0, 0)
-      }
-    }
-
-    // Preview
-    const showPreview = placeMode.value ? 1 : 0
-    gl.uniform1i(gl.getUniformLocation(program, 'u_showPreview'), showPreview)
-    if (showPreview) {
-      const pp = getPreviewPos()
-      gl.uniform3f(gl.getUniformLocation(program, 'u_previewPos'), pp[0], pp[1], pp[2])
-      gl.uniform1i(gl.getUniformLocation(program, 'u_previewShape'), placeShape.value)
-    }
   }
 
   function renderPass(canvasWidth: number, canvasHeight: number) {
-    const { gl, program, postProgram, fbo, fboTexture } = glState
+    const { gl, program, postProgram, postCache, fbo, fboTexture } = glState
     if (!gl || !program) return
 
-    const hasPostFX = postProgram && (bloomStrength.value > 0 || chromaticAmount.value > 0 || vignetteStrength.value > 0)
+    const hasPostFX = postProgram && (bloomStrength.value > 0 || chromaticAmount.value > 0)
 
     if (hasPostFX) {
       ensureFBO(canvasWidth, canvasHeight)
@@ -516,11 +499,10 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
       gl.useProgram(postProgram!)
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, fboTexture)
-      gl.uniform1i(gl.getUniformLocation(postProgram!, 'u_sceneTexture'), 0)
-      gl.uniform2f(gl.getUniformLocation(postProgram!, 'u_resolution'), canvasWidth, canvasHeight)
-      gl.uniform1f(gl.getUniformLocation(postProgram!, 'u_bloomStrength'), bloomStrength.value)
-      gl.uniform1f(gl.getUniformLocation(postProgram!, 'u_chromaticAmount'), chromaticAmount.value)
-      gl.uniform1f(gl.getUniformLocation(postProgram!, 'u_vignetteStrength'), vignetteStrength.value)
+      gl.uniform1i(postCache['u_sceneTexture'], 0)
+      gl.uniform2f(postCache['u_resolution'], canvasWidth, canvasHeight)
+      gl.uniform1f(postCache['u_bloomStrength'], bloomStrength.value)
+      gl.uniform1f(postCache['u_chromaticAmount'], chromaticAmount.value)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
       gl.useProgram(program)
@@ -604,9 +586,15 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
 
   function onWheel(e: WheelEvent) {
     e.preventDefault()
-    const fw = getForward()
-    const speed = -e.deltaY * 0.02
-    applyMovement(fw, speed)
+    // Scroll zooms FOV (telephoto). Hold Shift to move forward/back instead.
+    if (e.shiftKey) {
+      const fw = getForward()
+      const speed = -e.deltaY * 0.02
+      applyMovement(fw, speed)
+    } else {
+      const zoomFactor = 1 - e.deltaY * 0.001
+      zoom.value = Math.max(1.0, Math.min(10.0, zoom.value * zoomFactor))
+    }
     lastInteraction.value = performance.now()
   }
 
@@ -619,29 +607,12 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
       input.keysDown.add(key)
       lastInteraction.value = performance.now()
     }
-    if (key === 'f' && placeMode.value) { e.preventDefault(); placeObjectAhead() }
     if (key === ' ') { e.preventDefault(); timePaused.value = !timePaused.value }
     if (key === 'p') { e.preventDefault(); captureScreenshot() }
   }
 
   function onKeyUp(e: KeyboardEvent) {
     input.keysDown.delete(e.key.toLowerCase())
-  }
-
-  // === Placement ===
-
-  function placeObjectAhead() {
-    if (placedObjects.value.length >= MAX_PLACED_OBJECTS) return
-    const pp = getPreviewPos()
-    placedObjects.value = [...placedObjects.value, { x: pp[0], y: pp[1], z: pp[2], shape: placeShape.value }]
-  }
-
-  function clearPlacedObjects() { placedObjects.value = [] }
-
-  function undoLastPlacement() {
-    if (placedObjects.value.length > 0) {
-      placedObjects.value = placedObjects.value.slice(0, -1)
-    }
   }
 
   // === Screenshot ===
@@ -656,7 +627,7 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     canvas.width = origW * scale
     canvas.height = origH * scale
     gl.viewport(0, 0, canvas.width, canvas.height)
-    gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), canvas.width, canvas.height)
+    gl.uniform2f(glState.mainCache['u_resolution'], canvas.width, canvas.height)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
     canvas.toBlob((blob) => {
@@ -699,7 +670,12 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     input.keysDown.clear()
 
     if (glState.gl) {
-      const ext = glState.gl.getExtension('WEBGL_lose_context')
+      const { gl } = glState
+      if (glState.vao) gl.deleteVertexArray(glState.vao)
+      if (glState.quadBuffer) gl.deleteBuffer(glState.quadBuffer)
+      glState.vao = null
+      glState.quadBuffer = null
+      const ext = gl.getExtension('WEBGL_lose_context')
       ext?.loseContext()
       glState.gl = null
     }
@@ -711,7 +687,6 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     gl: () => glState.gl,
     program: () => glState.program,
     onMouseDown, onWheel,
-    placeObjectAhead, clearPlacedObjects, undoLastPlacement,
     captureScreenshot, recompileWithCustomGlsl,
     start, stop,
   }

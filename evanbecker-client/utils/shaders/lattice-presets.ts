@@ -31,7 +31,7 @@ export const LATTICE_PRESETS: LatticePreset[] = [
     animation: 3,     // Pulse
     cellSpacing: 0.15,
     wallThickness: 0.48,
-    animOffset: 0.35,
+    animOffset: 0.02,
     lightAngleX: 0.5,
     lightAngleY: 0.7,
     wireframe: false,

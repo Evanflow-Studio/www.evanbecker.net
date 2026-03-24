@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { useRayMarchGL, type QualityPreset, type PlacedObject, type SceneDefault } from '~/composables/useRayMarchGL'
-import { useAudioReactive } from '~/composables/useAudioReactive'
+import { useRayMarchGL, type QualityPreset, type SceneDefault } from '~/composables/useRayMarchGL'
 import { useUrlState } from '~/composables/useUrlState'
 import { useCommandDispatcher, type RayMarchCommand } from '~/composables/useCommandDispatcher'
 import { LATTICE_PRESETS, type LatticePreset } from '~/utils/shaders/lattice-presets'
@@ -29,10 +28,10 @@ const lastInteraction = ref(0)
 // Quality
 const quality = ref(2)
 const qualityPresets: QualityPreset[] = [
-  { name: 'Performance', steps: 64,  threshold: 0.003,  maxDist: 500,  warpCorrection: 1.0, bloom: 0,   chroma: 0,   vignette: 0 },
-  { name: 'Balanced',    steps: 128, threshold: 0.001,  maxDist: 1000, warpCorrection: 0.8, bloom: 0.3, chroma: 0.5, vignette: 0 },
-  { name: 'High',        steps: 256, threshold: 0.0005, maxDist: 2000, warpCorrection: 0.6, bloom: 0.6, chroma: 1.0, vignette: 0 },
-  { name: 'Ultra',       steps: 512, threshold: 0.0001, maxDist: 4000, warpCorrection: 0.3, bloom: 1.0, chroma: 1.5, vignette: 0 },
+  { name: 'Performance', steps: 64,  threshold: 0.003,  maxDist: 500,  warpCorrection: 1.0, bloom: 0,   chroma: 0 },
+  { name: 'Balanced',    steps: 128, threshold: 0.001,  maxDist: 1000, warpCorrection: 0.8, bloom: 0.3, chroma: 0.5 },
+  { name: 'High',        steps: 256, threshold: 0.0005, maxDist: 2000, warpCorrection: 0.6, bloom: 0.6, chroma: 1.0 },
+  { name: 'Ultra',       steps: 512, threshold: 0.0001, maxDist: 4000, warpCorrection: 0.3, bloom: 1.0, chroma: 1.5 },
 ]
 
 // Auto-apply FX when quality changes
@@ -40,7 +39,6 @@ watch(quality, (q) => {
   const preset = qualityPresets[q]
   bloomStrength.value = preset.bloom
   chromaticAmount.value = preset.chroma
-  vignetteStrength.value = preset.vignette
 })
 
 // Lattice controls
@@ -51,10 +49,7 @@ const animation = ref(0)
 const latticePreset = ref(0)
 const animOffset = ref(0.0)
 
-// Placement & rendering
-const placedObjects = ref<PlacedObject[]>([])
-const placeMode = ref(false)
-const placeShape = ref(0)
+// Rendering
 const wireframe = ref(false)
 
 // Time control
@@ -64,14 +59,12 @@ const timeSpeed = ref(1.0)
 // Post-processing
 const bloomStrength = ref(0)
 const chromaticAmount = ref(0)
-const vignetteStrength = ref(0)
 
-// Audio color reactivity
-const colorReact = ref(0)
-
-// Fog & movement
+// Fog, movement & zoom
 const fogDensity = ref(0.001)
 const moveSpeed = ref(CAMERA_DEFAULTS.MOVE_SPEED)
+const zoom = ref(1.0)
+const showMinimap = ref(true)
 
 // Custom palette (IQ cosine: a + b * cos(2π(c*t + d)))
 const paletteA = ref<[number, number, number]>([0.5, 0.5, 0.5])
@@ -99,14 +92,11 @@ function applyCustomGlsl() {
   }
 }
 
-// Audio
-const audio = useAudioReactive()
-
 // URL state
 const urlState = useUrlState({
   scene, palette, quality, geoPreset, animation,
   cellSpacing, wallThickness, animOffset, wireframe,
-  bloomStrength, chromaticAmount, colorReact, timeSpeed,
+  bloomStrength, chromaticAmount, timeSpeed,
   cameraPosX, cameraPosY, cameraPosZ, cameraYaw, cameraPitch,
   moveSpeed, fogDensity,
 })
@@ -132,23 +122,19 @@ watch(scene, (s) => {
 })
 
 // WebGL engine
-const isDragging = ref(false)
-
 const {
   fps, error, shaderCompiled, glContextCreated, glErrors, orbitProgress,
-  gl, program, onMouseDown, onWheel, placeObjectAhead, clearPlacedObjects,
-  undoLastPlacement, captureScreenshot, recompileWithCustomGlsl, start, stop,
+  gl, program, onMouseDown, onWheel,
+  captureScreenshot, recompileWithCustomGlsl, start, stop,
 } = useRayMarchGL({
   canvasRef, scene, palette, iterations, lightAngleX, lightAngleY,
   cameraPosX, cameraPosY, cameraPosZ, cameraYaw, cameraPitch,
   autoRotate, lastInteraction,
   cellSpacing, wallThickness, geoPreset, animation, quality,
-  placedObjects, placeMode, wireframe, animOffset, placeShape,
-  placeDistance: CAMERA_DEFAULTS.PLACE_DISTANCE,
+  wireframe, animOffset,
   timePaused, timeSpeed,
-  bloomStrength, chromaticAmount, vignetteStrength,
-  audioBass: audio.bass, audioMid: audio.mid, audioTreble: audio.treble, audioAmplitude: audio.amplitude,
-  colorReact, fogDensity, paletteA, paletteB, paletteC, paletteD,
+  bloomStrength, chromaticAmount,
+  fogDensity, zoom, showMinimap, paletteA, paletteB, paletteC, paletteD,
   customGlsl, customJs,
   qualityPresets, sceneDefaults,
   orbitDelay: CAMERA_DEFAULTS.ORBIT_DELAY_MS,
@@ -178,42 +164,21 @@ function onFullscreenChange() {
   isFullscreen.value = !!document.fullscreenElement
 }
 
-function handleMouseDown(e: MouseEvent) {
-  isDragging.value = true
-  onMouseDown(e)
-}
-
-function handleMouseUp() {
-  isDragging.value = false
-}
-
-const audioHandlers: Record<string, () => void> = {
-  none: () => audio.stop(),
-  generated: () => audio.startDefault(scene.value),
-  track: () => audio.startTrack('/audio/chill-ambient-loop.mp3', 'Chill Ambient Loop'),
-  mic: () => audio.startMic(),
-}
-
 // Command dispatcher — single entry point for all control interactions
 const { dispatch } = useCommandDispatcher(
   {
     scene, palette, quality, iterations, geoPreset, animation, latticePreset,
     cellSpacing, wallThickness, animOffset, wireframe,
-    bloomStrength, chromaticAmount, vignetteStrength, fogDensity, colorReact,
+    bloomStrength, chromaticAmount, fogDensity,
     autoRotate, moveSpeed, timePaused, timeSpeed,
-    placeMode, placeShape, customGlsl, customJs,
+    customGlsl, customJs,
     paletteA, paletteB, paletteC, paletteD, lastInteraction,
   },
   {
-    placeObjectAhead,
-    clearPlacedObjects,
-    undoLastPlacement,
     captureScreenshot,
     copyShareUrl: () => urlState.copyShareUrl(),
     toggleFullscreen,
     applyCustomGlsl,
-    handleAudioSource: (s: string) => audioHandlers[s]?.(),
-    handleAudioFile: (f: File) => audio.startFile(f),
     applyLatticePreset: (i: number) => {
       const preset = LATTICE_PRESETS[i]
       palette.value = preset.palette
@@ -229,23 +194,13 @@ const { dispatch } = useCommandDispatcher(
   },
 )
 
-// Restart drone with new tones when scene changes (if drone is active)
-watch(scene, (s) => {
-  if (audio.source.value === 'generated') {
-    audio.startDefault(s)
-  }
-})
-
 onMounted(() => {
   start()
-  window.addEventListener('mouseup', handleMouseUp)
   document.addEventListener('fullscreenchange', onFullscreenChange)
 })
 
 onUnmounted(() => {
   stop()
-  audio.stop()
-  window.removeEventListener('mouseup', handleMouseUp)
   document.removeEventListener('fullscreenchange', onFullscreenChange)
 })
 </script>
@@ -261,12 +216,11 @@ onUnmounted(() => {
     <div v-else class="relative" :class="isFullscreen ? 'h-screen' : ''">
       <canvas
         ref="canvasRef"
-        class="w-full"
+        class="w-full cursor-grab"
         :class="[
           isFullscreen ? 'h-screen' : 'h-[500px] rounded-2xl',
-          isDragging ? 'cursor-grabbing' : placeMode ? 'cursor-crosshair' : 'cursor-grab',
         ]"
-        @mousedown="handleMouseDown"
+        @mousedown="onMouseDown"
         @wheel.prevent="onWheel"
       />
 
@@ -309,20 +263,10 @@ onUnmounted(() => {
         :lattice-preset="latticePreset"
         :bloom-strength="bloomStrength"
         :chromatic-amount="chromaticAmount"
-        :vignette-strength="vignetteStrength"
         :fog-density="fogDensity"
-        :color-react="colorReact"
         :move-speed="moveSpeed"
-        :place-mode="placeMode"
-        :place-shape="placeShape"
-        :placed-count="placedObjects.length"
         :time-paused="timePaused"
         :time-speed="timeSpeed"
-        :audio-source="audio.source.value"
-        :audio-file-name="audio.fileName.value"
-        :audio-bass="audio.bass.value"
-        :audio-mid="audio.mid.value"
-        :audio-treble="audio.treble.value"
         :custom-glsl="customGlsl"
         :custom-js="customJs"
         :glsl-error="glslError"

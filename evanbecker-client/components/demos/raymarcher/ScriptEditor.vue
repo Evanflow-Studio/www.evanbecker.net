@@ -20,7 +20,7 @@ const glslPlaceholder = `// Transform vec3 rp (relative to camera)
 rp.y += sin(rp.x * 2.0 + u_time) * 0.5;`
 
 const jsPlaceholder = `// Runs each frame. Available: time, bass, mid, treble, amplitude
-// Can set: spacing, thickness, animOffset, bloom, chroma, vignette
+// Can set: spacing, thickness, animOffset, bloom, chroma
 spacing = 0.1 + Math.sin(time) * 0.05;
 bloom = bass * 2;`
 </script>
