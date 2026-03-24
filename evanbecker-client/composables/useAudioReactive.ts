@@ -15,6 +15,66 @@ export const AUDIO_TRACKS = [
   { id: 'chill-ambient-loop', name: 'Chill Ambient Loop', path: '/audio/chill-ambient-loop.mp3' },
 ]
 
+// === Chord Progressions ===
+
+interface ChordStep {
+  drone: number
+  chord: [number, number, number]
+  shimmer: number
+  filterCutoff: number
+}
+
+const PROGRESSIONS: Record<number, ChordStep[]> = {
+  0: [ // Scene 0: Am → F → C → G
+    { drone: NOTES.A1, chord: [NOTES.A3, NOTES.Cs4, NOTES.E4], shimmer: NOTES.A5, filterCutoff: 800 },
+    { drone: NOTES.F1, chord: [NOTES.F3, NOTES.A3, NOTES.C4], shimmer: NOTES.F5, filterCutoff: 1000 },
+    { drone: NOTES.C2, chord: [NOTES.C4, NOTES.E4, NOTES.G4], shimmer: NOTES.C6, filterCutoff: 1200 },
+    { drone: NOTES.G1, chord: [NOTES.G3, NOTES.B3, NOTES.D4], shimmer: NOTES.G5, filterCutoff: 600 },
+  ],
+  1: [ // Scene 1: Em → Bm → Am → Dm
+    { drone: NOTES.E1, chord: [NOTES.E3, NOTES.Gs3, NOTES.B3], shimmer: NOTES.E5, filterCutoff: 600 },
+    { drone: NOTES.B1, chord: [NOTES.B3, NOTES.D4, NOTES.F4], shimmer: NOTES.E5, filterCutoff: 500 },
+    { drone: NOTES.A1, chord: [NOTES.A3, NOTES.C4, NOTES.E4], shimmer: NOTES.A5, filterCutoff: 700 },
+    { drone: NOTES.D2, chord: [NOTES.D3, NOTES.F3, NOTES.A3], shimmer: NOTES.F5, filterCutoff: 550 },
+  ],
+  2: [ // Scene 2: C → Am → F → G
+    { drone: NOTES.C2, chord: [NOTES.C4, NOTES.E4, NOTES.G4], shimmer: NOTES.C6, filterCutoff: 1000 },
+    { drone: NOTES.A1, chord: [NOTES.A3, NOTES.C4, NOTES.E4], shimmer: NOTES.A5, filterCutoff: 900 },
+    { drone: NOTES.F1, chord: [NOTES.F3, NOTES.A3, NOTES.C4], shimmer: NOTES.F5, filterCutoff: 1200 },
+    { drone: NOTES.G1, chord: [NOTES.G3, NOTES.B3, NOTES.D4], shimmer: NOTES.G5, filterCutoff: 1100 },
+  ],
+  3: [ // Scene 3: Gm → Eb → Bb → F
+    { drone: NOTES.G1, chord: [NOTES.G3, NOTES.Bb3, NOTES.D4], shimmer: NOTES.G5, filterCutoff: 500 },
+    { drone: NOTES.Eb3, chord: [NOTES.Eb3, NOTES.G3, NOTES.Bb3], shimmer: NOTES.G5, filterCutoff: 450 },
+    { drone: NOTES.Bb1, chord: [NOTES.Bb3, NOTES.D4, NOTES.F4], shimmer: NOTES.F5, filterCutoff: 550 },
+    { drone: NOTES.F1, chord: [NOTES.F3, NOTES.A3, NOTES.C4], shimmer: NOTES.F5, filterCutoff: 600 },
+  ],
+}
+
+const CHORD_INTERVAL_MS = 8000
+const GLIDE_SECONDS = 2.0
+
+// === Drone config per scene ===
+
+interface DroneConfig {
+  droneFreq: number
+  detune: number
+  chord: [number, number, number]
+  shimmerFreq: number
+  filterCutoff: number
+  lfoSpeed: number
+  waveType: OscillatorType
+}
+
+const sceneVibes: Record<number, DroneConfig> = {
+  0: { droneFreq: NOTES.A1, detune: 0.5, chord: [NOTES.A3, NOTES.Cs4, NOTES.E4], shimmerFreq: NOTES.A5, filterCutoff: 800, lfoSpeed: 0.08, waveType: 'triangle' },
+  1: { droneFreq: NOTES.E1, detune: 0.3, chord: [NOTES.E3, NOTES.Gs3, NOTES.B3], shimmerFreq: NOTES.E5, filterCutoff: 600, lfoSpeed: 0.05, waveType: 'sine' },
+  2: { droneFreq: NOTES.C2, detune: 0.8, chord: [NOTES.C4, NOTES.E4, NOTES.G4], shimmerFreq: NOTES.C6, filterCutoff: 1000, lfoSpeed: 0.12, waveType: 'triangle' },
+  3: { droneFreq: NOTES.G1, detune: 0.4, chord: [NOTES.G3, NOTES.Bb3, NOTES.D4], shimmerFreq: NOTES.G5, filterCutoff: 500, lfoSpeed: 0.04, waveType: 'sine' },
+}
+
+// === Composable ===
+
 export function useAudioReactive() {
   const bass = ref(0)
   const mid = ref(0)
@@ -30,6 +90,7 @@ export function useAudioReactive() {
   let audioElement: HTMLAudioElement | null = null
   let mediaStream: MediaStream | null = null
   let generatorNodes: AudioNode[] = []
+  let chordTimerId: ReturnType<typeof setInterval> | null = null
   let rafId = 0
   let dataArray: Uint8Array | null = null
 
@@ -37,7 +98,6 @@ export function useAudioReactive() {
     if (!audioCtx || audioCtx.state === 'closed') {
       audioCtx = new AudioContext()
     }
-    // Resume if suspended (browsers require user gesture)
     if (audioCtx.state === 'suspended') {
       audioCtx.resume()
     }
@@ -78,10 +138,17 @@ export function useAudioReactive() {
   }
 
   function stopCurrent() {
+    // 1. Stop analysis loop
     cancelAnimationFrame(rafId)
+    rafId = 0
 
-    // Reset state immediately so UI updates
-    const wasActive = isActive.value
+    // 2. Clear chord progression timer
+    if (chordTimerId !== null) {
+      clearInterval(chordTimerId)
+      chordTimerId = null
+    }
+
+    // 3. Reset reactive state immediately
     isActive.value = false
     source.value = 'none'
     fileName.value = ''
@@ -90,11 +157,13 @@ export function useAudioReactive() {
     treble.value = 0
     amplitude.value = 0
 
-    // Then clean up audio nodes (can be slow)
+    // 4. Disconnect source node
     if (sourceNode) {
       try { sourceNode.disconnect() } catch { /* ok */ }
       sourceNode = null
     }
+
+    // 5. Stop and disconnect all generator nodes
     const nodesToStop = [...generatorNodes]
     generatorNodes = []
     for (const node of nodesToStop) {
@@ -103,41 +172,65 @@ export function useAudioReactive() {
         node.disconnect()
       } catch { /* already stopped */ }
     }
+
+    // 6. Clean up HTML audio element
     if (audioElement) {
       audioElement.pause()
       audioElement.src = ''
       audioElement = null
     }
+
+    // 7. Stop media stream tracks (mic)
     if (mediaStream) {
       mediaStream.getTracks().forEach(t => t.stop())
       mediaStream = null
     }
+
+    // 8. Disconnect analyser
     if (analyser) {
       try { analyser.disconnect() } catch { /* ok */ }
       analyser = null
     }
+    dataArray = null
 
-    // Keep audioCtx alive — browsers block new contexts created outside user gestures.
-    // Only fullStop() (on unmount) closes it.
+    // Keep audioCtx alive — browsers block new contexts outside user gestures
   }
 
-  // Scene-reactive tone presets for the generative drone
-  interface DroneConfig {
-    droneFreq: number
+  // === Chord Progression Engine ===
+
+  interface DroneOscillators {
+    drone1: OscillatorNode
+    drone2: OscillatorNode
+    pad1: OscillatorNode
+    pad2: OscillatorNode
+    pad3: OscillatorNode
+    shimmer: OscillatorNode
+    filter: BiquadFilterNode
     detune: number
-    chord: [number, number, number]
-    shimmerFreq: number
-    filterCutoff: number
-    lfoSpeed: number
-    waveType: OscillatorType
   }
 
-  const sceneVibes: Record<number, DroneConfig> = {
-    0: { droneFreq: NOTES.A1, detune: 0.5, chord: [NOTES.A3, NOTES.Cs4, NOTES.E4], shimmerFreq: NOTES.A5, filterCutoff: 800, lfoSpeed: 0.08, waveType: 'triangle' },
-    1: { droneFreq: NOTES.E1, detune: 0.3, chord: [NOTES.E3, NOTES.Gs3, NOTES.B3], shimmerFreq: NOTES.E5, filterCutoff: 600, lfoSpeed: 0.05, waveType: 'sine' },
-    2: { droneFreq: NOTES.C2, detune: 0.8, chord: [NOTES.C4, NOTES.E4, NOTES.G4], shimmerFreq: NOTES.C6, filterCutoff: 1000, lfoSpeed: 0.12, waveType: 'triangle' },
-    3: { droneFreq: NOTES.G1, detune: 0.4, chord: [NOTES.G3, NOTES.Bb3, NOTES.D4], shimmerFreq: NOTES.G5, filterCutoff: 500, lfoSpeed: 0.04, waveType: 'sine' },
+  function startChordProgression(oscs: DroneOscillators, sceneIndex: number) {
+    const progression = PROGRESSIONS[sceneIndex] || PROGRESSIONS[0]
+    let stepIndex = 0
+
+    chordTimerId = setInterval(() => {
+      if (!audioCtx) return
+      stepIndex = (stepIndex + 1) % progression.length
+      const step = progression[stepIndex]
+      const now = audioCtx.currentTime
+
+      // Glide oscillator frequencies to next chord
+      oscs.drone1.frequency.linearRampToValueAtTime(step.drone, now + GLIDE_SECONDS)
+      oscs.drone2.frequency.linearRampToValueAtTime(step.drone + oscs.detune, now + GLIDE_SECONDS)
+      oscs.pad1.frequency.linearRampToValueAtTime(step.chord[0], now + GLIDE_SECONDS)
+      oscs.pad2.frequency.linearRampToValueAtTime(step.chord[1], now + GLIDE_SECONDS)
+      oscs.pad3.frequency.linearRampToValueAtTime(step.chord[2], now + GLIDE_SECONDS)
+      oscs.shimmer.frequency.linearRampToValueAtTime(step.shimmer, now + GLIDE_SECONDS)
+      oscs.filter.frequency.linearRampToValueAtTime(step.filterCutoff, now + GLIDE_SECONDS)
+    }, CHORD_INTERVAL_MS)
   }
+
+  // === Source Starters ===
 
   function startDefault(sceneIndex = 0) {
     stopCurrent()
@@ -147,7 +240,6 @@ export function useAudioReactive() {
 
     const vibe = sceneVibes[sceneIndex] || sceneVibes[0]
 
-    // Procedural ambient drone — tones driven by scene
     const masterGain = ctx.createGain()
     masterGain.gain.value = AUDIO.MASTER_VOLUME
     generatorNodes.push(masterGain)
@@ -183,26 +275,25 @@ export function useAudioReactive() {
     shimmerLfo.connect(shimmerLfoGain)
     shimmerLfoGain.connect(shimmer.frequency)
 
-    // Gain levels per layer
+    // Gain levels — boosted for more FFT variation
     const droneGain = ctx.createGain()
     droneGain.gain.value = 0.6
     const padGain = ctx.createGain()
-    padGain.gain.value = 0.2
+    padGain.gain.value = 0.35 // boosted from 0.2
     const shimmerGain = ctx.createGain()
-    shimmerGain.gain.value = 0.08
+    shimmerGain.gain.value = 0.12 // boosted from 0.08
 
-    // Low-pass filter — cutoff from scene config
+    // Low-pass filter with wider LFO sweep
     const filter = ctx.createBiquadFilter()
     filter.type = 'lowpass'
     filter.frequency.value = vibe.filterCutoff
     filter.Q.value = 0.7
 
-    // Animate filter with LFO — speed from scene config
     const filterLfo = ctx.createOscillator()
     filterLfo.type = 'sine'
     filterLfo.frequency.value = vibe.lfoSpeed
     const filterLfoGain = ctx.createGain()
-    filterLfoGain.gain.value = 400
+    filterLfoGain.gain.value = 800 // boosted from 400
     filterLfo.connect(filterLfoGain)
     filterLfoGain.connect(filter.frequency)
 
@@ -225,6 +316,12 @@ export function useAudioReactive() {
     const oscs = [drone1, drone2, pad1, pad2, pad3, shimmer, shimmerLfo, filterLfo]
     oscs.forEach(o => o.start())
     generatorNodes.push(...oscs, droneGain, padGain, shimmerGain, filter, shimmerLfoGain, filterLfoGain)
+
+    // Start chord progression
+    startChordProgression(
+      { drone1, drone2, pad1, pad2, pad3, shimmer, filter, detune: vibe.detune },
+      sceneIndex,
+    )
 
     source.value = 'generated'
     isActive.value = true
@@ -267,7 +364,6 @@ export function useAudioReactive() {
       mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
       sourceNode = ctx.createMediaStreamSource(mediaStream)
       sourceNode.connect(analyser)
-      // Don't connect analyser to destination — avoids feedback
       source.value = 'mic'
       isActive.value = true
       fileName.value = 'Microphone'
@@ -314,17 +410,9 @@ export function useAudioReactive() {
   onUnmounted(fullStop)
 
   return {
-    bass,
-    mid,
-    treble,
-    amplitude,
-    source,
-    isActive,
-    fileName,
-    startDefault,
-    startTrack,
-    startMic,
-    startFile,
+    bass, mid, treble, amplitude,
+    source, isActive, fileName,
+    startDefault, startTrack, startMic, startFile,
     stop: stopCurrent,
   }
 }

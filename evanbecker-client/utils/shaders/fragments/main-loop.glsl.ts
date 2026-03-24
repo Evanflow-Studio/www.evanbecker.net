@@ -94,7 +94,7 @@ void main() {
       col = wireColor * wire * ao;
 
       // Depth fog (lighter in wireframe)
-      float fog = exp(-0.002 * t * t);
+      float fog = exp(-u_fogDensity * 0.4 * t * t);
       col = mix(bgColor, col, fog);
     } else {
       vec3 ambient = 0.2 * baseColor * ao;
@@ -114,14 +114,16 @@ void main() {
       }
 
       // Depth fog
-      float fog = exp(-0.005 * t * t);
+      float fog = exp(-u_fogDensity * t * t);
       col = mix(bgColor, col, fog);
     }
   } else {
-    // Near-miss glow — boosted by treble
+    // Near-miss glow — boosted by treble, faded by distance fog
     float glowIntensity = 0.08 + u_treble * 0.3;
     float glow = exp(-16.0 * minDist) * step(0.0, 0.5 - minDist);
-    col += getColor(0.5 + u_time * 0.02 + u_mid * 0.3) * glow * glowIntensity;
+    // Fade glow with same fog as geometry — prevents bright spots at far distances
+    float glowFog = exp(-u_fogDensity * t * t);
+    col += getColor(0.5 + u_time * 0.02 + u_mid * 0.3) * glow * glowIntensity * glowFog;
   }
 
   // Reinhard tone mapping + gamma

@@ -28,8 +28,10 @@ vec3 getColor(float t) {
     return cosPalette(t, vec3(0.5,0.3,0.5), vec3(0.4,0.4,0.5), vec3(1.0,0.7,1.0), vec3(0.00,0.50,0.30));
   } else if (u_palette == 10) { // Forest — green/earth
     return cosPalette(t, vec3(0.2,0.4,0.15), vec3(0.3,0.3,0.2), vec3(1.0,1.2,0.5), vec3(0.20,0.30,0.50));
-  } else { // Mono — grayscale
+  } else if (u_palette == 11) { // Mono — grayscale
     return cosPalette(t, vec3(0.5,0.5,0.5), vec3(0.3,0.3,0.3), vec3(1.0,1.0,1.0), vec3(0.00,0.00,0.00));
+  } else { // Custom — user-defined palette vectors
+    return cosPalette(t, u_paletteA, u_paletteB, u_paletteC, u_paletteD);
   }
 }
 `

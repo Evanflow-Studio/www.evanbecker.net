@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRayMarchGL, type QualityPreset, type PlacedObject, type SceneDefault } from '~/composables/useRayMarchGL'
 import { useAudioReactive } from '~/composables/useAudioReactive'
 import { useUrlState } from '~/composables/useUrlState'
+import { useCommandDispatcher, type RayMarchCommand } from '~/composables/useCommandDispatcher'
 import { LATTICE_PRESETS, type LatticePreset } from '~/utils/shaders/lattice-presets'
 import { ANIMATION, CAMERA_DEFAULTS } from '~/utils/shaders/constants'
 
@@ -68,6 +69,16 @@ const vignetteStrength = ref(0)
 // Audio color reactivity
 const colorReact = ref(0)
 
+// Fog & movement
+const fogDensity = ref(0.001)
+const moveSpeed = ref(CAMERA_DEFAULTS.MOVE_SPEED)
+
+// Custom palette (IQ cosine: a + b * cos(2π(c*t + d)))
+const paletteA = ref<[number, number, number]>([0.5, 0.5, 0.5])
+const paletteB = ref<[number, number, number]>([0.5, 0.5, 0.5])
+const paletteC = ref<[number, number, number]>([1.0, 1.0, 1.0])
+const paletteD = ref<[number, number, number]>([0.0, 0.33, 0.67])
+
 // Scripting
 const customGlsl = ref('')
 const customJs = ref('')
@@ -97,25 +108,10 @@ const urlState = useUrlState({
   cellSpacing, wallThickness, animOffset, wireframe,
   bloomStrength, chromaticAmount, colorReact, timeSpeed,
   cameraPosX, cameraPosY, cameraPosZ, cameraYaw, cameraPitch,
+  moveSpeed, fogDensity,
 })
 
-// Apply lattice preset
-function applyLatticePreset(preset: LatticePreset) {
-  palette.value = preset.palette
-  geoPreset.value = preset.geoPreset
-  animation.value = preset.animation
-  cellSpacing.value = preset.cellSpacing
-  wallThickness.value = preset.wallThickness
-  animOffset.value = preset.animOffset
-  lightAngleX.value = preset.lightAngleX
-  lightAngleY.value = preset.lightAngleY
-  wireframe.value = preset.wireframe
-}
-
-watch(latticePreset, (i) => {
-  applyLatticePreset(LATTICE_PRESETS[i])
-  lastInteraction.value = performance.now()
-})
+// Lattice preset is now applied via the command dispatcher
 
 // Per-scene camera defaults
 const sceneDefaults: SceneDefault[] = [
@@ -152,10 +148,11 @@ const {
   timePaused, timeSpeed,
   bloomStrength, chromaticAmount, vignetteStrength,
   audioBass: audio.bass, audioMid: audio.mid, audioTreble: audio.treble, audioAmplitude: audio.amplitude,
-  colorReact, customGlsl, customJs,
+  colorReact, fogDensity, paletteA, paletteB, paletteC, paletteD,
+  customGlsl, customJs,
   qualityPresets, sceneDefaults,
   orbitDelay: CAMERA_DEFAULTS.ORBIT_DELAY_MS,
-  moveSpeed: CAMERA_DEFAULTS.MOVE_SPEED,
+  moveSpeed,
   lookSpeed: CAMERA_DEFAULTS.LOOK_SPEED,
 })
 
@@ -181,10 +178,6 @@ function onFullscreenChange() {
   isFullscreen.value = !!document.fullscreenElement
 }
 
-function onControlUpdate() {
-  lastInteraction.value = performance.now()
-}
-
 function handleMouseDown(e: MouseEvent) {
   isDragging.value = true
   onMouseDown(e)
@@ -201,9 +194,40 @@ const audioHandlers: Record<string, () => void> = {
   mic: () => audio.startMic(),
 }
 
-function handleAudioSource(source: string) {
-  audioHandlers[source]?.()
-}
+// Command dispatcher — single entry point for all control interactions
+const { dispatch } = useCommandDispatcher(
+  {
+    scene, palette, quality, iterations, geoPreset, animation, latticePreset,
+    cellSpacing, wallThickness, animOffset, wireframe,
+    bloomStrength, chromaticAmount, vignetteStrength, fogDensity, colorReact,
+    autoRotate, moveSpeed, timePaused, timeSpeed,
+    placeMode, placeShape, customGlsl, customJs,
+    paletteA, paletteB, paletteC, paletteD, lastInteraction,
+  },
+  {
+    placeObjectAhead,
+    clearPlacedObjects,
+    undoLastPlacement,
+    captureScreenshot,
+    copyShareUrl: () => urlState.copyShareUrl(),
+    toggleFullscreen,
+    applyCustomGlsl,
+    handleAudioSource: (s: string) => audioHandlers[s]?.(),
+    handleAudioFile: (f: File) => audio.startFile(f),
+    applyLatticePreset: (i: number) => {
+      const preset = LATTICE_PRESETS[i]
+      palette.value = preset.palette
+      geoPreset.value = preset.geoPreset
+      animation.value = preset.animation
+      cellSpacing.value = preset.cellSpacing
+      wallThickness.value = preset.wallThickness
+      animOffset.value = preset.animOffset
+      lightAngleX.value = preset.lightAngleX
+      lightAngleY.value = preset.lightAngleY
+      wireframe.value = preset.wireframe
+    },
+  },
+)
 
 // Restart drone with new tones when scene changes (if drone is active)
 watch(scene, (s) => {
@@ -211,10 +235,6 @@ watch(scene, (s) => {
     audio.startDefault(s)
   }
 })
-
-function handleAudioFile(file: File) {
-  audio.startFile(file)
-}
 
 onMounted(() => {
   start()
@@ -289,7 +309,10 @@ onUnmounted(() => {
         :lattice-preset="latticePreset"
         :bloom-strength="bloomStrength"
         :chromatic-amount="chromaticAmount"
+        :vignette-strength="vignetteStrength"
+        :fog-density="fogDensity"
         :color-react="colorReact"
+        :move-speed="moveSpeed"
         :place-mode="placeMode"
         :place-shape="placeShape"
         :placed-count="placedObjects.length"
@@ -303,35 +326,7 @@ onUnmounted(() => {
         :custom-glsl="customGlsl"
         :custom-js="customJs"
         :glsl-error="glslError"
-        @update:scene="scene = $event; onControlUpdate()"
-        @update:palette="palette = $event; onControlUpdate()"
-        @update:quality="quality = $event; onControlUpdate()"
-        @update:iterations="iterations = $event; onControlUpdate()"
-        @update:auto-rotate="autoRotate = $event; onControlUpdate()"
-        @update:cell-spacing="cellSpacing = $event; onControlUpdate()"
-        @update:wall-thickness="wallThickness = $event; onControlUpdate()"
-        @update:geo-preset="geoPreset = $event; onControlUpdate()"
-        @update:animation="animation = $event; onControlUpdate()"
-        @update:wireframe="wireframe = $event; onControlUpdate()"
-        @update:anim-offset="animOffset = $event; onControlUpdate()"
-        @update:lattice-preset="latticePreset = $event; onControlUpdate()"
-        @update:bloom-strength="bloomStrength = $event"
-        @update:chromatic-amount="chromaticAmount = $event"
-        @update:color-react="colorReact = $event"
-        @update:place-mode="placeMode = $event; onControlUpdate()"
-        @update:place-shape="placeShape = $event; onControlUpdate()"
-        @update:time-paused="timePaused = $event"
-        @update:time-speed="timeSpeed = $event"
-        @update:custom-glsl="customGlsl = $event"
-        @update:custom-js="customJs = $event"
-        @place-object="placeObjectAhead(); onControlUpdate()"
-        @clear-placed="clearPlacedObjects(); onControlUpdate()"
-        @undo-placed="undoLastPlacement(); onControlUpdate()"
-        @screenshot="captureScreenshot()"
-        @copy-url="urlState.copyShareUrl()"
-        @audio-source="handleAudioSource"
-        @audio-file="handleAudioFile"
-        @apply-glsl="applyCustomGlsl"
+        @command="dispatch"
       />
     </div>
   </div>

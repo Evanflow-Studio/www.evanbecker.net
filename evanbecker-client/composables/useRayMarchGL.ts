@@ -106,12 +106,17 @@ export interface RayMarchGLOptions {
   audioTreble: Ref<number>
   audioAmplitude: Ref<number>
   colorReact: Ref<number>
+  fogDensity: Ref<number>
+  paletteA: Ref<[number, number, number]>
+  paletteB: Ref<[number, number, number]>
+  paletteC: Ref<[number, number, number]>
+  paletteD: Ref<[number, number, number]>
   customGlsl: Ref<string>
   customJs: Ref<string>
   qualityPresets: QualityPreset[]
   sceneDefaults: SceneDefault[]
   orbitDelay: number
-  moveSpeed: number
+  moveSpeed: Ref<number>
   lookSpeed: number
 }
 
@@ -127,6 +132,7 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     timePaused, timeSpeed,
     bloomStrength, chromaticAmount, vignetteStrength,
     audioBass, audioMid, audioTreble, audioAmplitude, colorReact,
+    fogDensity, paletteA, paletteB, paletteC, paletteD,
     customGlsl, customJs,
     qualityPresets, sceneDefaults, orbitDelay, moveSpeed, lookSpeed,
   } = options
@@ -220,6 +226,8 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     if (!prog) return null
     gl.attachShader(prog, vs)
     gl.attachShader(prog, fs)
+    // Force a_position to index 0 for all programs so they share the same VAO
+    gl.bindAttribLocation(prog, 0, 'a_position')
     gl.linkProgram(prog)
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
       error.value = 'Program link failed: ' + (gl.getProgramInfoLog(prog) || '')
@@ -340,7 +348,7 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
 
   function processKeys() {
     if (isOrbitAnimation() || input.keysDown.size === 0) return
-    const speed = input.keysDown.has('shift') ? moveSpeed * CAMERA_DEFAULTS.SPRINT_MULTIPLIER : moveSpeed
+    const speed = input.keysDown.has('shift') ? moveSpeed.value * CAMERA_DEFAULTS.SPRINT_MULTIPLIER : moveSpeed.value
 
     for (const key of input.keysDown) {
       const action = KEY_ACTIONS[key]
@@ -454,6 +462,15 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     gl.uniform1f(gl.getUniformLocation(program, 'u_hitThreshold'), qPreset.threshold)
     gl.uniform1f(gl.getUniformLocation(program, 'u_maxDist'), qPreset.maxDist)
     gl.uniform1f(gl.getUniformLocation(program, 'u_warpCorrection'), qPreset.warpCorrection)
+
+    // Fog
+    gl.uniform1f(gl.getUniformLocation(program, 'u_fogDensity'), fogDensity.value)
+
+    // Custom palette
+    gl.uniform3f(gl.getUniformLocation(program, 'u_paletteA'), paletteA.value[0], paletteA.value[1], paletteA.value[2])
+    gl.uniform3f(gl.getUniformLocation(program, 'u_paletteB'), paletteB.value[0], paletteB.value[1], paletteB.value[2])
+    gl.uniform3f(gl.getUniformLocation(program, 'u_paletteC'), paletteC.value[0], paletteC.value[1], paletteC.value[2])
+    gl.uniform3f(gl.getUniformLocation(program, 'u_paletteD'), paletteD.value[0], paletteD.value[1], paletteD.value[2])
 
     // Audio
     gl.uniform1f(gl.getUniformLocation(program, 'u_bass'), audioBass.value)
@@ -574,7 +591,9 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   function onMouseMove(e: MouseEvent) {
     if (!input.isDragging || isOrbitAnimation()) return
     cameraYaw.value += (e.clientX - input.lastMouse.x) * lookSpeed
-    cameraPitch.value -= (e.clientY - input.lastMouse.y) * lookSpeed
+    const MAX_PITCH = 1.484 // ~85 degrees — prevents gimbal lock at poles
+    cameraPitch.value = Math.max(-MAX_PITCH, Math.min(MAX_PITCH,
+      cameraPitch.value - (e.clientY - input.lastMouse.y) * lookSpeed))
     input.lastMouse = { x: e.clientX, y: e.clientY }
     lastInteraction.value = performance.now()
   }

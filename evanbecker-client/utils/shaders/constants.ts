@@ -1,6 +1,6 @@
 // Scene and palette names — shared between controls and orchestrator
 export const SCENE_NAMES = ['Infinite Lattice', 'Mandelbulb', 'CSG Operations', 'Fractal Descent'] as const
-export const PALETTE_NAMES = ['Aether', 'Cosmic', 'Inferno', 'Ocean', 'Electric', 'Prismatic', 'Neon', 'Sunset', 'Ice', 'Vapor', 'Forest', 'Mono'] as const
+export const PALETTE_NAMES = ['Aether', 'Cosmic', 'Inferno', 'Ocean', 'Electric', 'Prismatic', 'Neon', 'Sunset', 'Ice', 'Vapor', 'Forest', 'Mono', 'Custom'] as const
 export const QUALITY_NAMES = ['Performance', 'Balanced', 'High', 'Ultra'] as const
 export const GEO_PRESET_NAMES = ['Hollow Cube', 'Cross Beams', 'Nested Spheres', 'Frame Only', 'Torus Lattice'] as const
 export const ANIMATION_NAMES = ['None', 'Wave', 'Twist', 'Pulse', 'Kaleidoscope', 'Orbit', 'Ripple', 'Shatter', 'Morph', 'Custom'] as const
@@ -21,7 +21,7 @@ export const ANIMATION = {
 
 // Camera defaults
 export const CAMERA_DEFAULTS = {
-  MOVE_SPEED: 0.08,
+  MOVE_SPEED: 0.04,
   SPRINT_MULTIPLIER: 2.5,
   LOOK_SPEED: 0.005,
   ORBIT_DELAY_MS: 2000,
@@ -71,23 +71,48 @@ export const AUDIO = {
 
 // Musical note frequencies for the generative drone
 export const NOTES = {
-  A1: 55,
+  // Octave 1
   E1: 41.2,
-  C2: 65.41,
+  F1: 43.65,
   G1: 49,
-  A3: 220,
-  Cs4: 277.18,
-  E4: 329.63,
+  A1: 55,
+  Bb1: 58.27,
+  B1: 61.74,
+  // Octave 2
+  C2: 65.41,
+  D2: 73.42,
+  E2: 82.41,
+  F2: 87.31,
+  G2: 98,
+  A2: 110,
+  // Octave 3
+  C3: 130.81,
+  D3: 146.83,
+  Eb3: 155.56,
   E3: 164.81,
-  Gs3: 207.65,
-  B3: 246.94,
-  C4: 261.63,
-  G4: 392.0,
+  F3: 174.61,
   G3: 196,
+  Gs3: 207.65,
+  A3: 220,
   Bb3: 233.08,
+  B3: 246.94,
+  // Octave 4
+  C4: 261.63,
+  Cs4: 277.18,
   D4: 293.66,
-  A5: 880,
+  Eb4: 311.13,
+  E4: 329.63,
+  F4: 349.23,
+  G4: 392.0,
+  A4: 440,
+  Bb4: 466.16,
+  B4: 493.88,
+  // Octave 5
+  C5: 523.25,
   E5: 659,
-  C6: 1046,
+  F5: 698.46,
   G5: 783,
+  A5: 880,
+  // Octave 6
+  C6: 1046,
 } as const

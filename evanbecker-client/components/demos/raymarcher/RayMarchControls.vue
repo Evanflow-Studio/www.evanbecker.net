@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { MAX_PLACED_OBJECTS, SHAPE_NAMES } from '~/composables/useRayMarchGL'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
 import { AUDIO_SOURCE_NAMES, type AudioSource } from '~/composables/useAudioReactive'
+import type { RayMarchCommand } from '~/composables/useCommandDispatcher'
 import { SCENE_NAMES, PALETTE_NAMES, QUALITY_NAMES, GEO_PRESET_NAMES, ANIMATION_NAMES } from '~/utils/shaders/constants'
 
 const presetNames = LATTICE_PRESETS.map(p => p.name)
@@ -25,7 +26,10 @@ const props = defineProps<{
   latticePreset: number
   bloomStrength: number
   chromaticAmount: number
+  vignetteStrength: number
+  fogDensity: number
   colorReact: number
+  moveSpeed: number
   placeMode: boolean
   placeShape: number
   placedCount: number
@@ -41,37 +45,12 @@ const props = defineProps<{
   glslError: string
 }>()
 
+// Single command emission — replaces 26+ individual emits
 const emit = defineEmits<{
-  'update:scene': [value: number]
-  'update:palette': [value: number]
-  'update:quality': [value: number]
-  'update:iterations': [value: number]
-  'update:autoRotate': [value: boolean]
-  'update:wireframe': [value: boolean]
-  'update:cellSpacing': [value: number]
-  'update:wallThickness': [value: number]
-  'update:geoPreset': [value: number]
-  'update:animation': [value: number]
-  'update:animOffset': [value: number]
-  'update:latticePreset': [value: number]
-  'update:bloomStrength': [value: number]
-  'update:chromaticAmount': [value: number]
-  'update:colorReact': [value: number]
-  'update:placeMode': [value: boolean]
-  'update:placeShape': [value: number]
-  'update:timePaused': [value: boolean]
-  'update:timeSpeed': [value: number]
-  'update:customGlsl': [value: string]
-  'update:customJs': [value: string]
-  'audioSource': [source: AudioSource]
-  'audioFile': [file: File]
-  'placeObject': []
-  'clearPlaced': []
-  'undoPlaced': []
-  'screenshot': []
-  'copyUrl': []
-  'applyGlsl': []
+  command: [cmd: RayMarchCommand]
 }>()
+
+function cmd(command: RayMarchCommand) { emit('command', command) }
 
 const sceneNames = [...SCENE_NAMES]
 const paletteNames = [...PALETTE_NAMES]
@@ -79,10 +58,12 @@ const qualityNames = [...QUALITY_NAMES]
 const geoPresetNames = [...GEO_PRESET_NAMES]
 const animationNames = [...ANIMATION_NAMES]
 
-// Tabs
-const activeTab = ref<'scene' | 'fx' | 'audio' | 'tools'>('scene')
+// UI state
+const showAdvanced = ref(false)
+const activeTab = ref<'scene' | 'color' | 'fx' | 'audio' | 'tools'>('scene')
 const tabs = [
   { id: 'scene' as const, label: 'Scene' },
+  { id: 'color' as const, label: 'Color' },
   { id: 'fx' as const, label: 'FX' },
   { id: 'audio' as const, label: 'Audio' },
   { id: 'tools' as const, label: 'Tools' },
@@ -144,14 +125,14 @@ function onAudioSourceChange(e: Event) {
   if (key === 'file') {
     fileInputRef.value?.click()
   } else {
-    emit('audioSource', key)
+    cmd({ type: 'setAudioSource', value: key })
   }
 }
 
 function onFileSelect(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files?.[0]) {
-    emit('audioFile', input.files[0])
+    cmd({ type: 'setAudioFile', file: input.files[0] })
     input.value = ''
   }
 }
@@ -182,188 +163,207 @@ function onFileSelect(e: Event) {
     </div>
 
     <div v-if="!collapsed" class="flex flex-col gap-2 px-4 pb-3">
-      <!-- Tab bar -->
-      <div class="flex gap-1 border-b border-slate-700/50 pb-1">
+      <!-- ===== DEFAULT COMPACT BAR ===== -->
+      <div class="flex flex-wrap items-end gap-3">
+        <DemoSelect v-if="scene === 0" label="Preset" :model-value="latticePreset" :options="presetNames" @update:model-value="cmd({ type: 'setLatticePreset', value: $event })" />
+        <DemoSelect label="Shape" :model-value="geoPreset" :options="geoPresetNames" @update:model-value="cmd({ type: 'setGeoPreset', value: $event })" />
+        <DemoSelect label="Animate" :model-value="animation" :options="animationNames" @update:model-value="cmd({ type: 'setAnimation', value: $event })" />
+        <DemoSelect label="Quality" :model-value="quality" :options="qualityNames" @update:model-value="cmd({ type: 'setQuality', value: $event })" />
         <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          class="px-3 py-1 rounded-t-md text-[10px] font-medium uppercase tracking-wider transition-colors"
-          :class="activeTab === tab.id
-            ? 'bg-slate-700/50 text-[#2D95FC]'
-            : 'text-slate-500 hover:text-slate-300'"
-          @click="activeTab = tab.id"
+          class="h-7 rounded-md border px-3 text-xs font-medium transition-colors"
+          :class="showAdvanced
+            ? 'border-[#2D95FC] bg-[#2D95FC]/20 text-[#2D95FC]'
+            : 'border-slate-600 bg-slate-800 text-slate-400 hover:text-slate-200'"
+          @click="showAdvanced = !showAdvanced"
         >
-          {{ tab.label }}
+          ⚙ Advanced
         </button>
       </div>
 
-      <!-- ===== SCENE TAB ===== -->
-      <div v-if="activeTab === 'scene'" class="flex flex-col gap-2">
-        <div class="flex flex-wrap items-end gap-3">
-          <DemoSelect label="Scene" :model-value="scene" :options="sceneNames" @update:model-value="emit('update:scene', $event)" />
-          <DemoSelect label="Palette" :model-value="palette" :options="paletteNames" @update:model-value="emit('update:palette', $event)" />
-          <DemoSelect label="Quality" :model-value="quality" :options="qualityNames" @update:model-value="emit('update:quality', $event)" />
-          <DemoToggle label="Wire" :model-value="wireframe" @update:model-value="emit('update:wireframe', $event)" />
-          <DemoSlider
-            v-if="scene === 1 || scene === 3"
-            label="Iterations"
-            :model-value="iterations"
-            :min="1" :max="scene === 3 ? 8 : 12" :step="1"
-            width="w-20" :show-value="true"
-            @update:model-value="emit('update:iterations', $event)"
-          />
+      <!-- ===== ADVANCED PANEL ===== -->
+      <div v-if="showAdvanced" class="flex flex-col gap-2 border-t border-slate-700/50 pt-2">
+        <!-- Tab bar -->
+        <div class="flex gap-1 border-b border-slate-700/50 pb-1">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            class="px-3 py-1 rounded-t-md text-[10px] font-medium uppercase tracking-wider transition-colors"
+            :class="activeTab === tab.id
+              ? 'bg-slate-700/50 text-[#2D95FC]'
+              : 'text-slate-500 hover:text-slate-300'"
+            @click="activeTab = tab.id"
+          >
+            {{ tab.label }}
+          </button>
         </div>
-        <!-- Lattice controls -->
-        <div v-if="scene === 0" class="flex flex-wrap items-end gap-3 border-t border-slate-700/50 pt-2">
-          <DemoSelect label="Preset" :model-value="latticePreset" :options="presetNames" @update:model-value="emit('update:latticePreset', $event)" />
-          <DemoSelect label="Shape" :model-value="geoPreset" :options="geoPresetNames" @update:model-value="emit('update:geoPreset', $event)" />
-          <DemoSlider label="Spacing" :model-value="cellSpacing" width="w-20" @update:model-value="emit('update:cellSpacing', $event)" />
-          <DemoSlider label="Thickness" :model-value="wallThickness" width="w-20" @update:model-value="emit('update:wallThickness', $event)" />
-          <DemoSelect label="Animate" :model-value="animation" :options="animationNames" @update:model-value="emit('update:animation', $event)" />
-          <DemoSlider
-            v-if="animation > 0 && animation !== 5"
-            label="Offset" :model-value="animOffset" width="w-20"
-            @update:model-value="emit('update:animOffset', $event)"
-          />
-        </div>
-      </div>
 
-      <!-- ===== FX TAB ===== -->
-      <div v-if="activeTab === 'fx'" class="flex flex-wrap items-end gap-3">
-        <DemoSlider label="Bloom" :model-value="bloomStrength" :max="2" width="w-20" @update:model-value="emit('update:bloomStrength', $event)" />
-        <DemoSlider label="Chroma" :model-value="chromaticAmount" :max="5" width="w-20" @update:model-value="emit('update:chromaticAmount', $event)" />
-        <DemoSlider label="Color React" :model-value="colorReact" width="w-20" @update:model-value="emit('update:colorReact', $event)" />
-      </div>
-
-      <!-- ===== AUDIO TAB ===== -->
-      <div v-if="activeTab === 'audio'" class="flex flex-col gap-2">
-        <div class="flex flex-wrap items-end gap-3">
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Source</label>
-            <select
-              class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-200 outline-none focus:border-[#2D95FC]"
-              :value="audioSourceKeys.indexOf(audioSource)"
-              @change="onAudioSourceChange"
-            >
-              <option v-for="(name, i) in audioSourceOptions" :key="i" :value="i">{{ name }}</option>
-            </select>
-            <input ref="fileInputRef" type="file" accept="audio/*" class="hidden" @change="onFileSelect" />
+        <!-- ===== SCENE TAB ===== -->
+        <div v-if="activeTab === 'scene'" class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-end gap-3">
+            <DemoSelect label="Scene" :model-value="scene" :options="sceneNames" @update:model-value="cmd({ type: 'setScene', value: $event })" />
+            <DemoToggle label="Wire" :model-value="wireframe" @update:model-value="cmd({ type: 'setWireframe', value: $event })" />
+            <DemoSlider
+              v-if="scene === 1 || scene === 3"
+              label="Iterations"
+              :model-value="iterations"
+              :min="1" :max="scene === 3 ? 8 : 12" :step="1"
+              width="w-20" :show-value="true"
+              @update:model-value="cmd({ type: 'setIterations', value: $event })"
+            />
           </div>
-          <p v-if="audioSource !== 'none'" class="self-end text-[10px] text-slate-500 pb-1">
-            {{ audioFileName }}
-          </p>
-        </div>
-        <!-- Band visualizer -->
-        <div v-if="audioSource !== 'none'" class="flex items-end gap-2 h-8">
-          <div class="flex flex-col items-center gap-0.5">
-            <div class="w-6 rounded-sm bg-red-500/80 transition-all" :style="{ height: `${audioBass * 28}px` }" />
-            <span class="text-[8px] text-slate-500">Bass</span>
-          </div>
-          <div class="flex flex-col items-center gap-0.5">
-            <div class="w-6 rounded-sm bg-yellow-500/80 transition-all" :style="{ height: `${audioMid * 28}px` }" />
-            <span class="text-[8px] text-slate-500">Mid</span>
-          </div>
-          <div class="flex flex-col items-center gap-0.5">
-            <div class="w-6 rounded-sm bg-blue-500/80 transition-all" :style="{ height: `${audioTreble * 28}px` }" />
-            <span class="text-[8px] text-slate-500">Treble</span>
+          <div v-if="scene === 0" class="flex flex-wrap items-end gap-3 border-t border-slate-700/50 pt-2">
+            <DemoSlider label="Spacing" :model-value="cellSpacing" width="w-20" @update:model-value="cmd({ type: 'setCellSpacing', value: $event })" />
+            <DemoSlider label="Thickness" :model-value="wallThickness" width="w-20" @update:model-value="cmd({ type: 'setWallThickness', value: $event })" />
+            <DemoSlider
+              v-if="animation > 0 && animation !== 5"
+              label="Offset" :model-value="animOffset" width="w-20"
+              @update:model-value="cmd({ type: 'setAnimOffset', value: $event })"
+            />
           </div>
         </div>
-      </div>
 
-      <!-- ===== TOOLS TAB ===== -->
-      <div v-if="activeTab === 'tools'" class="flex flex-col gap-2">
-        <div class="flex flex-wrap items-end gap-3">
-          <!-- Time -->
-          <DemoToggle label="Pause" :model-value="timePaused" @update:model-value="emit('update:timePaused', $event)" />
-          <DemoSlider label="Speed" :model-value="timeSpeed" :min="0.1" :max="3" :step="0.1" width="w-20" :show-value="true" @update:model-value="emit('update:timeSpeed', $event)" />
+        <!-- ===== COLOR TAB ===== -->
+        <div v-if="activeTab === 'color'" class="flex flex-wrap items-end gap-3">
+          <DemoSelect label="Palette" :model-value="palette" :options="paletteNames" @update:model-value="cmd({ type: 'setPalette', value: $event })" />
+          <DemoSlider label="Color React" :model-value="colorReact" width="w-20" @update:model-value="cmd({ type: 'setColorReact', value: $event })" />
+          <!-- Custom palette editor placeholder — expand in Phase 4 PaletteEditor component -->
+        </div>
 
-          <!-- Drift -->
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Drift</label>
-            <button
-              class="relative h-7 rounded-md border px-3 text-xs font-medium transition-colors overflow-hidden"
-              :class="autoRotate
-                ? 'border-[#2D95FC] bg-[#2D95FC]/20 text-[#2D95FC]'
-                : 'border-slate-600 bg-slate-800 text-slate-400 hover:text-slate-200'"
-              @click="emit('update:autoRotate', !autoRotate)"
-            >
-              <div
-                v-if="autoRotate && orbitProgress < 1"
-                class="absolute inset-0 bg-[#2D95FC]/10 transition-none"
-                :style="{ width: `${orbitProgress * 100}%` }"
-              />
-              <span class="relative z-10">{{ autoRotate ? 'ON' : 'OFF' }}</span>
-            </button>
-          </div>
+        <!-- ===== FX TAB ===== -->
+        <div v-if="activeTab === 'fx'" class="flex flex-wrap items-end gap-3">
+          <DemoSlider label="Bloom" :model-value="bloomStrength" :max="2" width="w-20" @update:model-value="cmd({ type: 'setBloomStrength', value: $event })" />
+          <DemoSlider label="Chroma" :model-value="chromaticAmount" :max="5" width="w-20" @update:model-value="cmd({ type: 'setChromaticAmount', value: $event })" />
+          <DemoSlider label="Vignette" :model-value="vignetteStrength" :max="2" width="w-20" @update:model-value="cmd({ type: 'setVignetteStrength', value: $event })" />
+          <DemoSlider label="Fog" :model-value="fogDensity" :min="0" :max="0.01" :step="0.0005" width="w-20" :show-value="true" @update:model-value="cmd({ type: 'setFogDensity', value: $event })" />
+        </div>
 
-          <!-- Actions -->
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Actions</label>
-            <div class="flex gap-1">
-              <button
-                class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
-                title="Screenshot (P)"
-                @click="emit('screenshot')"
+        <!-- ===== AUDIO TAB ===== -->
+        <div v-if="activeTab === 'audio'" class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-end gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Source</label>
+              <select
+                class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-200 outline-none focus:border-[#2D95FC]"
+                :value="audioSourceKeys.indexOf(audioSource)"
+                @change="onAudioSourceChange"
               >
-                Screenshot
-              </button>
-              <button
-                class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
-                title="Copy share URL"
-                @click="emit('copyUrl')"
-              >
-                Share
-              </button>
+                <option v-for="(name, i) in audioSourceOptions" :key="i" :value="i">{{ name }}</option>
+              </select>
+              <input ref="fileInputRef" type="file" accept="audio/*" class="hidden" @change="onFileSelect" />
+            </div>
+            <p v-if="audioSource !== 'none'" class="self-end text-[10px] text-slate-500 pb-1">
+              {{ audioFileName }}
+            </p>
+          </div>
+          <div v-if="audioSource !== 'none'" class="flex items-end gap-2 h-8">
+            <div class="flex flex-col items-center gap-0.5">
+              <div class="w-6 rounded-sm bg-red-500/80 transition-all" :style="{ height: `${audioBass * 28}px` }" />
+              <span class="text-[8px] text-slate-500">Bass</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5">
+              <div class="w-6 rounded-sm bg-yellow-500/80 transition-all" :style="{ height: `${audioMid * 28}px` }" />
+              <span class="text-[8px] text-slate-500">Mid</span>
+            </div>
+            <div class="flex flex-col items-center gap-0.5">
+              <div class="w-6 rounded-sm bg-blue-500/80 transition-all" :style="{ height: `${audioTreble * 28}px` }" />
+              <span class="text-[8px] text-slate-500">Treble</span>
             </div>
           </div>
         </div>
 
-        <!-- Placement -->
-        <div class="flex flex-wrap items-end gap-3 border-t border-slate-700/50 pt-2">
-          <DemoToggle label="Place" :model-value="placeMode" @update:model-value="emit('update:placeMode', $event)" />
-          <template v-if="placeMode">
-            <DemoSelect label="Shape" :model-value="placeShape" :options="SHAPE_NAMES" @update:model-value="emit('update:placeShape', $event)" />
+        <!-- ===== TOOLS TAB ===== -->
+        <div v-if="activeTab === 'tools'" class="flex flex-col gap-2">
+          <div class="flex flex-wrap items-end gap-3">
+            <DemoToggle label="Pause" :model-value="timePaused" @update:model-value="cmd({ type: 'setTimePaused', value: $event })" />
+            <DemoSlider label="Speed" :model-value="timeSpeed" :min="0.1" :max="3" :step="0.1" width="w-20" :show-value="true" @update:model-value="cmd({ type: 'setTimeSpeed', value: $event })" />
+            <DemoSlider label="Move Speed" :model-value="moveSpeed" :min="0.01" :max="0.15" :step="0.005" width="w-20" :show-value="true" @update:model-value="cmd({ type: 'setMoveSpeed', value: $event })" />
+
             <div class="flex flex-col gap-1">
-              <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                {{ placedCount }}/{{ MAX_PLACED_OBJECTS }}
-              </label>
+              <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Drift</label>
+              <button
+                class="relative h-7 rounded-md border px-3 text-xs font-medium transition-colors overflow-hidden"
+                :class="autoRotate
+                  ? 'border-[#2D95FC] bg-[#2D95FC]/20 text-[#2D95FC]'
+                  : 'border-slate-600 bg-slate-800 text-slate-400 hover:text-slate-200'"
+                @click="cmd({ type: 'setAutoRotate', value: !autoRotate })"
+              >
+                <div
+                  v-if="autoRotate && orbitProgress < 1"
+                  class="absolute inset-0 bg-[#2D95FC]/10 transition-none"
+                  :style="{ width: `${orbitProgress * 100}%` }"
+                />
+                <span class="relative z-10">{{ autoRotate ? 'ON' : 'OFF' }}</span>
+              </button>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Actions</label>
               <div class="flex gap-1">
                 <button
-                  class="h-7 rounded-md border border-[#2D95FC] bg-[#2D95FC]/20 px-3 text-xs font-medium text-[#2D95FC] hover:bg-[#2D95FC]/30 transition-colors disabled:opacity-30"
-                  :disabled="placedCount >= MAX_PLACED_OBJECTS"
-                  @click="emit('placeObject')"
+                  class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                  title="Screenshot (P)"
+                  @click="cmd({ type: 'screenshot' })"
                 >
-                  Drop (F)
+                  Screenshot
                 </button>
                 <button
-                  class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-30"
-                  :disabled="placedCount === 0"
-                  @click="emit('undoPlaced')"
+                  class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                  title="Copy share URL"
+                  @click="cmd({ type: 'copyUrl' })"
                 >
-                  Undo
-                </button>
-                <button
-                  class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-30"
-                  :disabled="placedCount === 0"
-                  @click="emit('clearPlaced')"
-                >
-                  Clear
+                  Share
                 </button>
               </div>
             </div>
-          </template>
-        </div>
+          </div>
 
-        <!-- Script Editor -->
-        <div class="border-t border-slate-700/50 pt-2">
-          <ScriptEditor
-            :glsl-code="customGlsl"
-            :js-code="customJs"
-            :glsl-error="glslError"
-            @update:glsl-code="emit('update:customGlsl', $event)"
-            @update:js-code="emit('update:customJs', $event)"
-            @apply-glsl="emit('applyGlsl')"
-          />
+          <!-- Placement -->
+          <div class="flex flex-wrap items-end gap-3 border-t border-slate-700/50 pt-2">
+            <DemoToggle label="Place" :model-value="placeMode" @update:model-value="cmd({ type: 'setPlaceMode', value: $event })" />
+            <template v-if="placeMode">
+              <DemoSelect label="Shape" :model-value="placeShape" :options="SHAPE_NAMES" @update:model-value="cmd({ type: 'setPlaceShape', value: $event })" />
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                  {{ placedCount }}/{{ MAX_PLACED_OBJECTS }}
+                </label>
+                <div class="flex gap-1">
+                  <button
+                    class="h-7 rounded-md border border-[#2D95FC] bg-[#2D95FC]/20 px-3 text-xs font-medium text-[#2D95FC] hover:bg-[#2D95FC]/30 transition-colors disabled:opacity-30"
+                    :disabled="placedCount >= MAX_PLACED_OBJECTS"
+                    @click="cmd({ type: 'placeObject' })"
+                  >
+                    Drop (F)
+                  </button>
+                  <button
+                    class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-30"
+                    :disabled="placedCount === 0"
+                    @click="cmd({ type: 'undoPlaced' })"
+                  >
+                    Undo
+                  </button>
+                  <button
+                    class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-30"
+                    :disabled="placedCount === 0"
+                    @click="cmd({ type: 'clearPlaced' })"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Script Editor -->
+          <div class="border-t border-slate-700/50 pt-2">
+            <ScriptEditor
+              :glsl-code="customGlsl"
+              :js-code="customJs"
+              :glsl-error="glslError"
+              @update:glsl-code="cmd({ type: 'setCustomGlsl', value: $event })"
+              @update:js-code="cmd({ type: 'setCustomJs', value: $event })"
+              @apply-glsl="cmd({ type: 'applyGlsl' })"
+            />
+          </div>
         </div>
       </div>
     </div>

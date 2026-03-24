@@ -29,6 +29,8 @@ export interface UrlStateConfig {
   cameraPosZ: Ref<number>
   cameraYaw: Ref<number>
   cameraPitch: Ref<number>
+  moveSpeed: Ref<number>
+  fogDensity: Ref<number>
 }
 
 const SCHEMA: Record<keyof UrlStateConfig, FieldSchema> = {
@@ -50,6 +52,8 @@ const SCHEMA: Record<keyof UrlStateConfig, FieldSchema> = {
   cameraPosZ:      { key: 'cz', type: 'float' },
   cameraYaw:       { key: 'yw', type: 'float' },
   cameraPitch:     { key: 'pt', type: 'float' },
+  moveSpeed:       { key: 'ms', type: 'float' },
+  fogDensity:      { key: 'fd', type: 'float' },
 }
 
 const serializers: Record<FieldType, (val: unknown) => string> = {

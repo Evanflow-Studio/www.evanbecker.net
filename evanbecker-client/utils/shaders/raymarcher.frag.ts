@@ -43,6 +43,15 @@ uniform float u_treble;
 uniform float u_amplitude;
 uniform float u_colorReact;
 
+// Fog
+uniform float u_fogDensity;
+
+// Custom palette vectors (IQ cosine formula: a + b * cos(2pi * (c*t + d)))
+uniform vec3 u_paletteA;
+uniform vec3 u_paletteB;
+uniform vec3 u_paletteC;
+uniform vec3 u_paletteD;
+
 // Local placed objects: xyz = position, w = shape type
 uniform vec4 u_localObjects[8];
 uniform int u_localObjectCount;
