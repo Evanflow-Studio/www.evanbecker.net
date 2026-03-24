@@ -28,10 +28,10 @@ const lastInteraction = ref(0)
 // Quality
 const quality = ref(2)
 const qualityPresets: QualityPreset[] = [
-  { name: 'Performance', steps: 64,  threshold: 0.003, maxDist: 500,  warpCorrection: 1.0,  bloom: 0,   chroma: 0,   vignette: 0 },
-  { name: 'Balanced',    steps: 128, threshold: 0.001, maxDist: 1000, warpCorrection: 0.8,  bloom: 0.3, chroma: 0.5, vignette: 0 },
-  { name: 'High',        steps: 256, threshold: 0.0005, maxDist: 2000, warpCorrection: 0.5, bloom: 0.6, chroma: 1.0, vignette: 0 },
-  { name: 'Ultra',       steps: 512, threshold: 0.0001, maxDist: 4000, warpCorrection: 0.15, bloom: 1.0, chroma: 1.5, vignette: 0 },
+  { name: 'Performance', steps: 64,  threshold: 0.003,  maxDist: 500,  warpCorrection: 1.0, bloom: 0,   chroma: 0,   vignette: 0 },
+  { name: 'Balanced',    steps: 128, threshold: 0.001,  maxDist: 1000, warpCorrection: 0.8, bloom: 0.3, chroma: 0.5, vignette: 0 },
+  { name: 'High',        steps: 256, threshold: 0.0005, maxDist: 2000, warpCorrection: 0.6, bloom: 0.6, chroma: 1.0, vignette: 0 },
+  { name: 'Ultra',       steps: 512, threshold: 0.0001, maxDist: 4000, warpCorrection: 0.3, bloom: 1.0, chroma: 1.5, vignette: 0 },
 ]
 
 // Auto-apply FX when quality changes

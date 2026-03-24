@@ -112,7 +112,8 @@ vec2 latticeScene(vec3 p) {
 
   // Lipschitz correction — scale down distance for space-warping animations
   // so the ray marcher takes smaller steps and doesn't overshoot through surfaces.
-  // Base severity per animation, multiplied by quality-driven u_warpCorrection.
+  // Only applies when an animation is actively warping space (warpSeverity < 1.0).
+  // u_warpCorrection from quality preset further tightens the correction for higher quality.
   float warpSeverity = 1.0;
   if (u_animation == 1) warpSeverity = 0.7;       // Wave
   else if (u_animation == 2) warpSeverity = 0.7;  // Twist
@@ -120,7 +121,8 @@ vec2 latticeScene(vec3 p) {
   else if (u_animation == 6) warpSeverity = 0.6;  // Ripple
   else if (u_animation == 7) warpSeverity = 0.6;  // Shatter
   else if (u_animation == 8) warpSeverity = 0.5;  // Morph
-  d *= warpSeverity * u_warpCorrection;
+  // Mix: no animation = full speed (1.0), with animation = severity * quality correction
+  d *= mix(1.0, warpSeverity * u_warpCorrection, step(0.5, 1.0 - warpSeverity));
 
   // Color param from cell position
   float colorT = fract(dot(cellId, vec3(0.123, 0.456, 0.789)));
