@@ -46,7 +46,7 @@ const cellSpacing = ref(0.08)
 const wallThickness = ref(0.5)
 const geoPreset = ref(0)
 const animation = ref(0)
-const latticePreset = ref(0)
+const latticePreset = ref(3) // Deep Sea
 const animOffset = ref(0.0)
 
 // Rendering
@@ -221,6 +221,18 @@ const { dispatch } = useCommandDispatcher(
 )
 
 onMounted(async () => {
+  // Apply default preset on load
+  const preset = LATTICE_PRESETS[latticePreset.value]
+  palette.value = preset.palette
+  geoPreset.value = preset.geoPreset
+  animation.value = preset.animation
+  cellSpacing.value = preset.cellSpacing
+  wallThickness.value = preset.wallThickness
+  animOffset.value = preset.animOffset
+  lightAngleX.value = preset.lightAngleX
+  lightAngleY.value = preset.lightAngleY
+  wireframe.value = preset.wireframe
+
   document.addEventListener('fullscreenchange', onFullscreenChange)
   await start()
 })
