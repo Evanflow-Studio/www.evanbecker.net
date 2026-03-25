@@ -7,10 +7,11 @@ export interface MonitorStatus {
   lastCheck: string
 }
 
-const BASE_URL = 'https://health.evanbecker.net'
+// Fetches via Nuxt server proxy at /api/health to avoid CORS.
+// The proxy calls health.evanbecker.net server-side.
 const POLL_INTERVAL_MS = 30_000
 
-export function useUptimeKuma(slug = 'main') {
+export function useUptimeKuma() {
   const monitors = ref<Map<number, MonitorStatus>>(new Map())
   const loading = ref(true)
   const error = ref<string | null>(null)
@@ -19,7 +20,7 @@ export function useUptimeKuma(slug = 'main') {
 
   async function fetchHeartbeats() {
     try {
-      const res = await fetch(`${BASE_URL}/api/status-page/heartbeat/${slug}`)
+      const res = await fetch('/api/health')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
       const data = await res.json()

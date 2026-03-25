@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, shallowRef, watch } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useUptimeKuma, type MonitorStatus } from '~/composables/useUptimeKuma'
 
 // === Infrastructure Model ===
@@ -10,7 +10,7 @@ interface LabNode {
   hostname: string
   ip: string
   purpose: string
-  type: 'host' | 'database' | 'website' | 'ci' | 'secrets' | 'external' | 'cloudflare'
+  type: 'host' | 'database' | 'website-prod' | 'website-test' | 'ci' | 'secrets' | 'external' | 'cloudflare'
   position: [number, number, number]
   monitorIds?: number[]
   alwaysLive?: boolean
@@ -24,7 +24,6 @@ interface LabConnection {
   type?: 'lxc' | 'data' | 'tunnel'
 }
 
-// Monitor name mapping for display
 const MONITOR_NAMES: Record<number, string> = {
   1: 'Website (Prod)',
   2: 'Website (Test)',
@@ -51,12 +50,12 @@ const nodes: LabNode[] = [
   {
     id: 'ct105', label: 'CT105', hostname: 'docker-db-prod', ip: '192.168.0.105',
     purpose: 'PostgreSQL 18 (production)',
-    type: 'database', position: [3, 1.5, -2], monitorIds: [5],
+    type: 'database', position: [4, 1.5, -2], monitorIds: [5],
   },
   {
     id: 'ct106', label: 'CT106', hostname: 'docker-db-test', ip: '192.168.0.106',
     purpose: 'PostgreSQL 18 (test)',
-    type: 'database', position: [3, -0.5, 2.5], monitorIds: [6],
+    type: 'database', position: [4, -0.5, 2.5], monitorIds: [6],
   },
   {
     id: 'ct107', label: 'CT107', hostname: 'infisical', ip: '192.168.0.107',
@@ -68,15 +67,18 @@ const nodes: LabNode[] = [
     purpose: 'Docker Registry + GitHub Actions Runner',
     type: 'ci', position: [0, 3, 3], monitorIds: [8],
   },
+  // CT109 split into prod and test
   {
-    id: 'ct109', label: 'CT109', hostname: 'website', ip: '192.168.0.169',
-    purpose: 'Traefik + Website + API + Uptime Kuma + Watchtower',
-    type: 'website', position: [0, 1.5, -1], monitorIds: [1, 2, 3, 4],
-    services: [
-      'www.evanbecker.net', 'test.evanbecker.net',
-      'api.evanbecker.net', 'api-test.evanbecker.net',
-      'health.evanbecker.net', 'monitoring.evanbecker.net',
-    ],
+    id: 'ct109-prod', label: 'CT109 (Prod)', hostname: 'website', ip: '192.168.0.169',
+    purpose: 'Traefik + Production Website + API + Uptime Kuma',
+    type: 'website-prod', position: [0, 1.5, -1.5], monitorIds: [1, 3],
+    services: ['www.evanbecker.net', 'api.evanbecker.net', 'health.evanbecker.net', 'monitoring.evanbecker.net'],
+  },
+  {
+    id: 'ct109-test', label: 'CT109 (Test)', hostname: 'website', ip: '192.168.0.169',
+    purpose: 'Test Website + API + Watchtower',
+    type: 'website-test', position: [0, 0, 1.5], monitorIds: [2, 4],
+    services: ['test.evanbecker.net', 'api-test.evanbecker.net'],
   },
   {
     id: 'cloudflare', label: 'Cloudflare', hostname: 'Edge Network', ip: '—',
@@ -93,12 +95,15 @@ const nodes: LabNode[] = [
 
 const connections: LabConnection[] = [
   // Data connections
-  { from: 'ct109', to: 'ct105', label: 'DB connection (prod)', type: 'data' },
-  { from: 'ct109', to: 'ct106', label: 'DB connection (test)', type: 'data' },
-  { from: 'ct109', to: 'ct107', label: 'Secrets fetch at startup', type: 'data' },
-  { from: 'ct108', to: 'ct109', label: 'Image push via registry', type: 'data' },
+  { from: 'ct109-prod', to: 'ct105', label: 'DB connection (prod)', type: 'data' },
+  { from: 'ct109-test', to: 'ct106', label: 'DB connection (test)', type: 'data' },
+  { from: 'ct109-prod', to: 'ct107', label: 'Secrets fetch at startup', type: 'data' },
+  { from: 'ct109-test', to: 'ct107', label: 'Secrets fetch at startup', type: 'data' },
+  { from: 'ct108', to: 'ct109-prod', label: 'Image push (prod)', type: 'data' },
+  { from: 'ct108', to: 'ct109-test', label: 'Image push (test)', type: 'data' },
   // Cloudflare tunnels
-  { from: 'ct109', to: 'cloudflare', label: 'CF Tunnel (website stack)', type: 'tunnel' },
+  { from: 'ct109-prod', to: 'cloudflare', label: 'CF Tunnel (prod)', type: 'tunnel' },
+  { from: 'ct109-test', to: 'cloudflare', label: 'CF Tunnel (test)', type: 'tunnel' },
   { from: 'ct103', to: 'cloudflare', label: 'CF Tunnel (n8n)', type: 'tunnel' },
   // LXC host relationships
   { from: 'proxmox', to: 'ct103', label: 'LXC host', type: 'lxc' },
@@ -106,12 +111,13 @@ const connections: LabConnection[] = [
   { from: 'proxmox', to: 'ct106', label: 'LXC host', type: 'lxc' },
   { from: 'proxmox', to: 'ct107', label: 'LXC host', type: 'lxc' },
   { from: 'proxmox', to: 'ct108', label: 'LXC host', type: 'lxc' },
-  { from: 'proxmox', to: 'ct109', label: 'LXC host', type: 'lxc' },
+  { from: 'proxmox', to: 'ct109-prod', label: 'LXC host', type: 'lxc' },
+  { from: 'proxmox', to: 'ct109-test', label: 'LXC host', type: 'lxc' },
 ]
 
 // === Live Status ===
 
-const kuma = useUptimeKuma('main')
+const kuma = useUptimeKuma()
 
 function getNodeStatus(node: LabNode): 'up' | 'down' | 'unknown' {
   return kuma.getNodeStatus(node.monitorIds, node.alwaysLive)
@@ -130,7 +136,6 @@ let animFrameId = 0
 let resizeObserver: ResizeObserver | null = null
 
 const nodeMap = new Map<string, any>()
-const ringMap = new Map<string, any>()
 
 defineExpose({
   nodes, connections, threeLoaded, sceneNodeCount, selectedNode,
@@ -141,16 +146,17 @@ defineExpose({
 })
 
 const TYPE_COLORS: Record<string, number> = {
-  host: 0x64748b,
-  database: 0x22c55e,
-  website: 0x0c65e5,
-  ci: 0xf59e0b,
-  secrets: 0xa855f7,
-  external: 0x6b7280,
-  cloudflare: 0xf48120,
+  'host': 0x64748b,
+  'database': 0x22c55e,
+  'website-prod': 0x0c65e5,
+  'website-test': 0x2d95fc,
+  'ci': 0xf59e0b,
+  'secrets': 0xa855f7,
+  'external': 0x6b7280,
+  'cloudflare': 0xf48120,
 }
 
-const STATUS_RING_COLORS: Record<string, number> = {
+const STATUS_COLORS: Record<string, number> = {
   up: 0x22c55e,
   down: 0xef4444,
   unknown: 0xf59e0b,
@@ -160,6 +166,20 @@ const CONNECTION_COLORS: Record<string, number> = {
   data: 0x2d95fc,
   tunnel: 0xf48120,
   lxc: 0x475569,
+}
+
+// Sonar ping configuration
+const PING_INTERVAL = 3.0 // seconds between pings
+const PING_DURATION = 2.0 // seconds for ring to expand and fade
+const PING_MAX_SCALE_UP = 3.0 // max scale for UP status
+const PING_MAX_SCALE_DOWN = 6.0 // much larger for DOWN status
+
+interface SonarPing {
+  ring: any // THREE.Mesh
+  nodeId: string
+  startTime: number
+  maxScale: number
+  baseSize: number
 }
 
 async function init() {
@@ -218,6 +238,15 @@ async function init() {
     const mouse = new THREE.Vector2()
     const clickableObjects: any[] = []
 
+    // Track last ping time per node for staggered sonar
+    const lastPingTime = new Map<string, number>()
+    const activePings: SonarPing[] = []
+
+    // Stagger initial pings so they don't all fire at once
+    nodes.forEach((node, i) => {
+      lastPingTime.set(node.id, -(PING_INTERVAL * (i / nodes.length)))
+    })
+
     // Create nodes
     for (const node of nodes) {
       const color = TYPE_COLORS[node.type] ?? 0x6b7280
@@ -238,24 +267,10 @@ async function init() {
       })
       const mesh = new THREE.Mesh(geometry, material)
       mesh.position.set(...node.position)
-      mesh.userData = { nodeId: node.id }
+      mesh.userData = { nodeId: node.id, baseSize: size }
       scene.add(mesh)
       clickableObjects.push(mesh)
       nodeMap.set(node.id, mesh)
-
-      // Status ring — color updated in animation loop
-      const ringGeo = new THREE.RingGeometry(size * 1.2, size * 1.4, 32)
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: STATUS_RING_COLORS.unknown,
-        transparent: true,
-        opacity: 0.4,
-        side: THREE.DoubleSide,
-      })
-      const ring = new THREE.Mesh(ringGeo, ringMat)
-      ring.position.set(node.position[0], node.position[1] - size * 0.5, node.position[2])
-      ring.rotation.x = -Math.PI / 2
-      scene.add(ring)
-      ringMap.set(node.id, ring)
 
       // Label
       const labelDiv = document.createElement('div')
@@ -268,8 +283,38 @@ async function init() {
       sceneNodeCount.value++
     }
 
+    // Helper: spawn a sonar ping ring
+    function spawnPing(node: LabNode, status: 'up' | 'down' | 'unknown') {
+      const mesh = nodeMap.get(node.id)
+      if (!mesh) return
+
+      const baseSize = mesh.userData.baseSize as number
+      const isDown = status === 'down'
+      const pingColor = STATUS_COLORS[status] ?? STATUS_COLORS.unknown
+
+      const ringGeo = new THREE.RingGeometry(baseSize * 1.1, baseSize * 1.3, 32)
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: pingColor,
+        transparent: true,
+        opacity: isDown ? 0.8 : 0.5,
+        side: THREE.DoubleSide,
+      })
+      const ring = new THREE.Mesh(ringGeo, ringMat)
+      ring.position.set(node.position[0], node.position[1] - baseSize * 0.5, node.position[2])
+      ring.rotation.x = -Math.PI / 2
+      scene.add(ring)
+
+      activePings.push({
+        ring,
+        nodeId: node.id,
+        startTime: clock.getElapsedTime(),
+        maxScale: isDown ? PING_MAX_SCALE_DOWN : PING_MAX_SCALE_UP,
+        baseSize,
+      })
+    }
+
     // Create connections
-    const connectionMeshes: { mesh: any; direction: number }[] = []
+    const connectionMeshes: { mesh: any }[] = []
 
     for (const conn of connections) {
       const fromNode = nodes.find(n => n.id === conn.from)
@@ -286,21 +331,19 @@ async function init() {
       const material = new THREE.LineBasicMaterial({
         color: connColor,
         transparent: true,
-        opacity: isLxc ? 0.15 : 0.4,
+        opacity: isLxc ? 0.12 : 0.4,
       })
-      if (isLxc) material.opacity = 0.12
 
       const line = new THREE.Line(geometry, material)
       scene.add(line)
 
-      // Pulse particle (skip for LXC host lines — too many)
       if (!isLxc) {
         const pulseGeo = new THREE.SphereGeometry(0.06, 8, 8)
         const pulseMat = new THREE.MeshBasicMaterial({ color: connColor })
         const pulse = new THREE.Mesh(pulseGeo, pulseMat)
         pulse.userData = { from, to }
         scene.add(pulse)
-        connectionMeshes.push({ mesh: pulse, direction: 1 })
+        connectionMeshes.push({ mesh: pulse })
       }
     }
 
@@ -335,7 +378,7 @@ async function init() {
       controls.update()
       const t = clock.getElapsedTime()
 
-      // Animate pulses along connections
+      // Animate connection pulses
       for (const { mesh } of connectionMeshes) {
         const progress = (t * 0.25) % 1
         const from = mesh.userData.from as any
@@ -343,22 +386,40 @@ async function init() {
         mesh.position.lerpVectors(from, to, progress)
       }
 
-      // Update status ring colors from live data
+      // Spawn sonar pings at intervals
       for (const node of nodes) {
-        const ring = ringMap.get(node.id)
-        if (!ring) continue
-        const status = getNodeStatus(node)
-        const ringColor = STATUS_RING_COLORS[status] ?? STATUS_RING_COLORS.unknown
-        ring.material.color.setHex(ringColor)
-        // Pulse opacity for non-always-live nodes
-        if (node.alwaysLive) {
-          ring.material.opacity = 0.5
-        } else {
-          ring.material.opacity = 0.3 + 0.2 * Math.sin(t * 2 + node.position[0])
+        const last = lastPingTime.get(node.id) ?? 0
+        if (t - last >= PING_INTERVAL) {
+          lastPingTime.set(node.id, t)
+          const status = getNodeStatus(node)
+          spawnPing(node, status)
         }
       }
 
-      // Dim down nodes when their status is "down"
+      // Animate active sonar pings: expand + fade
+      for (let i = activePings.length - 1; i >= 0; i--) {
+        const ping = activePings[i]
+        const age = t - ping.startTime
+        const progress = age / PING_DURATION
+
+        if (progress >= 1) {
+          // Remove expired ping
+          scene.remove(ping.ring)
+          ping.ring.geometry.dispose()
+          ping.ring.material.dispose()
+          activePings.splice(i, 1)
+          continue
+        }
+
+        // Expand: 1x → maxScale
+        const scale = 1 + (ping.maxScale - 1) * progress
+        ping.ring.scale.set(scale, scale, 1)
+
+        // Fade out
+        ping.ring.material.opacity = (1 - progress) * 0.6
+      }
+
+      // Dim down nodes when status is "down"
       for (const node of nodes) {
         const mesh = nodeMap.get(node.id)
         if (!mesh) continue
@@ -399,7 +460,6 @@ onUnmounted(() => {
   }
 })
 
-// Helper: format time ago
 function timeAgo(isoString: string): string {
   if (!isoString) return '—'
   const seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000)

@@ -20,14 +20,14 @@ uniform float u_zoom;
 // Palette selection — covers the most common presets with minimal branching
 vec3 getColorFast(float t) {
   vec3 a, b, c, d;
-  if (u_palette == 10) {
-    // Forest (Jellyfish default)
-    a = vec3(0.3, 0.4, 0.2); b = vec3(0.3, 0.3, 0.2);
-    c = vec3(1.0, 1.0, 1.0); d = vec3(0.0, 0.15, 0.2);
-  } else if (u_palette == 3) {
-    // Ocean (Deep Sea)
+  if (u_palette == 3) {
+    // Ocean (Deep Sea — default)
     a = vec3(0.2, 0.3, 0.5); b = vec3(0.3, 0.3, 0.3);
     c = vec3(1.0, 1.0, 1.0); d = vec3(0.0, 0.1, 0.2);
+  } else if (u_palette == 10) {
+    // Forest (Jellyfish)
+    a = vec3(0.3, 0.4, 0.2); b = vec3(0.3, 0.3, 0.2);
+    c = vec3(1.0, 1.0, 1.0); d = vec3(0.0, 0.15, 0.2);
   } else if (u_palette == 6) {
     // Neon
     a = vec3(0.5, 0.5, 0.5); b = vec3(0.5, 0.5, 0.5);
