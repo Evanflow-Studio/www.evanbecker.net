@@ -44,7 +44,7 @@ const nodes: LabNode[] = [
   {
     id: 'ct103', label: 'CT103', hostname: 'docker-host', ip: '—',
     purpose: 'n8n automation + cloudflared',
-    type: 'external', position: [-4, 1.5, 2], alwaysLive: true,
+    type: 'external', position: [-4, 1.5, 2],
     services: ['n8n.evanbecker.net'],
   },
   {
