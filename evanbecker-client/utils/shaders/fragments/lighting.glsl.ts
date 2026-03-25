@@ -10,28 +10,15 @@ vec3 estimateNormal(vec3 p) {
   ));
 }
 
-float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
-  float res = 1.0;
-  float t = mint;
-  for (int i = 0; i < 24; i++) {
-    if (t >= maxt) break;
-    float h = sceneD(ro + rd * t);
-    if (h < 0.001) return 0.0;
-    res = min(res, k * h / t);
-    t += h;
-  }
-  return clamp(res, 0.0, 1.0);
+// Cheap directional shadow approximation — single SDF sample instead of ray march
+float cheapShadow(vec3 p, vec3 lightDir) {
+  float d = sceneD(p + lightDir * 0.3);
+  return smoothstep(0.0, 0.3, d);
 }
 
-float ambientOcclusion(vec3 p, vec3 n) {
-  float occ = 0.0;
-  float sca = 1.0;
-  for (int i = 0; i < 5; i++) {
-    float h = 0.01 + 0.12 * float(i);
-    float d = sceneD(p + h * n);
-    occ += (h - d) * sca;
-    sca *= 0.95;
-  }
-  return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
+// Cheap AO — single SDF sample along normal
+float cheapAO(vec3 p, vec3 n) {
+  float d = sceneD(p + n * 0.15);
+  return clamp(d / 0.15, 0.0, 1.0);
 }
 `

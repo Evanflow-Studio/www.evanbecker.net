@@ -26,7 +26,7 @@ onMounted(async () => {
   window.addEventListener('scroll', onScroll, { passive: true })
   onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
-  // Auth0 is loaded as a client plugin — wait for it
+  // Auth0 is loaded as a client plugin — wait for it event-driven
   try {
     const { useAuth0 } = await import('@auth0/auth0-vue')
     const auth0 = useAuth0()

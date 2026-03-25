@@ -26,12 +26,12 @@ const autoRotate = ref(false)
 const lastInteraction = ref(0)
 
 // Quality
-const quality = ref(2)
+const quality = ref(1)
 const qualityPresets: QualityPreset[] = [
-  { name: 'Performance', steps: 64,  threshold: 0.003,  maxDist: 500,  warpCorrection: 1.0, bloom: 0,   chroma: 0 },
-  { name: 'Balanced',    steps: 128, threshold: 0.001,  maxDist: 1000, warpCorrection: 0.8, bloom: 0.3, chroma: 0.5 },
-  { name: 'High',        steps: 256, threshold: 0.0005, maxDist: 2000, warpCorrection: 0.6, bloom: 0.6, chroma: 1.0 },
-  { name: 'Ultra',       steps: 512, threshold: 0.0001, maxDist: 4000, warpCorrection: 0.3, bloom: 1.0, chroma: 1.5 },
+  { name: 'Performance', steps: 32,  threshold: 0.005,  maxDist: 100,  warpCorrection: 1.0, bloom: 0,   chroma: 0 },
+  { name: 'Balanced',    steps: 64,  threshold: 0.002,  maxDist: 300,  warpCorrection: 0.8, bloom: 0.3, chroma: 0.5 },
+  { name: 'High',        steps: 96,  threshold: 0.001,  maxDist: 600,  warpCorrection: 0.6, bloom: 0.6, chroma: 1.0 },
+  { name: 'Ultra',       steps: 128, threshold: 0.0005, maxDist: 1200, warpCorrection: 0.3, bloom: 1.0, chroma: 1.5 },
 ]
 
 // Auto-apply FX when quality changes
@@ -64,7 +64,7 @@ const chromaticAmount = ref(0)
 const fogDensity = ref(0.001)
 const moveSpeed = ref(CAMERA_DEFAULTS.MOVE_SPEED)
 const zoom = ref(1.0)
-const showMinimap = ref(true)
+const showMinimap = ref(false)
 
 // Custom palette (IQ cosine: a + b * cos(2π(c*t + d)))
 const paletteA = ref<[number, number, number]>([0.5, 0.5, 0.5])
@@ -123,7 +123,7 @@ watch(scene, (s) => {
 
 // WebGL engine
 const {
-  fps, error, shaderCompiled, glContextCreated, glErrors, orbitProgress,
+  fps, error, shaderCompiled, shaderCompiling, glContextCreated, glErrors, orbitProgress,
   gl, program, onMouseDown, onWheel,
   captureScreenshot, recompileWithCustomGlsl, start, stop,
 } = useRayMarchGL({
@@ -194,9 +194,9 @@ const { dispatch } = useCommandDispatcher(
   },
 )
 
-onMounted(() => {
-  start()
+onMounted(async () => {
   document.addEventListener('fullscreenchange', onFullscreenChange)
+  await start()
 })
 
 onUnmounted(() => {
@@ -239,6 +239,14 @@ onUnmounted(() => {
         >
           {{ isFullscreen ? '✕' : '⛶' }}
         </button>
+      </div>
+
+      <!-- Shader compiling overlay -->
+      <div v-if="shaderCompiling" class="absolute inset-0 flex items-center justify-center bg-[#0B1120]/80 rounded-2xl z-10">
+        <div class="text-center">
+          <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-500 border-t-[#2D95FC]" />
+          <p class="mt-3 text-sm text-slate-400 font-mono">Compiling shader...</p>
+        </div>
       </div>
 
       <!-- Paused indicator -->

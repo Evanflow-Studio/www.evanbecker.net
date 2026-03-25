@@ -37,8 +37,7 @@ uniform float u_animOffset;
 
 // Fog & zoom
 uniform float u_fogDensity;
-uniform float u_zoom; // 1.0 = default FOV, >1 = zoomed in
-uniform int u_showMinimap; // 0 = off, 1 = on
+uniform float u_zoom;
 
 // Custom palette vectors (IQ cosine formula: a + b * cos(2pi * (c*t + d)))
 uniform vec3 u_paletteA;

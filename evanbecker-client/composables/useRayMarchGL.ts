@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { VERTEX_SHADER } from '~/utils/shaders/raymarcher.vert'
 import { FRAGMENT_SHADER, buildFragmentShader } from '~/utils/shaders/raymarcher.frag'
+import { FRAGMENT_SHADER_FAST } from '~/utils/shaders/raymarcher-fast.frag'
 import { POST_VERTEX, POST_FRAGMENT } from '~/utils/shaders/postprocess.frag'
 import {
   ANIMATION, CAMERA_DEFAULTS, DRIFT, LIGHT, CELL_SPACING,
@@ -135,6 +136,7 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   const fps = ref(0)
   const error = ref<string | null>(null)
   const shaderCompiled = ref(false)
+  const shaderCompiling = ref(false)
   const glContextCreated = ref(false)
   const glErrors = ref<string[]>([])
   const orbitProgress = ref(0)
@@ -188,38 +190,50 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
 
   // === GL setup ===
 
-  function compileShader(type: number, source: string): WebGLShader | null {
+  // Submit shader for compilation — does NOT check status (non-blocking)
+  function submitShader(type: number, source: string): WebGLShader | null {
     const { gl } = glState
     if (!gl) return null
     const shader = gl.createShader(type)
     if (!shader) return null
     gl.shaderSource(shader, source)
     gl.compileShader(shader)
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      glErrors.value.push(gl.getShaderInfoLog(shader) || 'Unknown error')
-      gl.deleteShader(shader)
-      return null
-    }
     return shader
   }
 
-  function createProgram(vsSource: string, fsSource: string): WebGLProgram | null {
+  // Submit program for linking — does NOT check status (non-blocking)
+  function submitProgram(vsSource: string, fsSource: string): WebGLProgram | null {
     const { gl } = glState
     if (!gl) return null
-    const vs = compileShader(gl.VERTEX_SHADER, vsSource)
-    const fs = compileShader(gl.FRAGMENT_SHADER, fsSource)
+    const vs = submitShader(gl.VERTEX_SHADER, vsSource)
+    const fs = submitShader(gl.FRAGMENT_SHADER, fsSource)
     if (!vs || !fs) return null
     const prog = gl.createProgram()
     if (!prog) return null
     gl.attachShader(prog, vs)
     gl.attachShader(prog, fs)
-    // Force a_position to index 0 for all programs so they share the same VAO
     gl.bindAttribLocation(prog, 0, 'a_position')
     gl.linkProgram(prog)
+    // Do NOT check LINK_STATUS here — that blocks the main thread
+    return prog
+  }
+
+  // Validate a program after GPU compilation is done (called later)
+  function validateProgram(prog: WebGLProgram): boolean {
+    const { gl } = glState
+    if (!gl) return false
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
       error.value = 'Program link failed: ' + (gl.getProgramInfoLog(prog) || '')
-      return null
+      return false
     }
+    return true
+  }
+
+  // Synchronous createProgram for small shaders (post-process) where blocking is OK
+  function createProgramSync(vsSource: string, fsSource: string): WebGLProgram | null {
+    const prog = submitProgram(vsSource, fsSource)
+    if (!prog) return null
+    if (!validateProgram(prog)) return null
     return prog
   }
 
@@ -247,59 +261,148 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     glState.fboHeight = height
   }
 
-  function initGL() {
-    const canvas = canvasRef.value
-    if (!canvas) return
+  const MAIN_UNIFORM_NAMES = [
+    'u_resolution', 'u_time', 'u_cameraYaw', 'u_cameraPitch', 'u_cameraPos',
+    'u_iterations', 'u_scene', 'u_palette', 'u_lightDir',
+    'u_cellSpacing', 'u_wallThickness', 'u_geoPreset', 'u_animation',
+    'u_animOffset', 'u_wireframe', 'u_maxSteps', 'u_hitThreshold',
+    'u_maxDist', 'u_warpCorrection', 'u_fogDensity', 'u_zoom',
+    'u_paletteA', 'u_paletteB', 'u_paletteC', 'u_paletteD',
+  ]
 
-    glState.gl = canvas.getContext('webgl2', { antialias: false, powerPreference: 'high-performance' })
-    if (!glState.gl) {
-      error.value = 'WebGL2 is not supported in this browser.'
-      return
-    }
-    glContextCreated.value = true
+  const POST_UNIFORM_NAMES = [
+    'u_sceneTexture', 'u_resolution', 'u_bloomStrength', 'u_chromaticAmount',
+  ]
 
-    glState.program = createProgram(VERTEX_SHADER, FRAGMENT_SHADER)
-    if (!glState.program) {
-      error.value = 'Shader compilation failed: ' + glErrors.value.join('; ')
-      return
-    }
-    shaderCompiled.value = true
+  const ATTRIB_POSITION = 0 // Matches bindAttribLocation(prog, 0, 'a_position')
 
-    // Fullscreen quad VAO
-    const { gl } = glState
+  function setupVAO(gl: WebGL2RenderingContext) {
     const quad = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1])
     glState.vao = gl.createVertexArray()
     gl.bindVertexArray(glState.vao)
     glState.quadBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, glState.quadBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW)
-    const loc = gl.getAttribLocation(glState.program, 'a_position')
-    gl.enableVertexAttribArray(loc)
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+    // Use hardcoded index — do NOT call getAttribLocation, it forces sync compilation
+    gl.enableVertexAttribArray(ATTRIB_POSITION)
+    gl.vertexAttribPointer(ATTRIB_POSITION, 2, gl.FLOAT, false, 0, 0)
+  }
 
-    // Build main program uniform cache
-    glState.mainCache = buildUniformCache(gl, glState.program, [
-      'u_resolution', 'u_time', 'u_cameraYaw', 'u_cameraPitch', 'u_cameraPos',
-      'u_iterations', 'u_scene', 'u_palette', 'u_lightDir',
-      'u_cellSpacing', 'u_wallThickness', 'u_geoPreset', 'u_animation',
-      'u_animOffset', 'u_wireframe', 'u_maxSteps', 'u_hitThreshold',
-      'u_maxDist', 'u_warpCorrection', 'u_fogDensity', 'u_zoom',
-      'u_showMinimap', 'u_paletteA', 'u_paletteB', 'u_paletteC', 'u_paletteD',
-    ])
+  function finalizeInit(gl: WebGL2RenderingContext) {
+    glState.mainCache = buildUniformCache(gl, glState.program!, MAIN_UNIFORM_NAMES)
 
-    // Post-processing program (optional — fails gracefully)
-    glState.postProgram = createProgram(POST_VERTEX, POST_FRAGMENT)
+    // Post-process shader is tiny — OK to compile synchronously
+    glState.postProgram = createProgramSync(POST_VERTEX, POST_FRAGMENT)
     if (glState.postProgram) {
-      glState.postCache = buildUniformCache(gl, glState.postProgram, [
-        'u_sceneTexture', 'u_resolution', 'u_bloomStrength', 'u_chromaticAmount',
-      ])
+      glState.postCache = buildUniformCache(gl, glState.postProgram, POST_UNIFORM_NAMES)
     }
 
-    gl.useProgram(glState.program)
+    gl.useProgram(glState.program!)
+    shaderCompiled.value = true
+    shaderCompiling.value = false
+
     frame.startTime = performance.now()
     frame.lastFpsTime = frame.startTime
     frame.lastFrameTime = frame.startTime
     frame.frameCount = 0
+  }
+
+  const COMPLETION_STATUS_KHR = 0x91B1
+
+  // Shared uniform names that exist in BOTH fast and full shaders
+  const FAST_UNIFORM_NAMES = [
+    'u_resolution', 'u_time', 'u_cameraYaw', 'u_cameraPitch', 'u_cameraPos',
+    'u_scene', 'u_palette', 'u_lightDir',
+    'u_cellSpacing', 'u_wallThickness', 'u_fogDensity', 'u_zoom',
+  ]
+
+  function initGL(): Promise<void> {
+    return new Promise((resolve) => {
+      const canvas = canvasRef.value
+      if (!canvas) { resolve(); return }
+
+      const t0 = performance.now()
+
+      glState.gl = canvas.getContext('webgl2', { antialias: false, powerPreference: 'high-performance' })
+      if (!glState.gl) {
+        error.value = 'WebGL2 is not supported in this browser.'
+        resolve(); return
+      }
+      glContextCreated.value = true
+      shaderCompiling.value = true
+
+      const { gl } = glState
+      const parallelExt = gl.getExtension('KHR_parallel_shader_compile')
+
+      // PHASE 1: Compile the FAST placeholder shader synchronously (<100ms)
+      const fastProg = submitProgram(VERTEX_SHADER, FRAGMENT_SHADER_FAST)
+      if (!fastProg || !validateProgram(fastProg)) {
+        error.value = 'Fast shader failed: ' + glErrors.value.join('; ')
+        shaderCompiling.value = false
+        resolve(); return
+      }
+
+      glState.program = fastProg
+      setupVAO(gl)
+      glState.mainCache = buildUniformCache(gl, fastProg, FAST_UNIFORM_NAMES)
+      gl.useProgram(fastProg)
+      shaderCompiled.value = true // Start rendering with fast shader immediately
+
+      frame.startTime = performance.now()
+      frame.lastFpsTime = frame.startTime
+      frame.lastFrameTime = frame.startTime
+      frame.frameCount = 0
+
+      console.log(`[RayMarcher] Fast shader ready in ${(performance.now() - t0).toFixed(0)}ms`)
+
+      // PHASE 2: Submit the FULL shader for background compilation
+      const fullProg = submitProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+      if (!fullProg) {
+        shaderCompiling.value = false
+        resolve(); return
+      }
+
+      function swapToFull() {
+        if (!gl || !fullProg) return
+        if (!validateProgram(fullProg)) {
+          console.warn('[RayMarcher] Full shader link failed, keeping fast shader')
+          shaderCompiling.value = false
+          resolve(); return
+        }
+        glState.program = fullProg
+        glState.mainCache = buildUniformCache(gl, fullProg, MAIN_UNIFORM_NAMES)
+
+        // Post-process shader
+        glState.postProgram = createProgramSync(POST_VERTEX, POST_FRAGMENT)
+        if (glState.postProgram) {
+          glState.postCache = buildUniformCache(gl, glState.postProgram, POST_UNIFORM_NAMES)
+        }
+
+        gl.useProgram(fullProg)
+        shaderCompiling.value = false
+        console.log(`[RayMarcher] Full shader ready in ${(performance.now() - t0).toFixed(0)}ms`)
+        resolve()
+      }
+
+      if (parallelExt) {
+        // Chrome/Edge: poll without blocking
+        console.log('[RayMarcher] Compiling full shader async (KHR_parallel_shader_compile)')
+        function poll() {
+          if (!gl) { resolve(); return }
+          if (gl.getProgramParameter(fullProg!, COMPLETION_STATUS_KHR)) {
+            swapToFull()
+          } else {
+            requestAnimationFrame(poll)
+          }
+        }
+        requestAnimationFrame(poll)
+      } else {
+        // Firefox/Safari: no parallel compile. Defer blocking check by ~2 seconds
+        // so the fast shader renders several frames first.
+        console.log('[RayMarcher] Compiling full shader deferred (no parallel ext)')
+        setTimeout(swapToFull, 2000)
+      }
+    })
   }
 
   // === Camera movement ===
@@ -393,17 +496,10 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   function recompileWithCustomGlsl(customGlslCode?: string) {
     const { gl } = glState
     if (!gl) return false
-    const newProgram = createProgram(VERTEX_SHADER, buildFragmentShader(customGlslCode))
-    if (!newProgram) return false
+    const newProgram = submitProgram(VERTEX_SHADER, buildFragmentShader(customGlslCode))
+    if (!newProgram || !validateProgram(newProgram)) return false
     glState.program = newProgram
-    glState.mainCache = buildUniformCache(gl, newProgram, [
-      'u_resolution', 'u_time', 'u_cameraYaw', 'u_cameraPitch', 'u_cameraPos',
-      'u_iterations', 'u_scene', 'u_palette', 'u_lightDir',
-      'u_cellSpacing', 'u_wallThickness', 'u_geoPreset', 'u_animation',
-      'u_animOffset', 'u_wireframe', 'u_maxSteps', 'u_hitThreshold',
-      'u_maxDist', 'u_warpCorrection', 'u_fogDensity', 'u_zoom',
-      'u_showMinimap', 'u_paletteA', 'u_paletteB', 'u_paletteC', 'u_paletteD',
-    ])
+    glState.mainCache = buildUniformCache(gl, newProgram, MAIN_UNIFORM_NAMES)
     gl.useProgram(glState.program)
     return true
   }
@@ -474,7 +570,7 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     // Fog & zoom
     gl.uniform1f(mainCache['u_fogDensity'], fogDensity.value)
     gl.uniform1f(mainCache['u_zoom'], zoom.value)
-    gl.uniform1i(mainCache['u_showMinimap'], showMinimap.value ? 1 : 0)
+    // minimap removed for shader compilation performance
 
     // Custom palette
     gl.uniform3f(mainCache['u_paletteA'], paletteA.value[0], paletteA.value[1], paletteA.value[2])
@@ -529,16 +625,19 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   }
 
   function render() {
+    // Always re-schedule first — never let the loop die
+    frame.animFrameId = requestAnimationFrame(render)
+
     const { gl, program } = glState
     if (!gl || !program) return
 
     const canvas = canvasRef.value
-    if (!canvas) return
+    if (!canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) return
 
     // Resize canvas to match display
     const dpr = Math.min(window.devicePixelRatio, CAMERA_DEFAULTS.MAX_DPR)
-    const w = canvas.clientWidth * dpr
-    const h = canvas.clientHeight * dpr
+    const w = Math.round(canvas.clientWidth * dpr)
+    const h = Math.round(canvas.clientHeight * dpr)
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w
       canvas.height = h
@@ -558,8 +657,6 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     uploadUniforms(elapsed, canvas.width, canvas.height)
     renderPass(canvas.width, canvas.height)
     updateFrameStats(now)
-
-    frame.animFrameId = requestAnimationFrame(render)
   }
 
   // === Input handlers ===
@@ -646,9 +743,8 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
 
   // === Lifecycle ===
 
-  function start() {
-    initGL()
-    frame.animFrameId = requestAnimationFrame(render)
+  async function start() {
+    // Register input handlers immediately (responsive even while compiling)
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
     window.addEventListener('keydown', onKeyDown)
@@ -657,6 +753,14 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     if (canvasRef.value) {
       resizeObserver = new ResizeObserver(() => { /* handled in render loop */ })
       resizeObserver.observe(canvasRef.value)
+    }
+
+    // Init GL asynchronously — browser stays responsive during GPU compilation
+    await initGL()
+
+    // Only start render loop after shader is compiled
+    if (shaderCompiled.value) {
+      frame.animFrameId = requestAnimationFrame(render)
     }
   }
 
@@ -683,7 +787,7 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   }
 
   return {
-    fps, error, shaderCompiled, glContextCreated, glErrors, orbitProgress,
+    fps, error, shaderCompiled, shaderCompiling, glContextCreated, glErrors, orbitProgress,
     gl: () => glState.gl,
     program: () => glState.program,
     onMouseDown, onWheel,

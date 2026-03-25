@@ -30,7 +30,7 @@ vec4 marchView(vec2 pixelCoord, vec2 resolution, float zoom) {
   vec2 result;
   bool hit = false;
 
-  for (int i = 0; i < 512; i++) {
+  for (int i = 0; i < 128; i++) {
     if (i >= u_maxSteps) break;
     vec3 p = ro + rd * t;
     result = sceneSDF(p);
@@ -52,8 +52,8 @@ vec4 marchView(vec2 pixelCoord, vec2 resolution, float zoom) {
     vec3 h = normalize(lightDir - rd);
     float spec = pow(max(dot(n, h), 0.0), 48.0);
 
-    float shadow = softShadow(p + n * 0.01, lightDir, 0.02, 10.0, 16.0);
-    float ao = ambientOcclusion(p, n);
+    float shadow = cheapShadow(p + n * 0.01, lightDir);
+    float ao = cheapAO(p, n);
 
     // Fresnel rim
     float fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
@@ -108,32 +108,6 @@ vec4 marchView(vec2 pixelCoord, vec2 resolution, float zoom) {
 }
 
 void main() {
-  // Main view — uses zoom level
   fragColor = marchView(gl_FragCoord.xy, u_resolution, u_zoom);
-
-  // Minimap inset — bottom-left corner, shows 1x zoom (wide angle overview)
-  if (u_showMinimap == 1 && u_zoom > 1.05) {
-    float mapScale = 0.2; // 20% of screen size
-    vec2 mapSize = u_resolution * mapScale;
-    vec2 mapOrigin = vec2(12.0, 12.0); // pixels from bottom-left
-    vec2 localCoord = gl_FragCoord.xy - mapOrigin;
-
-    if (localCoord.x >= 0.0 && localCoord.x < mapSize.x &&
-        localCoord.y >= 0.0 && localCoord.y < mapSize.y) {
-      // Remap local coord to full-screen equivalent for 1x zoom
-      vec2 remapped = localCoord / mapScale;
-      vec4 mapColor = marchView(remapped, u_resolution, 1.0);
-
-      // Border
-      float borderDist = min(min(localCoord.x, localCoord.y),
-                             min(mapSize.x - localCoord.x, mapSize.y - localCoord.y));
-      float border = 1.0 - smoothstep(0.0, 2.0, borderDist);
-      mapColor.rgb = mix(mapColor.rgb, vec3(0.2, 0.6, 1.0), border * 0.8);
-
-      // Slight dim to distinguish from main view
-      mapColor.rgb *= 0.85;
-      fragColor = mapColor;
-    }
-  }
 }
 `

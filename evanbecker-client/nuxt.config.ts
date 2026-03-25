@@ -1,6 +1,6 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-12-01',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
 
   modules: [
     '@nuxt/content',
@@ -56,6 +56,7 @@ export default defineNuxtConfig({
       auth0ClientId: process.env.NUXT_PUBLIC_AUTH0_CLIENT_ID || '',
       auth0Audience: process.env.NUXT_PUBLIC_AUTH0_AUDIENCE || '',
       auth0RedirectUri: process.env.NUXT_PUBLIC_AUTH0_REDIRECT_URI || 'http://localhost:3000/',
+      recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
     },
   },
 })
