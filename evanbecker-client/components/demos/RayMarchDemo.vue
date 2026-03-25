@@ -9,12 +9,16 @@ import { ANIMATION, CAMERA_DEFAULTS } from '~/utils/shaders/constants'
 // Canvas
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
+// Initialize ALL control refs from the default preset at declaration time.
+// This ensures the fast shader (Firefox) renders with correct values from frame 1.
+const DEFAULT_PRESET = LATTICE_PRESETS[0] // Jellyfish
+
 // Scene & appearance
 const scene = ref(0)
-const palette = ref(1)
+const palette = ref(DEFAULT_PRESET.palette)
 const iterations = ref(6)
-const lightAngleX = ref(0.5)
-const lightAngleY = ref(0.7)
+const lightAngleX = ref(DEFAULT_PRESET.lightAngleX)
+const lightAngleY = ref(DEFAULT_PRESET.lightAngleY)
 
 // FPS camera
 const cameraPosX = ref(0)
@@ -41,16 +45,16 @@ watch(quality, (q) => {
   chromaticAmount.value = preset.chroma
 })
 
-// Lattice controls
-const cellSpacing = ref(0.08)
-const wallThickness = ref(0.5)
-const geoPreset = ref(0)
-const animation = ref(0)
-const latticePreset = ref(3) // Deep Sea
-const animOffset = ref(0.0)
+// Lattice controls — initialized from default preset
+const cellSpacing = ref(DEFAULT_PRESET.cellSpacing)
+const wallThickness = ref(DEFAULT_PRESET.wallThickness)
+const geoPreset = ref(DEFAULT_PRESET.geoPreset)
+const animation = ref(DEFAULT_PRESET.animation)
+const latticePreset = ref(0) // Jellyfish (index 0)
+const animOffset = ref(DEFAULT_PRESET.animOffset)
 
 // Rendering
-const wireframe = ref(false)
+const wireframe = ref(DEFAULT_PRESET.wireframe)
 
 // Time control
 const timePaused = ref(false)
@@ -221,18 +225,6 @@ const { dispatch } = useCommandDispatcher(
 )
 
 onMounted(async () => {
-  // Apply default preset on load
-  const preset = LATTICE_PRESETS[latticePreset.value]
-  palette.value = preset.palette
-  geoPreset.value = preset.geoPreset
-  animation.value = preset.animation
-  cellSpacing.value = preset.cellSpacing
-  wallThickness.value = preset.wallThickness
-  animOffset.value = preset.animOffset
-  lightAngleX.value = preset.lightAngleX
-  lightAngleY.value = preset.lightAngleY
-  wireframe.value = preset.wireframe
-
   document.addEventListener('fullscreenchange', onFullscreenChange)
   await start()
 })

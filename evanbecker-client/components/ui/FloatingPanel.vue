@@ -27,30 +27,54 @@ const dragState = ref({
 
 let positioned = false
 
-function onDragStart(e: MouseEvent) {
-  e.stopPropagation()
+function startDrag(clientX: number, clientY: number) {
   dragState.value = {
     isDragging: true,
-    startX: e.clientX,
-    startY: e.clientY,
+    startX: clientX,
+    startY: clientY,
     offsetX: panelX.value,
     offsetY: panelY.value,
   }
+}
+
+function moveDrag(clientX: number, clientY: number) {
+  if (!dragState.value.isDragging) return
+  panelX.value = dragState.value.offsetX + (clientX - dragState.value.startX)
+  panelY.value = dragState.value.offsetY + (clientY - dragState.value.startY)
+}
+
+function endDrag() {
+  dragState.value.isDragging = false
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+  window.removeEventListener('touchmove', onTouchDragMove)
+  window.removeEventListener('touchend', onTouchDragEnd)
+}
+
+function onDragStart(e: MouseEvent) {
+  e.stopPropagation()
+  startDrag(e.clientX, e.clientY)
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('mouseup', onDragEnd)
 }
 
-function onDragMove(e: MouseEvent) {
-  if (!dragState.value.isDragging) return
-  panelX.value = dragState.value.offsetX + (e.clientX - dragState.value.startX)
-  panelY.value = dragState.value.offsetY + (e.clientY - dragState.value.startY)
+function onDragMove(e: MouseEvent) { moveDrag(e.clientX, e.clientY) }
+function onDragEnd() { endDrag() }
+
+function onTouchDragStart(e: TouchEvent) {
+  e.stopPropagation()
+  e.preventDefault()
+  startDrag(e.touches[0].clientX, e.touches[0].clientY)
+  window.addEventListener('touchmove', onTouchDragMove, { passive: false })
+  window.addEventListener('touchend', onTouchDragEnd)
 }
 
-function onDragEnd() {
-  dragState.value.isDragging = false
-  window.removeEventListener('mousemove', onDragMove)
-  window.removeEventListener('mouseup', onDragEnd)
+function onTouchDragMove(e: TouchEvent) {
+  e.preventDefault()
+  moveDrag(e.touches[0].clientX, e.touches[0].clientY)
 }
+
+function onTouchDragEnd() { endDrag() }
 
 onMounted(() => {
   requestAnimationFrame(() => {
@@ -73,9 +97,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  // Defensive cleanup in case unmount happens during drag
   window.removeEventListener('mousemove', onDragMove)
   window.removeEventListener('mouseup', onDragEnd)
+  window.removeEventListener('touchmove', onTouchDragMove)
+  window.removeEventListener('touchend', onTouchDragEnd)
 })
 </script>
 
@@ -89,8 +114,9 @@ onBeforeUnmount(() => {
   >
     <!-- Drag handle -->
     <div
-      class="flex cursor-move items-center justify-between px-4 pt-2 pb-1 select-none"
+      class="flex cursor-move items-center justify-between px-4 pt-2 pb-1 select-none touch-none"
       @mousedown="onDragStart"
+      @touchstart="onTouchDragStart"
     >
       <div class="flex items-center gap-2">
         <div class="h-1 w-8 rounded-full bg-slate-600" />

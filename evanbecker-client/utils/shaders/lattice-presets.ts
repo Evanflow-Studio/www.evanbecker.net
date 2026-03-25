@@ -13,25 +13,25 @@ export interface LatticePreset {
 
 export const LATTICE_PRESETS: LatticePreset[] = [
   {
-    name: 'Default',
-    palette: 1,       // Cosmic
-    geoPreset: 0,     // Hollow Cube
-    animation: 0,     // None
-    cellSpacing: 0.08,
-    wallThickness: 0.5,
-    animOffset: 0.0,
-    lightAngleX: 0.5,
-    lightAngleY: 0.7,
-    wireframe: false,
-  },
-  {
     name: 'Jellyfish',
     palette: 10,      // Forest
     geoPreset: 0,     // Hollow Cube
     animation: 3,     // Pulse
     cellSpacing: 0.15,
     wallThickness: 0.48,
-    animOffset: 0.02,
+    animOffset: 0.12,
+    lightAngleX: 0.5,
+    lightAngleY: 0.7,
+    wireframe: false,
+  },
+  {
+    name: 'Crystal Array',
+    palette: 1,       // Cosmic
+    geoPreset: 0,     // Hollow Cube
+    animation: 0,     // None
+    cellSpacing: 0.08,
+    wallThickness: 0.5,
+    animOffset: 0.0,
     lightAngleX: 0.5,
     lightAngleY: 0.7,
     wireframe: false,

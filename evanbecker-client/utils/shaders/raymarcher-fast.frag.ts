@@ -17,9 +17,26 @@ uniform float u_wallThickness;
 uniform float u_fogDensity;
 uniform float u_zoom;
 
-// Minimal palette
+// Palette selection — covers the most common presets with minimal branching
 vec3 getColorFast(float t) {
-  vec3 a = vec3(0.5), b = vec3(0.5), c = vec3(1.0), d = vec3(0.0, 0.33, 0.67);
+  vec3 a, b, c, d;
+  if (u_palette == 10) {
+    // Forest (Jellyfish default)
+    a = vec3(0.3, 0.4, 0.2); b = vec3(0.3, 0.3, 0.2);
+    c = vec3(1.0, 1.0, 1.0); d = vec3(0.0, 0.15, 0.2);
+  } else if (u_palette == 3) {
+    // Ocean (Deep Sea)
+    a = vec3(0.2, 0.3, 0.5); b = vec3(0.3, 0.3, 0.3);
+    c = vec3(1.0, 1.0, 1.0); d = vec3(0.0, 0.1, 0.2);
+  } else if (u_palette == 6) {
+    // Neon
+    a = vec3(0.5, 0.5, 0.5); b = vec3(0.5, 0.5, 0.5);
+    c = vec3(1.0, 1.0, 0.5); d = vec3(0.8, 0.9, 0.3);
+  } else {
+    // Cosmic (fallback)
+    a = vec3(0.5); b = vec3(0.5);
+    c = vec3(1.0, 1.0, 1.0); d = vec3(0.0, 0.33, 0.67);
+  }
   return a + b * cos(6.28318 * (c * t + d));
 }
 
