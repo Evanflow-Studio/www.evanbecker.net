@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Configuration.AddJsonFile("./secrets/appsettings.Secrets.json", optional: true, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables();
-builder.Configuration.AddInfisical();
+builder.Configuration.AddSecrets();
 
 var environmentName = builder.Environment.EnvironmentName;
 Console.WriteLine($"Starting API with Environment: {environmentName}");
@@ -31,6 +31,12 @@ builder.Services.Configure<GitHubConfiguration>(gitHubSection);
 
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+builder.Services.Configure<RecaptchaSettings>(builder.Configuration.GetSection("Recaptcha"));
+builder.Services.AddHttpClient<IRecaptchaService, RecaptchaService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o =>
