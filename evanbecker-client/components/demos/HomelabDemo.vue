@@ -33,6 +33,7 @@ const MONITOR_NAMES: Record<number, string> = {
   6: 'Database (Test)',
   7: 'Infisical',
   8: 'Docker Registry',
+  9: 'n8n',
 }
 
 const nodes: LabNode[] = [
@@ -44,7 +45,7 @@ const nodes: LabNode[] = [
   {
     id: 'ct103', label: 'CT103', hostname: 'docker-host', ip: '—',
     purpose: 'n8n automation + cloudflared',
-    type: 'external', position: [-4, 1.5, 2],
+    type: 'external', position: [-4, 1.5, 2], monitorIds: [9],
     services: ['n8n.evanbecker.net'],
   },
   {
