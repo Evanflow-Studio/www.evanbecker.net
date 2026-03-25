@@ -5,28 +5,26 @@ using System.Text.Json.Serialization;
 namespace evanbecker_api.Configuration;
 
 /// <summary>
-/// Pulls secrets from Infisical at startup and maps them to .NET configuration paths.
-/// Skips gracefully when INFISICAL_CLIENT_ID is not set (local dev).
+/// Configuration source that pulls secrets from an external provider at startup.
+/// Currently backed by Infisical. The provider is decoupled from the key mapping
+/// via ISecretsMapper, so swapping providers only requires a new mapper.
+///
+/// Skips gracefully when INFISICAL_CLIENT_ID is not set (local dev falls back to appsettings).
 /// </summary>
-public class InfisicalConfigurationSource : IConfigurationSource
+public class SecretsConfigurationSource : IConfigurationSource
 {
     public IConfigurationProvider Build(IConfigurationBuilder builder) =>
-        new InfisicalConfigurationProvider();
+        new SecretsConfigurationProvider(new InfisicalSecretsMapper());
 }
 
-public class InfisicalConfigurationProvider : ConfigurationProvider
+public class SecretsConfigurationProvider : ConfigurationProvider
 {
-    // Maps Infisical flat keys → .NET configuration paths.
-    // Add new secrets here as needed.
-    private static readonly Dictionary<string, string> KeyMap = new()
+    private readonly ISecretsMapper _mapper;
+
+    public SecretsConfigurationProvider(ISecretsMapper mapper)
     {
-        ["DB_CONNECTION_STRING"] = "ConnectionStrings:Database",
-        ["AUTH0_DOMAIN"] = "Auth0:Domain",
-        ["AUTH0_AUDIENCE"] = "Auth0:Audience",
-        ["AUTH0_CLIENT_ID"] = "Auth0:ClientId",
-        ["AUTH0_CLIENT_SECRET"] = "Auth0:ClientSecret",
-        ["AUTH0_URL"] = "Auth0:Url",
-    };
+        _mapper = mapper;
+    }
 
     public override void Load()
     {
@@ -38,7 +36,7 @@ public class InfisicalConfigurationProvider : ConfigurationProvider
 
         if (string.IsNullOrEmpty(clientId))
         {
-            Console.WriteLine("Infisical: INFISICAL_CLIENT_ID not set, skipping (using local config).");
+            Console.WriteLine("Secrets: No INFISICAL_CLIENT_ID set, skipping remote secrets (using local config).");
             return;
         }
 
@@ -46,35 +44,35 @@ public class InfisicalConfigurationProvider : ConfigurationProvider
             string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(environment))
         {
             throw new InvalidOperationException(
-                "Infisical: INFISICAL_CLIENT_ID is set but other required vars are missing. " +
+                "Secrets: INFISICAL_CLIENT_ID is set but other required vars are missing. " +
                 "Need: INFISICAL_CLIENT_SECRET, INFISICAL_ADDRESS, INFISICAL_PROJECT_ID, INFISICAL_ENVIRONMENT");
         }
 
-        Console.WriteLine($"Infisical: Loading secrets for environment '{environment}'...");
+        Console.WriteLine($"Secrets: Loading from Infisical for environment '{environment}'...");
 
         try
         {
             var accessToken = Authenticate(address, clientId, clientSecret);
             var secrets = FetchSecrets(address, accessToken, projectId, environment);
 
-            Console.WriteLine($"Infisical: Loaded {secrets.Count} secrets.");
+            var mapped = 0;
             foreach (var secret in secrets)
             {
-                if (KeyMap.TryGetValue(secret.SecretKey, out var configPath))
+                var configPath = _mapper.MapKey(secret.SecretKey);
+                if (configPath != null)
                 {
                     Data[configPath] = secret.SecretValue;
-                }
-                else if (secret.SecretKey.Contains("__"))
-                {
-                    Data[secret.SecretKey.Replace("__", ":")] = secret.SecretValue;
+                    mapped++;
                 }
             }
+
+            Console.WriteLine($"Secrets: Loaded {secrets.Count} secrets, mapped {mapped} to configuration.");
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException(
-                $"Infisical: Failed to load secrets from {address}. " +
-                $"Ensure Infisical is reachable and credentials are correct.", ex);
+                $"Secrets: Failed to load from {address}. " +
+                $"Ensure the provider is reachable and credentials are correct.", ex);
         }
     }
 
@@ -89,7 +87,7 @@ public class InfisicalConfigurationProvider : ConfigurationProvider
         response.EnsureSuccessStatusCode();
 
         var result = response.Content.ReadFromJsonAsync<AuthResponse>().GetAwaiter().GetResult()
-            ?? throw new InvalidOperationException("Infisical: Empty auth response.");
+            ?? throw new InvalidOperationException("Secrets: Empty auth response.");
 
         return result.AccessToken;
     }
@@ -109,12 +107,12 @@ public class InfisicalConfigurationProvider : ConfigurationProvider
         response.EnsureSuccessStatusCode();
 
         var result = response.Content.ReadFromJsonAsync<SecretsResponse>().GetAwaiter().GetResult()
-            ?? throw new InvalidOperationException("Infisical: Empty secrets response.");
+            ?? throw new InvalidOperationException("Secrets: Empty secrets response.");
 
         return result.Secrets;
     }
 
-    // JSON models for Infisical REST API responses
+    // JSON models for Infisical REST API
     private record AuthResponse(
         [property: JsonPropertyName("accessToken")] string AccessToken);
 
@@ -126,11 +124,11 @@ public class InfisicalConfigurationProvider : ConfigurationProvider
         [property: JsonPropertyName("secretValue")] string SecretValue);
 }
 
-public static class InfisicalConfigurationExtensions
+public static class SecretsConfigurationExtensions
 {
-    public static IConfigurationBuilder AddInfisical(this IConfigurationBuilder builder)
+    public static IConfigurationBuilder AddSecrets(this IConfigurationBuilder builder)
     {
-        builder.Add(new InfisicalConfigurationSource());
+        builder.Add(new SecretsConfigurationSource());
         return builder;
     }
 }
