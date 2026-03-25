@@ -162,6 +162,8 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
 
   const orbit: OrbitState = { center: null, angle: 0 }
   const scriptCache: ScriptCache = { fn: null, lastSource: '' }
+  let pendingFullProgram: WebGLProgram | null = null
+  let needsFullShader = false
 
   let resizeObserver: ResizeObserver | null = null
 
@@ -334,73 +336,71 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
       const { gl } = glState
       const parallelExt = gl.getExtension('KHR_parallel_shader_compile')
 
-      // PHASE 1: Compile the FAST placeholder shader synchronously (<100ms)
+      // PHASE 1: Submit the FAST placeholder shader — NO validation (non-blocking)
+      // On Firefox, even getProgramParameter(LINK_STATUS) blocks for seconds.
+      // Instead, just useProgram and start rendering. If GPU isn't done yet,
+      // drawArrays produces a black frame. Once GPU finishes, it renders.
       const fastProg = submitProgram(VERTEX_SHADER, FRAGMENT_SHADER_FAST)
-      if (!fastProg || !validateProgram(fastProg)) {
-        error.value = 'Fast shader failed: ' + glErrors.value.join('; ')
+      if (!fastProg) {
+        error.value = 'Fast shader submission failed'
         shaderCompiling.value = false
         resolve(); return
       }
 
       glState.program = fastProg
       setupVAO(gl)
-      glState.mainCache = buildUniformCache(gl, fastProg, FAST_UNIFORM_NAMES)
       gl.useProgram(fastProg)
-      shaderCompiled.value = true // Start rendering with fast shader immediately
+      // Build uniform cache — getUniformLocation may return null if not linked yet,
+      // but that's OK: uniform calls with null locations are silently ignored.
+      glState.mainCache = buildUniformCache(gl, fastProg, FAST_UNIFORM_NAMES)
+      shaderCompiled.value = true // Start render loop immediately
 
       frame.startTime = performance.now()
       frame.lastFpsTime = frame.startTime
       frame.lastFrameTime = frame.startTime
       frame.frameCount = 0
 
-      console.log(`[RayMarcher] Fast shader ready in ${(performance.now() - t0).toFixed(0)}ms`)
+      console.log(`[RayMarcher] Fast shader submitted in ${(performance.now() - t0).toFixed(0)}ms (no validation)`)
 
-      // PHASE 2: Submit the FULL shader for background compilation
-      const fullProg = submitProgram(VERTEX_SHADER, FRAGMENT_SHADER)
-      if (!fullProg) {
-        shaderCompiling.value = false
-        resolve(); return
-      }
-
-      function swapToFull() {
-        if (!gl || !fullProg) return
-        if (!validateProgram(fullProg)) {
-          console.warn('[RayMarcher] Full shader link failed, keeping fast shader')
-          shaderCompiling.value = false
-          resolve(); return
-        }
-        glState.program = fullProg
-        glState.mainCache = buildUniformCache(gl, fullProg, MAIN_UNIFORM_NAMES)
-
-        // Post-process shader
-        glState.postProgram = createProgramSync(POST_VERTEX, POST_FRAGMENT)
-        if (glState.postProgram) {
-          glState.postCache = buildUniformCache(gl, glState.postProgram, POST_UNIFORM_NAMES)
-        }
-
-        gl.useProgram(fullProg)
-        shaderCompiling.value = false
-        console.log(`[RayMarcher] Full shader ready in ${(performance.now() - t0).toFixed(0)}ms`)
-        resolve()
-      }
+      // Keep shaderCompiling true — it will be set to false in the render
+      // loop once we detect the fast shader is actually producing frames.
+      // This keeps the "Compiling shader..." overlay visible.
 
       if (parallelExt) {
-        // Chrome/Edge: poll without blocking
-        console.log('[RayMarcher] Compiling full shader async (KHR_parallel_shader_compile)')
+        // Chrome/Edge: submit full shader now — poll for completion without blocking
+        console.log('[RayMarcher] Submitting full shader (KHR_parallel_shader_compile)')
+        const fullProg = submitProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+        if (!fullProg) { shaderCompiling.value = false; resolve(); return }
+
         function poll() {
-          if (!gl) { resolve(); return }
-          if (gl.getProgramParameter(fullProg!, COMPLETION_STATUS_KHR)) {
-            swapToFull()
+          if (!gl || !fullProg) { resolve(); return }
+          if (gl.getProgramParameter(fullProg, COMPLETION_STATUS_KHR)) {
+            if (validateProgram(fullProg)) {
+              glState.program = fullProg
+              glState.mainCache = buildUniformCache(gl, fullProg, MAIN_UNIFORM_NAMES)
+              glState.postProgram = createProgramSync(POST_VERTEX, POST_FRAGMENT)
+              if (glState.postProgram) {
+                glState.postCache = buildUniformCache(gl, glState.postProgram, POST_UNIFORM_NAMES)
+              }
+              gl.useProgram(fullProg)
+              console.log(`[RayMarcher] Full shader ready in ${(performance.now() - t0).toFixed(0)}ms`)
+            }
+            shaderCompiling.value = false
+            resolve()
           } else {
             requestAnimationFrame(poll)
           }
         }
         requestAnimationFrame(poll)
       } else {
-        // Firefox/Safari: no parallel compile. Defer blocking check by ~2 seconds
-        // so the fast shader renders several frames first.
-        console.log('[RayMarcher] Compiling full shader deferred (no parallel ext)')
-        setTimeout(swapToFull, 2000)
+        // Firefox/Safari: DO NOT submit the full shader now.
+        // Even linkProgram() blocks the main thread on Firefox.
+        // Mark that we need to compile the full shader on first user interaction.
+        console.log('[RayMarcher] Full shader deferred until first interaction (no parallel ext)')
+        pendingFullProgram = null
+        needsFullShader = true
+        // shaderCompiling stays true — render loop will clear it when fast shader starts drawing
+        resolve()
       }
     })
   }
@@ -491,6 +491,33 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
       bloomStrength.value = ctx.bloom
       chromaticAmount.value = ctx.chroma
     } catch { /* ignore runtime errors */ }
+  }
+
+  // Compile and swap to full shader on first user interaction (Firefox path).
+  // This WILL briefly block, but the user just clicked/typed so it's acceptable.
+  function trySwapPendingShader() {
+    if (!needsFullShader || !glState.gl) return
+    needsFullShader = false // Only try once
+    const { gl } = glState
+
+    console.log('[RayMarcher] Compiling full shader on first interaction...')
+    const t0 = performance.now()
+    const prog = submitProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+    if (!prog || !validateProgram(prog)) {
+      console.warn('[RayMarcher] Full shader failed, keeping fast shader')
+      return
+    }
+
+    glState.program = prog
+    glState.mainCache = buildUniformCache(gl, prog, MAIN_UNIFORM_NAMES)
+
+    glState.postProgram = createProgramSync(POST_VERTEX, POST_FRAGMENT)
+    if (glState.postProgram) {
+      glState.postCache = buildUniformCache(gl, glState.postProgram, POST_UNIFORM_NAMES)
+    }
+
+    gl.useProgram(prog)
+    console.log(`[RayMarcher] Full shader ready in ${(performance.now() - t0).toFixed(0)}ms (on interaction)`)
   }
 
   function recompileWithCustomGlsl(customGlslCode?: string) {
@@ -624,6 +651,8 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     }
   }
 
+  const pixelBuf = new Uint8Array(4)
+
   function render() {
     // Always re-schedule first — never let the loop die
     frame.animFrameId = requestAnimationFrame(render)
@@ -656,12 +685,29 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     updateCamera(elapsed, now)
     uploadUniforms(elapsed, canvas.width, canvas.height)
     renderPass(canvas.width, canvas.height)
+
+    // Detect when the shader starts producing visible output.
+    // On Firefox, the fast shader is submitted without validation — first frames
+    // are black until the GPU finishes compiling. Once a center pixel is non-black,
+    // the shader is ready and we can dismiss the "Compiling shader..." overlay.
+    if (shaderCompiling.value) {
+      gl.readPixels(
+        Math.floor(canvas.width / 2), Math.floor(canvas.height / 2),
+        1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuf,
+      )
+      if (pixelBuf[0] > 0 || pixelBuf[1] > 0 || pixelBuf[2] > 0) {
+        shaderCompiling.value = false
+        console.log('[RayMarcher] Fast shader producing frames — overlay dismissed')
+      }
+    }
+
     updateFrameStats(now)
   }
 
   // === Input handlers ===
 
   function onMouseDown(e: MouseEvent) {
+    trySwapPendingShader()
     input.isDragging = true
     input.lastMouse = { x: e.clientX, y: e.clientY }
     lastInteraction.value = performance.now()
@@ -682,6 +728,7 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   }
 
   function onWheel(e: WheelEvent) {
+    trySwapPendingShader()
     e.preventDefault()
     // Scroll zooms FOV (telephoto). Hold Shift to move forward/back instead.
     if (e.shiftKey) {
@@ -698,6 +745,7 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
   const MOVEMENT_KEYS = new Set(['w', 'a', 's', 'd', 'q', 'e', 'shift', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'])
 
   function onKeyDown(e: KeyboardEvent) {
+    trySwapPendingShader()
     const key = e.key.toLowerCase()
     if (MOVEMENT_KEYS.has(key)) {
       e.preventDefault()
@@ -710,6 +758,54 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
 
   function onKeyUp(e: KeyboardEvent) {
     input.keysDown.delete(e.key.toLowerCase())
+  }
+
+  // === Touch handlers ===
+
+  let touchStartDist = 0
+  let touchStartZoom = 1
+
+  function onTouchStart(e: TouchEvent) {
+    trySwapPendingShader()
+    lastInteraction.value = performance.now()
+
+    if (e.touches.length === 1) {
+      input.isDragging = true
+      input.lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    } else if (e.touches.length === 2) {
+      // Pinch zoom start
+      input.isDragging = false
+      const dx = e.touches[1].clientX - e.touches[0].clientX
+      const dy = e.touches[1].clientY - e.touches[0].clientY
+      touchStartDist = Math.sqrt(dx * dx + dy * dy)
+      touchStartZoom = zoom.value
+    }
+  }
+
+  function onTouchMove(e: TouchEvent) {
+    e.preventDefault()
+    lastInteraction.value = performance.now()
+
+    if (e.touches.length === 1 && input.isDragging) {
+      if (isOrbitAnimation()) return
+      const t = e.touches[0]
+      cameraYaw.value += (t.clientX - input.lastMouse.x) * lookSpeed
+      const MAX_PITCH = 1.484
+      cameraPitch.value = Math.max(-MAX_PITCH, Math.min(MAX_PITCH,
+        cameraPitch.value - (t.clientY - input.lastMouse.y) * lookSpeed))
+      input.lastMouse = { x: t.clientX, y: t.clientY }
+    } else if (e.touches.length === 2) {
+      // Pinch zoom
+      const dx = e.touches[1].clientX - e.touches[0].clientX
+      const dy = e.touches[1].clientY - e.touches[0].clientY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const scale = dist / (touchStartDist || 1)
+      zoom.value = Math.max(1.0, Math.min(10.0, touchStartZoom * scale))
+    }
+  }
+
+  function onTouchEnd() {
+    input.isDragging = false
   }
 
   // === Screenshot ===
@@ -791,6 +887,8 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     gl: () => glState.gl,
     program: () => glState.program,
     onMouseDown, onWheel,
+    onTouchStart, onTouchMove, onTouchEnd,
+    applyMovement, getForward, getRight,
     captureScreenshot, recompileWithCustomGlsl,
     start, stop,
   }

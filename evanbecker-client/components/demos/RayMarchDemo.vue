@@ -121,10 +121,23 @@ watch(scene, (s) => {
   lastInteraction.value = performance.now()
 })
 
+// Mobile detection
+const isMobile = ref(false)
+if (typeof window !== 'undefined') {
+  isMobile.value = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768
+}
+
+// Default to Performance on mobile
+if (isMobile.value) {
+  quality.value = 0
+}
+
 // WebGL engine
 const {
   fps, error, shaderCompiled, shaderCompiling, glContextCreated, glErrors, orbitProgress,
   gl, program, onMouseDown, onWheel,
+  onTouchStart, onTouchMove, onTouchEnd,
+  applyMovement, getForward, getRight,
   captureScreenshot, recompileWithCustomGlsl, start, stop,
 } = useRayMarchGL({
   canvasRef, scene, palette, iterations, lightAngleX, lightAngleY,
@@ -146,6 +159,19 @@ const {
 defineExpose({
   canvasRef, gl, program, shaderCompiled, glContextCreated, glErrors, fps, iterations,
 })
+
+// Mobile joystick handler
+function onJoystickMove(dx: number, dy: number) {
+  const fw = getForward()
+  const rt = getRight()
+  const speed = moveSpeed.value
+  // Forward/back from joystick Y
+  applyMovement(fw, dy * speed)
+  // Strafe from joystick X
+  cameraPosX.value -= rt[0] * dx * speed
+  cameraPosZ.value -= rt[2] * dx * speed
+  lastInteraction.value = performance.now()
+}
 
 // Fullscreen
 const containerRef = ref<HTMLElement | null>(null)
@@ -216,12 +242,17 @@ onUnmounted(() => {
     <div v-else class="relative" :class="isFullscreen ? 'h-screen' : ''">
       <canvas
         ref="canvasRef"
-        class="w-full cursor-grab"
+        class="w-full cursor-grab touch-none"
         :class="[
           isFullscreen ? 'h-screen' : 'h-[500px] rounded-2xl',
+          isMobile ? 'h-[300px]' : '',
         ]"
         @mousedown="onMouseDown"
         @wheel.prevent="onWheel"
+        @touchstart.prevent="onTouchStart"
+        @touchmove.prevent="onTouchMove"
+        @touchend.prevent="onTouchEnd"
+        @touchcancel.prevent="onTouchEnd"
       />
 
       <!-- Top-right overlay -->
@@ -252,6 +283,11 @@ onUnmounted(() => {
       <!-- Paused indicator -->
       <div v-if="timePaused" class="absolute top-3 left-3 rounded-md bg-black/60 px-3 py-1 text-xs font-mono text-yellow-400">
         PAUSED (Space)
+      </div>
+
+      <!-- Mobile joystick -->
+      <div v-if="isMobile" class="absolute bottom-20 left-4 z-10">
+        <MobileJoystick @move="onJoystickMove" />
       </div>
 
       <!-- Controls -->
