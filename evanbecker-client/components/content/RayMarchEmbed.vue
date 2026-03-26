@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, nextTick, onUnmounted } from 'vue'
+import { useRayMarcherStore } from '~/stores/raymarcher'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
 
 const props = withDefaults(defineProps<{
@@ -13,22 +14,41 @@ const props = withDefaults(defineProps<{
 const activated = ref(false)
 const containerRef = ref<HTMLElement | null>(null)
 
-// Resolve preset index from name
 const presetIndex = LATTICE_PRESETS.findIndex(p => p.name.toLowerCase() === props.preset.toLowerCase())
 const presetName = presetIndex >= 0 ? LATTICE_PRESETS[presetIndex].name : props.preset
 
 function activate() {
+  // Reset GL status so the engine starts fresh
+  const store = useRayMarcherStore()
+  store.gl.shaderCompiled = false
+  store.gl.shaderCompiling = false
+  store.gl.contextCreated = false
+  store.gl.error = null
+  store.gl.errors = []
+
+  // Apply the requested preset
+  if (presetIndex >= 0) {
+    store.applyLatticePreset(presetIndex)
+  }
+
   activated.value = true
 }
 
-// Deactivate when clicking outside (return keyboard to page)
+function deactivate() {
+  activated.value = false
+}
+
+// Deactivate on click outside — but skip the frame where we just activated
+// (otherwise the activate click itself triggers deactivation via bubbling)
 function onClickOutside(e: MouseEvent) {
+  if (!activated.value) return
   if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
-    activated.value = false
+    deactivate()
   }
 }
 
 if (typeof window !== 'undefined') {
+  // Use capture:false + nextTick delay so the activate click doesn't immediately deactivate
   window.addEventListener('click', onClickOutside)
   onUnmounted(() => window.removeEventListener('click', onClickOutside))
 }
@@ -68,8 +88,11 @@ if (typeof window !== 'undefined') {
       </ClientOnly>
     </div>
 
-    <p v-if="activated" class="mt-2 text-center text-[11px] text-slate-500">
-      WASD to move · Mouse to look · Click outside to deactivate
-    </p>
+    <div v-if="activated" class="mt-2 flex items-center justify-center gap-3">
+      <p class="text-[11px] text-slate-500">WASD to move · Mouse to look</p>
+      <button class="text-[11px] text-slate-500 underline hover:text-slate-300 transition-colors" @click="deactivate">
+        Close
+      </button>
+    </div>
   </div>
 </template>
