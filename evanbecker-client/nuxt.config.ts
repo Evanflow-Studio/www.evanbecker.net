@@ -3,6 +3,7 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
 
   modules: [
+    '@pinia/nuxt',
     '@nuxt/content',
     '@nuxtjs/tailwindcss',
     '@nuxtjs/color-mode',

@@ -1,38 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRayMarcherStore } from '~/stores/raymarcher'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
-import type { RayMarchCommand } from '~/composables/useCommandDispatcher'
 import { QUALITY_NAMES, GEO_PRESET_NAMES, ANIMATION_NAMES } from '~/utils/shaders/constants'
 
+const store = useRayMarcherStore()
 const presetNames = LATTICE_PRESETS.map(p => p.name)
 
-const props = defineProps<{
-  scene: number
-  palette: number
-  quality: number
-  iterations: number
-  autoRotate: boolean
-  orbitProgress: number
-  wireframe: boolean
-  cellSpacing: number
-  wallThickness: number
-  geoPreset: number
-  animation: number
-  animOffset: number
-  latticePreset: number
-  bloomStrength: number
-  chromaticAmount: number
-  fogDensity: number
-  moveSpeed: number
-  timePaused: boolean
-  timeSpeed: number
-  customGlsl: string
-  customJs: string
-  glslError: string
+const emit = defineEmits<{
+  screenshot: []
+  fullscreen: []
+  'apply-glsl': []
 }>()
-
-const emit = defineEmits<{ command: [cmd: RayMarchCommand] }>()
-function cmd(command: RayMarchCommand) { emit('command', command) }
 
 const showAdvanced = ref(false)
 const activeTab = ref('scene')
@@ -48,10 +27,14 @@ const tabs = [
   <FloatingPanel initial-position="bottom-center">
     <!-- Compact bar -->
     <div class="flex flex-wrap items-end gap-3">
-      <DemoSelect v-if="scene === 0" label="Preset" :model-value="latticePreset" :options="presetNames" @update:model-value="cmd({ type: 'setLatticePreset', value: $event })" />
-      <DemoSelect label="Shape" :model-value="geoPreset" :options="[...GEO_PRESET_NAMES]" @update:model-value="cmd({ type: 'setGeoPreset', value: $event })" />
-      <DemoSelect label="Animate" :model-value="animation" :options="[...ANIMATION_NAMES]" @update:model-value="cmd({ type: 'setAnimation', value: $event })" />
-      <DemoSelect label="Quality" :model-value="quality" :options="[...QUALITY_NAMES]" @update:model-value="cmd({ type: 'setQuality', value: $event })" />
+      <DemoSelect v-if="store.scene.index === 0" label="Preset" :model-value="store.lattice.presetIndex"
+        :options="presetNames" @update:model-value="store.applyLatticePreset($event)" />
+      <DemoSelect label="Shape" :model-value="store.lattice.geoPreset"
+        :options="[...GEO_PRESET_NAMES]" @update:model-value="store.lattice.geoPreset = $event" />
+      <DemoSelect label="Animate" :model-value="store.lattice.animation"
+        :options="[...ANIMATION_NAMES]" @update:model-value="store.lattice.animation = $event" />
+      <DemoSelect label="Quality" :model-value="store.render.quality"
+        :options="[...QUALITY_NAMES]" @update:model-value="store.applyQualityFX($event)" />
       <button
         class="h-7 rounded-md border px-3 text-xs font-medium transition-colors"
         :class="showAdvanced
@@ -67,31 +50,10 @@ const tabs = [
     <div v-if="showAdvanced" class="flex flex-col gap-2 border-t border-slate-700/50 pt-2">
       <TabBar :tabs="tabs" :model-value="activeTab" @update:model-value="activeTab = $event" />
 
-      <SceneTab
-        v-if="activeTab === 'scene'"
-        :scene="scene" :wireframe="wireframe" :iterations="iterations"
-        :cell-spacing="cellSpacing" :wall-thickness="wallThickness"
-        :anim-offset="animOffset" :animation="animation"
-        @command="cmd($event)"
-      />
-      <ColorTab
-        v-if="activeTab === 'color'"
-        :palette="palette"
-        @command="cmd($event)"
-      />
-      <FxTab
-        v-if="activeTab === 'fx'"
-        :bloom-strength="bloomStrength" :chromatic-amount="chromaticAmount"
-        :fog-density="fogDensity"
-        @command="cmd($event)"
-      />
-      <ToolsTab
-        v-if="activeTab === 'tools'"
-        :time-paused="timePaused" :time-speed="timeSpeed" :move-speed="moveSpeed"
-        :auto-rotate="autoRotate" :orbit-progress="orbitProgress"
-        :custom-glsl="customGlsl" :custom-js="customJs" :glsl-error="glslError"
-        @command="cmd($event)"
-      />
+      <SceneTab v-if="activeTab === 'scene'" />
+      <ColorTab v-if="activeTab === 'color'" />
+      <FxTab v-if="activeTab === 'fx'" />
+      <ToolsTab v-if="activeTab === 'tools'" @screenshot="emit('screenshot')" @fullscreen="emit('fullscreen')" @apply-glsl="emit('apply-glsl')" />
     </div>
   </FloatingPanel>
 </template>
