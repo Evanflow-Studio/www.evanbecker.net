@@ -11,7 +11,7 @@ export const useRayMarcherStore = defineStore('raymarcher', {
     scene: {
       index: 0,
       palette: DEFAULT_PRESET.palette,
-      iterations: 6,
+      iterations: 8,
       lightAngleX: DEFAULT_PRESET.lightAngleX,
       lightAngleY: DEFAULT_PRESET.lightAngleY,
     } as SceneState,
@@ -24,7 +24,6 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       yaw: 0.8,
       pitch: 0.0,
       moveSpeed: CAMERA_DEFAULTS.MOVE_SPEED,
-      autoRotate: false,
       lastInteraction: 0,
     } as CameraState,
 
@@ -36,7 +35,6 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       cellSpacing: DEFAULT_PRESET.cellSpacing,
       wallThickness: DEFAULT_PRESET.wallThickness,
       animOffset: DEFAULT_PRESET.animOffset,
-      wireframe: DEFAULT_PRESET.wireframe,
       isCustomized: false,
       basePresetName: DEFAULT_PRESET.name,
     } as LatticeState,
@@ -44,6 +42,7 @@ export const useRayMarcherStore = defineStore('raymarcher', {
     // Rendering / FX
     render: {
       quality: 1,
+      stepsOverride: 0, // 0 = use quality preset's steps, >0 = manual override
       bloomStrength: 0,
       chromaticAmount: 0,
       fogDensity: 0.001,
@@ -64,13 +63,6 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       d: [0.0, 0.33, 0.67] as [number, number, number],
     },
 
-    // Scripting
-    scripting: {
-      customGlsl: '',
-      customJs: '',
-      glslError: '',
-    },
-
     // GL status (read-only from composable)
     gl: {
       fps: 0,
@@ -79,7 +71,6 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       shaderCompiling: false,
       contextCreated: false,
       errors: [] as string[],
-      orbitProgress: 0,
     },
 
     // Mobile
@@ -93,6 +84,12 @@ export const useRayMarcherStore = defineStore('raymarcher', {
     currentLatticePreset() {
       return LATTICE_PRESETS[this.lattice.presetIndex]
     },
+    /** Effective steps: manual override if set, otherwise from quality preset */
+    effectiveSteps(): number {
+      return this.render.stepsOverride > 0
+        ? this.render.stepsOverride
+        : QUALITY_PRESETS[this.render.quality].steps
+    },
   },
 
   actions: {
@@ -105,12 +102,17 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       this.lattice.cellSpacing = preset.cellSpacing
       this.lattice.wallThickness = preset.wallThickness
       this.lattice.animOffset = preset.animOffset
-      this.lattice.wireframe = preset.wireframe
       this.lattice.isCustomized = false
       this.lattice.basePresetName = preset.name
       this.scene.palette = preset.palette
       this.scene.lightAngleX = preset.lightAngleX
       this.scene.lightAngleY = preset.lightAngleY
+      // Some presets switch scenes (e.g., Infinite Descent → Fractal Descent)
+      if (preset.scene !== undefined) {
+        this.scene.index = preset.scene
+      } else {
+        this.scene.index = 0 // Default to Infinite Lattice
+      }
     },
 
     /** Auto-fork: marks the current preset as customized. Called when any lattice/scene property is manually changed. */
@@ -141,6 +143,7 @@ export const useRayMarcherStore = defineStore('raymarcher', {
     applyQualityFX(qualityIndex: number) {
       const preset = QUALITY_PRESETS[qualityIndex]
       this.render.quality = qualityIndex
+      this.render.stepsOverride = 0 // reset manual override when switching quality
       this.render.bloomStrength = preset.bloom
       this.render.chromaticAmount = preset.chroma
     },
@@ -217,7 +220,6 @@ const URL_SCHEMA: Record<string, { path: string; type: UrlFieldType }> = {
   cs: { path: 'lattice.cellSpacing',   type: 'float' },
   wt: { path: 'lattice.wallThickness', type: 'float' },
   ao: { path: 'lattice.animOffset',    type: 'float' },
-  w:  { path: 'lattice.wireframe',     type: 'bool' },
   bl: { path: 'render.bloomStrength',  type: 'float' },
   ca: { path: 'render.chromaticAmount',type: 'float' },
   fd: { path: 'render.fogDensity',     type: 'float' },
@@ -232,15 +234,15 @@ const URL_SCHEMA: Record<string, { path: string; type: UrlFieldType }> = {
 
 // Quality presets — co-located with the store that uses them
 export const QUALITY_PRESETS: QualityPreset[] = [
-  { name: 'Performance', steps: 32,  threshold: 0.005,  maxDist: 100,  warpCorrection: 1.0, bloom: 0,   chroma: 0 },
-  { name: 'Balanced',    steps: 64,  threshold: 0.002,  maxDist: 300,  warpCorrection: 0.8, bloom: 0.3, chroma: 0.5 },
-  { name: 'High',        steps: 96,  threshold: 0.001,  maxDist: 600,  warpCorrection: 0.6, bloom: 0.6, chroma: 1.0 },
-  { name: 'Ultra',       steps: 128, threshold: 0.0005, maxDist: 1200, warpCorrection: 0.3, bloom: 1.0, chroma: 1.5 },
+  { name: 'Performance', steps: 64,  threshold: 0.005,  maxDist: 100,  warpCorrection: 1.0, bloom: 0,    chroma: 0 },
+  { name: 'Balanced',    steps: 64,  threshold: 0.002,  maxDist: 300,  warpCorrection: 0.8, bloom: 0.3,  chroma: 0.15 },
+  { name: 'High',        steps: 96,  threshold: 0.001,  maxDist: 600,  warpCorrection: 0.6, bloom: 0.6,  chroma: 0.25 },
+  { name: 'Ultra',       steps: 128, threshold: 0.0005, maxDist: 1200, warpCorrection: 0.3, bloom: 1.0,  chroma: 0.35 },
 ]
 
 export const SCENE_DEFAULTS: SceneDefault[] = [
-  { pos: [0, 0, 3], yaw: 0.8, pitch: 0 },
-  { pos: [0, 0, 2.5], yaw: 0, pitch: 0 },
-  { pos: [0, 0, 10], yaw: 0, pitch: 0 },
-  { pos: [0, 0, 3], yaw: 0, pitch: 0 },
+  { pos: [-0.65, 0, -2.06], yaw: 0.3, pitch: 0 },   // Lattice — offset to avoid spawning inside geometry
+  { pos: [0, 0, 2.5], yaw: 0, pitch: 0 },             // Mandelbulb
+  { pos: [0, 0, 10], yaw: 0, pitch: 0 },               // CSG Operations
+  { pos: [0, 0, 0], yaw: 0, pitch: 0 },                // Fractal Descent — origin (shader handles camera)
 ]

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
 import { QUALITY_NAMES, GEO_PRESET_NAMES, ANIMATION_NAMES } from '~/utils/shaders/constants'
@@ -10,7 +10,6 @@ const presetNames = LATTICE_PRESETS.map(p => p.name)
 const emit = defineEmits<{
   screenshot: []
   fullscreen: []
-  'apply-glsl': []
 }>()
 
 const showAdvanced = ref(false)
@@ -28,6 +27,10 @@ function editLattice<K extends keyof typeof store.lattice>(key: K, value: typeof
   store.forkPreset()
 }
 
+/** Scene type checks for conditional UI */
+const isLatticeScene = computed(() => store.scene.index === 0)
+const isFractalScene = computed(() => store.scene.index === 3)
+
 /** Preset display name — shows fork state */
 const presetDisplayName = computed(() => {
   if (store.lattice.isCustomized) return `Custom (${store.lattice.basePresetName})`
@@ -39,8 +42,8 @@ const presetDisplayName = computed(() => {
   <FloatingPanel initial-position="bottom-center">
     <!-- Compact bar -->
     <div class="flex flex-wrap items-end gap-3">
-      <!-- Preset selector with fork indicator -->
-      <div v-if="store.scene.index === 0" class="flex flex-col gap-1">
+      <!-- Preset selector — always visible (presets can switch scenes) -->
+      <div class="flex flex-col gap-1">
         <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Preset</label>
         <div class="flex items-center gap-1">
           <select
@@ -63,10 +66,14 @@ const presetDisplayName = computed(() => {
         </div>
       </div>
 
-      <DemoSelect label="Shape" :model-value="store.lattice.geoPreset"
-        :options="[...GEO_PRESET_NAMES]" @update:model-value="editLattice('geoPreset', $event)" />
-      <DemoSelect label="Animate" :model-value="store.lattice.animation"
-        :options="[...ANIMATION_NAMES]" @update:model-value="editLattice('animation', $event)" />
+      <!-- Lattice-specific controls (only for Infinite Lattice scene) -->
+      <template v-if="isLatticeScene">
+        <DemoSelect label="Shape" :model-value="store.lattice.geoPreset"
+          :options="[...GEO_PRESET_NAMES]" @update:model-value="editLattice('geoPreset', $event)" />
+        <DemoSelect label="Animate" :model-value="store.lattice.animation"
+          :options="[...ANIMATION_NAMES]" @update:model-value="editLattice('animation', $event)" />
+      </template>
+
       <DemoSelect label="Quality" :model-value="store.render.quality"
         :options="[...QUALITY_NAMES]" @update:model-value="store.applyQualityFX($event)" />
       <button
@@ -87,7 +94,7 @@ const presetDisplayName = computed(() => {
       <SceneTab v-if="activeTab === 'scene'" />
       <ColorTab v-if="activeTab === 'color'" />
       <FxTab v-if="activeTab === 'fx'" />
-      <ToolsTab v-if="activeTab === 'tools'" @screenshot="emit('screenshot')" @fullscreen="emit('fullscreen')" @apply-glsl="emit('apply-glsl')" />
+      <ToolsTab v-if="activeTab === 'tools'" @screenshot="emit('screenshot')" @fullscreen="emit('fullscreen')" />
     </div>
   </FloatingPanel>
 </template>

@@ -32,7 +32,6 @@ uniform int u_maxSteps;
 uniform float u_hitThreshold;
 uniform float u_maxDist;
 uniform float u_warpCorrection;
-uniform int u_wireframe;
 uniform float u_animOffset;
 
 // Fog & zoom
@@ -47,41 +46,16 @@ uniform vec3 u_paletteD;
 
 `
 
-// Custom GLSL injection point for animation index 9
-const CUSTOM_GLSL_PLACEHOLDER = '/* CUSTOM_GLSL_INJECT */'
-
-function buildSceneLatticeWithCustom(customGlsl?: string): string {
-  if (!customGlsl) return SCENE_LATTICE
-
-  // Inject custom GLSL as animation == 9
-  const injection = `} else if (u_animation == 9) {
-    // Custom user GLSL transform
-    ${customGlsl}
-  `
-
-  // Replace the marker comment with the custom animation branch
-  return SCENE_LATTICE.replace(
-    '// __CUSTOM_ANIMATION_INJECT__',
-    injection,
-  )
-}
-
-export function buildFragmentShader(customGlsl?: string): string {
-  const lattice = buildSceneLatticeWithCustom(customGlsl)
-  return [
-    UNIFORMS,
-    SDF_PRIMITIVES,
-    CSG_OPERATIONS,
-    COSINE_PALETTES,
-    lattice,
-    SCENE_MANDELBULB,
-    SCENE_CSG,
-    SCENE_FRACTAL,
-    SCENE_DISPATCHER,
-    LIGHTING,
-    MAIN_LOOP,
-  ].join('\n')
-}
-
-// Default shader (no custom GLSL)
-export const FRAGMENT_SHADER = buildFragmentShader()
+export const FRAGMENT_SHADER = [
+  UNIFORMS,
+  SDF_PRIMITIVES,
+  CSG_OPERATIONS,
+  COSINE_PALETTES,
+  SCENE_LATTICE,
+  SCENE_MANDELBULB,
+  SCENE_CSG,
+  SCENE_FRACTAL,
+  SCENE_DISPATCHER,
+  LIGHTING,
+  MAIN_LOOP,
+].join('\n')

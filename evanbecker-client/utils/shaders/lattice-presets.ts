@@ -1,5 +1,6 @@
 export interface LatticePreset {
   name: string
+  scene?: number       // Scene index (0=Lattice, 1=Mandelbulb, 2=CSG, 3=Fractal). Defaults to 0.
   palette: number
   geoPreset: number
   animation: number
@@ -8,10 +9,21 @@ export interface LatticePreset {
   animOffset: number
   lightAngleX: number
   lightAngleY: number
-  wireframe: boolean
 }
 
 export const LATTICE_PRESETS: LatticePreset[] = [
+  {
+    name: 'Infinite Descent',
+    scene: 3,         // Fractal Descent
+    palette: 4,       // Electric
+    geoPreset: 0,
+    animation: 0,
+    cellSpacing: 0.1,
+    wallThickness: 0.5,
+    animOffset: 0.0,
+    lightAngleX: 0.5,
+    lightAngleY: 0.7,
+  },
   {
     name: 'Deep Sea',
     palette: 3,       // Ocean
@@ -22,7 +34,6 @@ export const LATTICE_PRESETS: LatticePreset[] = [
     animOffset: 0.0,
     lightAngleX: 0.4,
     lightAngleY: 0.8,
-    wireframe: false,
   },
   {
     name: 'Jellyfish',
@@ -31,34 +42,9 @@ export const LATTICE_PRESETS: LatticePreset[] = [
     animation: 3,     // Pulse
     cellSpacing: 0.15,
     wallThickness: 0.48,
-    animOffset: 0.12,
+    animOffset: 1.0,
     lightAngleX: 0.5,
     lightAngleY: 0.7,
-    wireframe: false,
-  },
-  {
-    name: 'Crystal Array',
-    palette: 1,       // Cosmic
-    geoPreset: 0,     // Hollow Cube
-    animation: 0,     // None
-    cellSpacing: 0.08,
-    wallThickness: 0.5,
-    animOffset: 0.0,
-    lightAngleX: 0.5,
-    lightAngleY: 0.7,
-    wireframe: false,
-  },
-  {
-    name: 'Neon Grid',
-    palette: 6,       // Neon
-    geoPreset: 3,     // Frame Only
-    animation: 0,     // None
-    cellSpacing: 0.05,
-    wallThickness: 0.3,
-    animOffset: 0.0,
-    lightAngleX: 0.3,
-    lightAngleY: 0.5,
-    wireframe: true,
   },
   {
     name: 'Vortex',
@@ -70,19 +56,6 @@ export const LATTICE_PRESETS: LatticePreset[] = [
     animOffset: 0.0,
     lightAngleX: 0.6,
     lightAngleY: 0.6,
-    wireframe: false,
-  },
-  {
-    name: 'Shattered Ice',
-    palette: 8,       // Ice
-    geoPreset: 0,     // Hollow Cube
-    animation: 7,     // Shatter
-    cellSpacing: 0.12,
-    wallThickness: 0.55,
-    animOffset: 0.1,
-    lightAngleX: 0.5,
-    lightAngleY: 0.9,
-    wireframe: false,
   },
   {
     name: 'Dreamscape',
@@ -94,6 +67,72 @@ export const LATTICE_PRESETS: LatticePreset[] = [
     animOffset: 0.0,
     lightAngleX: 0.5,
     lightAngleY: 0.7,
-    wireframe: false,
+  },
+  {
+    name: 'Neon Grid',
+    palette: 6,       // Neon
+    geoPreset: 3,     // Frame Only
+    animation: 0,     // None
+    cellSpacing: 0.05,
+    wallThickness: 0.3,
+    animOffset: 0.0,
+    lightAngleX: 0.3,
+    lightAngleY: 0.5,
+  },
+  {
+    name: 'Shattered Ice',
+    palette: 8,       // Ice
+    geoPreset: 0,     // Hollow Cube
+    animation: 7,     // Shatter
+    cellSpacing: 0.12,
+    wallThickness: 0.55,
+    animOffset: 0.1,
+    lightAngleX: 0.5,
+    lightAngleY: 0.9,
+  },
+  {
+    name: 'Crystal Array',
+    palette: 1,       // Cosmic
+    geoPreset: 0,     // Hollow Cube
+    animation: 0,     // None
+    cellSpacing: 0.08,
+    wallThickness: 0.5,
+    animOffset: 0.0,
+    lightAngleX: 0.5,
+    lightAngleY: 0.7,
+  },
+  // --- New presets ---
+  {
+    name: 'Coral Reef',
+    palette: 7,       // Sunset
+    geoPreset: 5,     // Gyroid
+    animation: 1,     // Wave
+    cellSpacing: 0.9,
+    wallThickness: 0.5,
+    animOffset: 0.4,
+    lightAngleX: 0.35,
+    lightAngleY: 0.75,
+  },
+  {
+    name: 'Clockwork',
+    palette: 4,       // Electric
+    geoPreset: 7,     // Chain Links
+    animation: 2,     // Twist
+    cellSpacing: 0.1,
+    wallThickness: 0.45,
+    animOffset: 0.3,
+    lightAngleX: 0.5,
+    lightAngleY: 0.6,
+  },
+  {
+    name: 'Alien Hive',
+    palette: 9,       // Vapor
+    geoPreset: 5,     // Gyroid
+    animation: 3,     // Pulse
+    cellSpacing: 0.85,
+    wallThickness: 0.5,
+    animOffset: 0.8,
+    lightAngleX: 0.4,
+    lightAngleY: 0.85,
   },
 ]

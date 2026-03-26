@@ -2,7 +2,6 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRayMarcherStore, QUALITY_PRESETS } from '~/stores/raymarcher'
 import { useRayMarchEngine } from '~/composables/raymarcher/useRayMarchEngine'
-import { ANIMATION } from '~/utils/shaders/constants'
 
 const store = useRayMarcherStore()
 
@@ -33,18 +32,6 @@ function toggleFullscreen() {
   document.fullscreenElement ? document.exitFullscreen() : containerRef.value.requestFullscreen()
 }
 function onFullscreenChange() { isFullscreen.value = !!document.fullscreenElement }
-
-// Custom GLSL
-function applyCustomGlsl() {
-  const code = store.scripting.customGlsl.trim()
-  if (!code) { store.scripting.glslError = ''; return }
-  if (engine.recompileWithCustomGlsl(code)) {
-    store.scripting.glslError = ''
-    store.lattice.animation = ANIMATION.Custom
-  } else {
-    store.scripting.glslError = 'Compilation failed — check your GLSL syntax'
-  }
-}
 
 // Mobile joystick
 function onJoystickMove(dx: number, dy: number) {
@@ -103,7 +90,7 @@ onUnmounted(() => {
       <!-- HUD -->
       <div class="absolute top-3 right-3 flex items-center gap-2">
         <div class="rounded-md bg-black/60 px-2 py-1 text-xs font-mono text-slate-300">
-          {{ QUALITY_PRESETS[store.render.quality].steps }} steps
+          {{ store.effectiveSteps }} steps
         </div>
         <div class="rounded-md bg-black/60 px-2 py-1 text-xs font-mono text-slate-300">
           {{ store.gl.fps }} FPS
@@ -152,7 +139,6 @@ onUnmounted(() => {
       <RayMarchControls
         @screenshot="engine.captureScreenshot"
         @fullscreen="toggleFullscreen"
-        @apply-glsl="applyCustomGlsl"
       />
     </div>
   </div>

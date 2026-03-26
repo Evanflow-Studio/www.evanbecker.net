@@ -56,9 +56,7 @@ export function uploadUniforms(res: GLResources, elapsed: number) {
   gl.uniform1i(mainCache['u_geoPreset'], store.lattice.geoPreset)
   gl.uniform1i(mainCache['u_animation'], store.lattice.animation)
   gl.uniform1f(mainCache['u_animOffset'], store.lattice.animOffset)
-  gl.uniform1i(mainCache['u_wireframe'], store.lattice.wireframe ? 1 : 0)
-
-  gl.uniform1i(mainCache['u_maxSteps'], qPreset.steps)
+  gl.uniform1i(mainCache['u_maxSteps'], store.effectiveSteps)
   gl.uniform1f(mainCache['u_hitThreshold'], qPreset.threshold)
   gl.uniform1f(mainCache['u_maxDist'], qPreset.maxDist)
   gl.uniform1f(mainCache['u_warpCorrection'], qPreset.warpCorrection)

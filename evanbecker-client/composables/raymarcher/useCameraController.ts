@@ -1,5 +1,5 @@
 import { useRayMarcherStore } from '~/stores/raymarcher'
-import { ANIMATION, CAMERA_DEFAULTS, DRIFT, CELL_SPACING } from '~/utils/shaders/constants'
+import { ANIMATION, CAMERA_DEFAULTS, CELL_SPACING } from '~/utils/shaders/constants'
 import type { OrbitTracking } from '~/types/raymarcher'
 
 type Vec3 = [number, number, number]
@@ -61,22 +61,10 @@ export function processOrbit(store: StoreType, orbit: OrbitTracking) {
 export function updateCamera(
   store: StoreType,
   orbit: OrbitTracking,
-  elapsed: number,
-  now: number,
-  orbitDelay: number,
 ) {
   if (store.lattice.animation === ANIMATION.Orbit) {
     processOrbit(store, orbit)
   } else {
     orbit.center = null
-  }
-
-  const idleMs = now - store.camera.lastInteraction
-  const driftActive = store.camera.autoRotate && store.lattice.animation !== ANIMATION.Orbit
-  store.gl.orbitProgress = driftActive ? Math.min(1, idleMs / orbitDelay) : 0
-
-  if (driftActive && idleMs > orbitDelay) {
-    store.camera.yaw += DRIFT.YAW_SPEED
-    store.camera.pitch += Math.sin(elapsed * DRIFT.PITCH_FREQUENCY) * DRIFT.PITCH_AMPLITUDE
   }
 }

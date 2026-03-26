@@ -7,7 +7,6 @@ export interface CameraState {
   yaw: number
   pitch: number
   moveSpeed: number
-  autoRotate: boolean
   lastInteraction: number
 }
 
@@ -26,13 +25,13 @@ export interface LatticeState {
   cellSpacing: number
   wallThickness: number
   animOffset: number
-  wireframe: boolean
   isCustomized: boolean
   basePresetName: string
 }
 
 export interface RenderState {
   quality: number
+  stepsOverride: number // 0 = use quality preset, >0 = manual
   bloomStrength: number
   chromaticAmount: number
   fogDensity: number

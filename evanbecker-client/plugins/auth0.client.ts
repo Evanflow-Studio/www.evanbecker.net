@@ -8,17 +8,21 @@ export default defineNuxtPlugin((nuxtApp) => {
     return
   }
 
-  const auth0 = createAuth0({
-    domain: config.public.auth0Domain,
-    clientId: config.public.auth0ClientId,
-    authorizationParams: {
-      redirect_uri: config.public.auth0RedirectUri,
-      audience: config.public.auth0Audience,
-      scope: 'openid profile email offline_access',
-    },
-    cacheLocation: 'localstorage',
-    useRefreshTokens: true,
-  })
+  try {
+    const auth0 = createAuth0({
+      domain: config.public.auth0Domain,
+      clientId: config.public.auth0ClientId,
+      authorizationParams: {
+        redirect_uri: config.public.auth0RedirectUri,
+        audience: config.public.auth0Audience,
+        scope: 'openid profile email offline_access',
+      },
+      cacheLocation: 'localstorage',
+      useRefreshTokens: true,
+    })
 
-  nuxtApp.vueApp.use(auth0)
+    nuxtApp.vueApp.use(auth0)
+  } catch (e) {
+    console.warn('Auth0: failed to initialize, app will run without authentication.', e)
+  }
 })

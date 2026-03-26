@@ -1,13 +1,12 @@
-import { ref, type Ref } from 'vue'
+import { type Ref } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { CAMERA_DEFAULTS } from '~/utils/shaders/constants'
-import type { GLResources, FrameTiming, OrbitTracking } from '~/types/raymarcher'
-import { compileShaders, recompileWithCustomGlsl as recompileGlsl } from './useShaderCompiler'
+import type { GLResources, OrbitTracking } from '~/types/raymarcher'
+import { compileShaders } from './useShaderCompiler'
 import { createInputState, processKeys, createMouseHandlers, createTouchHandlers, createKeyHandlers } from './useInputHandler'
 import { createOrbitState, updateCamera, getForward, getRight, applyMovement as applyMov } from './useCameraController'
 import { createFrameTiming, resetFrameTiming, uploadUniforms, renderPass, updateFrameStats } from './useRenderPipeline'
 import { captureScreenshot as doScreenshot } from './useScreenshot'
-import { createScriptCache, evalCustomJs } from './useCustomScripting'
 
 const MAX_DPR = 2
 
@@ -27,14 +26,12 @@ function createGLResources(): GLResources {
 export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
   const store = useRayMarcherStore()
   const lookSpeed = CAMERA_DEFAULTS.LOOK_SPEED
-  const orbitDelay = CAMERA_DEFAULTS.ORBIT_DELAY_MS
 
   // Internal (non-reactive) state
   const res = createGLResources()
   const frame = createFrameTiming()
   const input = createInputState()
   const orbit = createOrbitState()
-  const scriptCache = createScriptCache()
   let resizeObserver: ResizeObserver | null = null
   let contextLost = false
 
@@ -98,8 +95,7 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
 
     // Update
     processKeys(input)
-    evalCustomJs(scriptCache, elapsed)
-    updateCamera(store, orbit, elapsed, now, orbitDelay)
+    updateCamera(store, orbit)
     uploadUniforms(res, elapsed)
     renderPass(res, canvas.width, canvas.height)
     updateFrameStats(frame, now)
@@ -162,11 +158,6 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     if (canvasRef.value) doScreenshot(canvasRef.value, res)
   }
 
-  function recompileWithCustomGlsl(code: string): boolean {
-    if (!res.gl) return false
-    return recompileGlsl(res.gl, res, code)
-  }
-
   return {
     // Handlers for template bindings
     onMouseDown: mouse.onMouseDown,
@@ -180,7 +171,6 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     applyMovement: (dir: [number, number, number], speed: number) => applyMov(store, dir, speed),
     // Actions
     captureScreenshot,
-    recompileWithCustomGlsl,
     start,
     stop,
     // GL access for tests

@@ -18,9 +18,9 @@ vec4 marchView(vec2 pixelCoord, vec2 resolution, float zoom) {
   vec3 up = cross(right, forward);
   vec3 rd = normalize(forward + uv.x * right + uv.y * up);
 
-  // Background gradient from palette
+  // Background gradient — near-black for fractal scene, subtle palette tint for others
   vec3 bgTop = vec3(0.02, 0.02, 0.04);
-  vec3 bgBot = getColor(0.5) * 0.08;
+  vec3 bgBot = (u_scene == 3) ? vec3(0.01, 0.01, 0.02) : getColor(0.5) * 0.08;
   vec3 col = mix(bgBot, bgTop, uv.y + 0.5);
   vec3 bgColor = col;
 
@@ -63,34 +63,16 @@ vec4 marchView(vec2 pixelCoord, vec2 resolution, float zoom) {
     vec3 baseColor = getColor(colorT);
     vec3 rimColor = getColor(colorT + 0.3);
 
-    if (u_wireframe == 1) {
-      // Wireframe mode — silhouette edges + structural edges
-      float silhouette = pow(1.0 - abs(dot(n, -rd)), 1.5);
-      // Structural edges where normal sharply changes axis
-      float nx = abs(n.x), ny = abs(n.y), nz = abs(n.z);
-      float maxN = max(nx, max(ny, nz));
-      float structural = 1.0 - smoothstep(0.6, 0.95, maxN);
-      float wire = max(silhouette, structural);
+    vec3 ambient = 0.2 * baseColor * ao;
+    vec3 diffCol = 0.7 * baseColor * diff * shadow;
+    vec3 specCol = 0.6 * vec3(1.0) * spec * shadow;
+    vec3 rimCol = rimColor * fresnel * 0.4;
 
-      float colorT = result.y + u_time * 0.02;
-      vec3 wireColor = getColor(colorT) * 1.2;
-      col = wireColor * wire * ao;
+    col = ambient + diffCol + specCol + rimCol;
 
-      // Depth fog (lighter in wireframe)
-      float fog = exp(-u_fogDensity * 0.4 * t * t);
-      col = mix(bgColor, col, fog);
-    } else {
-      vec3 ambient = 0.2 * baseColor * ao;
-      vec3 diffCol = 0.7 * baseColor * diff * shadow;
-      vec3 specCol = 0.6 * vec3(1.0) * spec * shadow;
-      vec3 rimCol = rimColor * fresnel * 0.4;
-
-      col = ambient + diffCol + specCol + rimCol;
-
-      // Depth fog
-      float fog = exp(-u_fogDensity * t * t);
-      col = mix(bgColor, col, fog);
-    }
+    // Depth fog
+    float fog = exp(-u_fogDensity * t * t);
+    col = mix(bgColor, col, fog);
   } else {
     // Near-miss glow, faded by distance fog
     float glowIntensity = 0.08;

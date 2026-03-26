@@ -43,7 +43,7 @@ vec3 applyAnimation(vec3 rp, float time, int anim) {
 
 // --- Geometry preset (single unified function to minimize branching) ---
 
-float evalGeometry(vec3 q, vec3 cellId, float wallThickness, float time, int preset) {
+float evalGeometry(vec3 q, vec3 worldP, vec3 cellId, float wallThickness, float time, int preset) {
   if (preset == 1) {
     // Cross Beams
     float thick = mix(0.05, 0.45, wallThickness);
@@ -68,8 +68,11 @@ float evalGeometry(vec3 q, vec3 cellId, float wallThickness, float time, int pre
     return sdTorus(tq, vec2(0.7, tubeR));
   }
   if (preset == 5) {
-    // Gyroid
-    return sdGyroid(q, 2.5 + 0.3 * sin(time * 0.2), mix(0.03, 0.4, wallThickness));
+    // Gyroid — evaluated on world-space coords (worldP), NOT cell-local q.
+    // The gyroid is naturally periodic via sin/cos so domain repetition
+    // via mod() clips it at cell boundaries creating jagged artifacts.
+    // Using worldP lets it tile naturally at its own period.
+    return sdGyroid(worldP, 0.4 + 0.05 * sin(time * 0.2), mix(0.02, 0.15, wallThickness));
   }
   if (preset == 6) {
     // Menger Cross
@@ -120,7 +123,6 @@ vec2 latticeScene(vec3 p) {
   if (u_animation >= 1 && u_animation != 5) {
     vec3 rp = p - animCenter;
     rp = applyAnimation(rp, u_time, u_animation);
-    // __CUSTOM_ANIMATION_INJECT__
     p = rp + animCenter;
   }
 
@@ -129,8 +131,8 @@ vec2 latticeScene(vec3 p) {
   vec3 cellId = floor((p + cellSize * 0.5) / cellSize);
   vec3 q = mod(p + cellSize * 0.5, cellSize) - cellSize * 0.5;
 
-  // Geometry dispatch
-  float d = evalGeometry(q, cellId, u_wallThickness, u_time, u_geoPreset);
+  // Geometry dispatch (pass both cell-local q and world-space p for gyroid)
+  float d = evalGeometry(q, p, cellId, u_wallThickness, u_time, u_geoPreset);
 
   // Breathing center sphere (all presets)
   float center = sdSphere(q, 0.15 + 0.05 * sin(u_time * 0.8 + 1.0));

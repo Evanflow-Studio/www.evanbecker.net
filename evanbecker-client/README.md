@@ -15,24 +15,51 @@ Nuxt 3 frontend for [www.evanbecker.net](https://www.evanbecker.net).
 
 ```
 evanbecker-client/
-├── pages/                  # File-based routing (index, about-me, articles, etc.)
-├── components/             # Vue components (auto-imported, no prefix)
-│   ├── demos/              # 3D demo components (WebGL, Three.js)
-│   └── icons/              # Icon components
-├── composables/            # Vue composables (useApi, useDemoTests)
-├── content/articles/       # Markdown blog posts
-├── layouts/                # Page layouts (default, article)
-├── assets/
-│   ├── css/main.css        # Global styles + print styles
-│   └── images/             # Static images and logos
-├── plugins/                # Nuxt plugins (auth0.client.ts)
-├── server/routes/          # Server routes (feed.xml)
-├── public/                 # Static public assets
-├── nuxt.config.ts          # Nuxt configuration
-├── tailwind.config.ts      # Tailwind configuration
-├── Dockerfile              # Multi-stage production build
+├── pages/                       # File-based routing
+├── components/
+│   ├── demos/                   # Interactive demo components
+│   │   ├── RayMarchDemo.vue     # WebGL2 ray marcher orchestrator
+│   │   ├── HomelabDemo.vue      # 3D homelab topology viewer
+│   │   ├── ArchGraphDemo.vue    # 3D architecture knowledge graph
+│   │   └── raymarcher/          # Ray marcher sub-components
+│   │       ├── RayMarchControls.vue
+│   │       ├── ScriptEditor.vue
+│   │       └── tabs/            # Control panel tabs (Scene, Color, FX, Tools)
+│   ├── ui/                      # Reusable UI components
+│   │   ├── FloatingPanel.vue    # Draggable/collapsible panel
+│   │   └── TabBar.vue           # Generic tab bar
+│   └── icons/                   # Icon components
+├── composables/
+│   ├── useRayMarchGL.ts         # WebGL2 render engine
+│   ├── useCommandDispatcher.ts  # Command pattern for demo controls
+│   ├── useUptimeKuma.ts         # Live status from Uptime Kuma
+│   ├── useUrlState.ts           # URL hash state serialization
+│   └── useDemoTests.ts          # Demo test framework
+├── utils/shaders/               # GLSL shader modules
+│   ├── constants.ts             # Shared enums and config
+│   ├── lattice-presets.ts       # Named scene presets
+│   ├── raymarcher.frag.ts       # Fragment shader builder
+│   └── fragments/               # GLSL module fragments
+├── content/articles/            # Markdown blog posts
+├── layouts/                     # Page layouts (default, article)
+├── assets/                      # CSS, images, fonts
+├── plugins/                     # Nuxt plugins (auth0.client.ts)
+├── server/routes/               # Server routes (feed.xml)
+├── nuxt.config.ts               # Nuxt configuration
+├── Dockerfile                   # Multi-stage production build
 └── package.json
 ```
+
+## Interactive Demos (`/sandbox`)
+
+### Ray Marcher
+WebGL2 GPU ray marcher with 4 scenes, 10 geometry presets, 9 animation modes, FPS camera, 12+ color palettes, post-processing, FOV zoom, and GLSL/JS scripting.
+
+### Homelab Viewer
+3D topology of the Proxmox homelab with live status from Uptime Kuma — sonar ping animations show green for up, red (larger) for down.
+
+### Architecture Graph
+3D force-directed knowledge graph of architecture patterns and technologies.
 
 ## Development
 

@@ -1,5 +1,5 @@
 import { VERTEX_SHADER } from '~/utils/shaders/raymarcher.vert'
-import { FRAGMENT_SHADER, buildFragmentShader } from '~/utils/shaders/raymarcher.frag'
+import { FRAGMENT_SHADER } from '~/utils/shaders/raymarcher.frag'
 import { FRAGMENT_SHADER_FAST } from '~/utils/shaders/raymarcher-fast.frag'
 import { POST_VERTEX, POST_FRAGMENT } from '~/utils/shaders/postprocess.frag'
 import type { GLResources, UniformCache } from '~/types/raymarcher'
@@ -12,7 +12,7 @@ export const MAIN_UNIFORM_NAMES = [
   'u_resolution', 'u_time', 'u_cameraYaw', 'u_cameraPitch', 'u_cameraPos',
   'u_iterations', 'u_scene', 'u_palette', 'u_lightDir',
   'u_cellSpacing', 'u_wallThickness', 'u_geoPreset', 'u_animation',
-  'u_animOffset', 'u_wireframe', 'u_maxSteps', 'u_hitThreshold',
+  'u_animOffset', 'u_maxSteps', 'u_hitThreshold',
   'u_maxDist', 'u_warpCorrection', 'u_fogDensity', 'u_zoom',
   'u_paletteA', 'u_paletteB', 'u_paletteC', 'u_paletteD',
 ]
@@ -174,14 +174,3 @@ export async function compileShaders(
   })
 }
 
-/**
- * Recompile with custom GLSL injected as animation 9.
- */
-export function recompileWithCustomGlsl(gl: WebGL2RenderingContext, res: GLResources, customGlsl: string): boolean {
-  const newProgram = createProgramSync(gl, VERTEX_SHADER, buildFragmentShader(customGlsl))
-  if (!newProgram) return false
-  res.program = newProgram
-  res.mainCache = buildUniformCache(gl, newProgram, MAIN_UNIFORM_NAMES)
-  gl.useProgram(newProgram)
-  return true
-}

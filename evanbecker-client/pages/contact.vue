@@ -5,7 +5,14 @@ import {
   ComputerDesktopIcon,
 } from '@heroicons/vue/24/outline'
 
-useHead({ title: 'Contact - Evan Becker' })
+const config = useRuntimeConfig()
+
+useHead({
+  title: 'Contact - Evan Becker',
+  script: config.public.recaptchaSiteKey
+    ? [{ src: `https://www.google.com/recaptcha/api.js?render=${config.public.recaptchaSiteKey}`, async: true }]
+    : [],
+})
 
 const router = useRouter()
 const form = reactive({
@@ -16,20 +23,41 @@ const form = reactive({
   message: '',
 })
 const loading = ref(false)
+const errorMsg = ref('')
+
+async function getRecaptchaToken(): Promise<string> {
+  const siteKey = config.public.recaptchaSiteKey
+  if (!siteKey) return ''
+  await new Promise<void>((resolve) => {
+    if (window.grecaptcha?.ready) {
+      window.grecaptcha.ready(() => resolve())
+    } else {
+      resolve()
+    }
+  })
+  return window.grecaptcha?.execute(siteKey, { action: 'contact' }) ?? ''
+}
 
 async function submitContact() {
   loading.value = true
-  const config = useRuntimeConfig()
+  errorMsg.value = ''
   try {
-    await fetch(`${config.public.apiUrl}api/v1/contact`, {
+    const recaptchaToken = await getRecaptchaToken()
+    const res = await fetch(`${config.public.apiUrl}api/v1/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, recaptchaToken }),
       mode: 'cors',
     })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      errorMsg.value = data.error || 'Failed to send message. Please try again.'
+      return
+    }
     router.push('/thank-you-message')
   } catch (e) {
     console.error('Failed to send message:', e)
+    errorMsg.value = 'Failed to send message. Please try again.'
   } finally {
     loading.value = false
   }
@@ -145,6 +173,9 @@ const contactOptions = [
               class="mt-1.5 block w-full rounded-xl border-slate-300 bg-white px-4 py-2.5 text-slate-800 shadow-sm focus:border-[#2D95FC] focus:ring-1 focus:ring-[#2D95FC] dark:border-slate-600 dark:bg-[#1E293B] dark:text-slate-200"
             />
           </div>
+        </div>
+        <div v-if="errorMsg" class="sm:col-span-2 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+          {{ errorMsg }}
         </div>
         <div class="mt-6 flex justify-end">
           <button

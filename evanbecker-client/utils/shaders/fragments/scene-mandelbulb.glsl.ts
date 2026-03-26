@@ -1,7 +1,14 @@
 export const SCENE_MANDELBULB = `
-// === SCENE 1: MANDELBULB ===
+// === SCENE 1: MANDELBULB (Hexagonal Lattice) ===
+//
+// The Mandelbulb is evaluated per-cell in a hexagonal grid on the XZ plane,
+// with regular repetition on Y. This gives a more organic layout than
+// the cubic grid used by the lattice scenes.
+//
+// Hex grid: two offset rectangular grids — pick whichever cell center
+// is closer. This produces a proper hexagonal tiling.
 
-vec2 mandelbulbScene(vec3 p) {
+vec2 mandelbulbSDF(vec3 p) {
   vec3 z = p;
   float dr = 1.0;
   float r = 0.0;
@@ -29,5 +36,50 @@ vec2 mandelbulbScene(vec3 p) {
 
   float d = 0.5 * log(r) * r / dr;
   return vec2(d, trap);
+}
+
+vec2 mandelbulbScene(vec3 p) {
+  // Hexagonal grid parameters
+  // The Mandelbulb has radius ~1.2, so cells need to be at least 3.0 apart
+  float cellSize = 4.0;
+  float rowHeight = cellSize * 1.7320508; // cellSize * sqrt(3)
+
+  // Y-axis: simple repetition
+  float yCell = floor((p.y + cellSize * 0.5) / cellSize);
+  float qy = mod(p.y + cellSize * 0.5, cellSize) - cellSize * 0.5;
+
+  // XZ plane: hexagonal tiling via two offset grids
+  // Grid A: regular
+  vec2 cellA = vec2(cellSize, rowHeight);
+  vec2 idA = floor((p.xz + cellA * 0.5) / cellA);
+  vec2 qA = mod(p.xz + cellA * 0.5, cellA) - cellA * 0.5;
+
+  // Grid B: offset by half a cell in both X and Z
+  vec2 offsetB = vec2(cellSize * 0.5, rowHeight * 0.5);
+  vec2 idB = floor((p.xz + cellA * 0.5 - offsetB) / cellA);
+  vec2 qB = mod(p.xz + cellA * 0.5 - offsetB, cellA) - cellA * 0.5;
+
+  // Pick the closer cell center
+  vec3 q;
+  vec2 hexId;
+  if (dot(qA, qA) < dot(qB, qB)) {
+    q = vec3(qA.x, qy, qA.y);
+    hexId = idA;
+  } else {
+    q = vec3(qB.x, qy, qB.y);
+    hexId = idB;
+  }
+
+  // Slow rotation per cell for visual variety
+  float cellHash = fract(sin(dot(vec3(hexId, yCell), vec3(12.9898, 78.233, 45.164))) * 43758.5453);
+  float rotAngle = u_time * 0.15 + cellHash * 6.28;
+  float cr = cos(rotAngle), sr = sin(rotAngle);
+  q.xz = mat2(cr, -sr, sr, cr) * q.xz;
+
+  vec2 result = mandelbulbSDF(q);
+
+  // Color: orbit trap + hex cell variety
+  float colorT = result.y * 0.5 + cellHash * 0.3;
+  return vec2(result.x, colorT);
 }
 `
