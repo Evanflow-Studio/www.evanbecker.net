@@ -155,13 +155,17 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       if (this.isMobile) this.render.quality = 0
     },
 
-    /** Import state from URL hash. Returns true if state was restored. Clears hash after import. */
+    /** Import state from URL hash or query params. Returns true if state was restored. Clears after import. */
     importFromUrl(): boolean {
       if (typeof window === 'undefined') return false
-      const hash = window.location.hash
-      if (!hash || hash.length < 2) return false
 
-      const params = new URLSearchParams(hash.slice(1))
+      // Support both hash (#s=2) and query params (?s=2)
+      const hash = window.location.hash
+      const search = window.location.search
+      const source = (hash && hash.length >= 2) ? hash.slice(1) : (search && search.length >= 2) ? search.slice(1) : null
+      if (!source) return false
+
+      const params = new URLSearchParams(source)
       let applied = false
 
       for (const [key, { path, type }] of Object.entries(URL_SCHEMA)) {
@@ -179,6 +183,7 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       }
 
       if (applied) {
+        // Clear both hash and query params
         window.history.replaceState(null, '', window.location.pathname)
       }
       return applied
