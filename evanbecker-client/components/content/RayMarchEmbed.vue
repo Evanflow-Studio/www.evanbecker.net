@@ -102,12 +102,13 @@ onUnmounted(() => {
       ]"
       @click="!focused && activate()"
     >
-      <!-- Defocused overlay: dims the scene, click to re-focus -->
+      <!-- Defocused overlay: dims the scene, click anywhere to re-focus -->
       <div
         v-if="!focused"
-        class="absolute inset-0 z-10 flex items-center justify-center bg-black/40 transition-opacity"
+        class="absolute inset-0 z-10 flex items-center justify-center bg-black/40 transition-opacity cursor-pointer"
+        @click.stop="activate"
       >
-        <p class="text-sm text-slate-300 bg-black/60 rounded-md px-3 py-1.5">Click to interact</p>
+        <p class="text-sm text-slate-300 bg-black/60 rounded-md px-3 py-1.5 pointer-events-none">Click to interact</p>
       </div>
 
       <ClientOnly>
@@ -121,7 +122,11 @@ onUnmounted(() => {
     </div>
 
     <div v-if="mounted" class="mt-2 flex items-center justify-center gap-3">
-      <p class="text-[11px] text-slate-500">
+      <p
+        class="text-[11px] text-slate-500"
+        :class="!focused && 'cursor-pointer hover:text-slate-300 transition-colors'"
+        @click="!focused && activate()"
+      >
         {{ focused ? 'WASD to move · Mouse to look · Click outside to release' : 'Click to interact' }}
       </p>
       <button class="text-[11px] text-slate-500 underline hover:text-slate-300 transition-colors" @click="close">
