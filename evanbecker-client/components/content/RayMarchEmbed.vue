@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
+import { SCENE_NAMES } from '~/utils/shaders/constants'
 
 const props = withDefaults(defineProps<{
   preset?: string
@@ -11,12 +12,29 @@ const props = withDefaults(defineProps<{
   height: 'h-[400px]',
 })
 
-const mounted = ref(false)    // Has the ray marcher been created? (persists)
-const focused = ref(false)    // Is the user interacting with it? (toggles on click in/out)
+const mounted = ref(false)
+const focused = ref(false)
+const sceneOverridden = ref(false)
 const containerRef = ref<HTMLElement | null>(null)
 
 const presetIndex = LATTICE_PRESETS.findIndex(p => p.name.toLowerCase() === props.preset.toLowerCase())
 const presetName = presetIndex >= 0 ? LATTICE_PRESETS[presetIndex].name : props.preset
+
+// Show which scene is active when overridden
+const overrideLabel = computed(() => {
+  if (!sceneOverridden.value) return ''
+  const store = useRayMarcherStore()
+  return SCENE_NAMES[store.scene.index] ?? 'Custom'
+})
+
+function resetToPreset() {
+  const store = useRayMarcherStore()
+  // Restore the original scene (Infinite Lattice = 0) and preset
+  store.scene.index = 0
+  store.applySceneDefaults(0)
+  if (presetIndex >= 0) store.applyLatticePreset(presetIndex)
+  sceneOverridden.value = false
+}
 
 let outsideListener: ((e: MouseEvent) => void) | null = null
 
@@ -64,28 +82,30 @@ function close() {
 
 function onSceneChange(e: Event) {
   const detail = (e as CustomEvent).detail
-  if (detail) {
-    // Activate if not already mounted
-    if (!mounted.value) {
-      const store = useRayMarcherStore()
-      store.gl.shaderCompiled = false
-      store.gl.shaderCompiling = false
-      store.gl.contextCreated = false
-      store.gl.error = null
-      store.gl.errors = []
-      mounted.value = true
-    }
-    focused.value = true
-    if (!outsideListener) {
-      setTimeout(() => {
-        outsideListener = (e: MouseEvent) => {
-          if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
-            blur()
-          }
+  if (!detail) return
+
+  // Activate if not already mounted
+  if (!mounted.value) {
+    const store = useRayMarcherStore()
+    store.gl.shaderCompiled = false
+    store.gl.shaderCompiling = false
+    store.gl.contextCreated = false
+    store.gl.error = null
+    store.gl.errors = []
+    mounted.value = true
+  }
+  focused.value = true
+  sceneOverridden.value = true
+
+  if (!outsideListener) {
+    setTimeout(() => {
+      outsideListener = (e: MouseEvent) => {
+        if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
+          blur()
         }
-        window.addEventListener('click', outsideListener)
-      }, 0)
-    }
+      }
+      window.addEventListener('click', outsideListener)
+    }, 0)
   }
 }
 
@@ -134,6 +154,26 @@ onUnmounted(() => {
       ]"
       @click="!focused && activate()"
     >
+      <!-- Reset button: appears when scene was changed via SceneLink -->
+      <Transition
+        enter-active-class="transition-all duration-200 ease-out"
+        leave-active-class="transition-all duration-150 ease-in"
+        enter-from-class="opacity-0 -translate-x-2"
+        leave-to-class="opacity-0 -translate-x-2"
+      >
+        <button
+          v-if="sceneOverridden && focused"
+          class="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-md bg-black/70 backdrop-blur-sm px-2.5 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-black/80 transition-colors border border-slate-600/30"
+          @click.stop="resetToPreset"
+          :title="`Reset to ${presetName}`"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+          </svg>
+          <span>{{ presetName }}</span>
+        </button>
+      </Transition>
+
       <!-- Defocused overlay: dims the scene, click anywhere to re-focus -->
       <div
         v-if="!focused"
@@ -159,7 +199,15 @@ onUnmounted(() => {
         :class="!focused && 'cursor-pointer hover:text-slate-300 transition-colors'"
         @click="!focused && activate()"
       >
-        {{ focused ? 'WASD to move · Mouse to look · Click outside to release' : 'Click to interact' }}
+        <template v-if="focused">
+          WASD to move · Mouse to look · Click outside to release
+        </template>
+        <template v-else-if="sceneOverridden">
+          Viewing {{ overrideLabel }} · Click to interact
+        </template>
+        <template v-else>
+          Click to interact
+        </template>
       </p>
       <button class="text-[11px] text-slate-500 underline hover:text-slate-300 transition-colors" @click="close">
         Close
