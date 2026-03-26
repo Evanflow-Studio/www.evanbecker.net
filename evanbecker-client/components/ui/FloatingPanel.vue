@@ -81,13 +81,19 @@ function onTouchDragEnd() { endDrag() }
 onMounted(() => {
   requestAnimationFrame(() => {
     if (!positioned && panelRef.value?.parentElement) {
-      const parent = panelRef.value.parentElement.getBoundingClientRect()
+      const parent = panelRef.value.parentElement
       const panel = panelRef.value.getBoundingClientRect()
+      // Use the canvas height if available (more accurate than parent container)
+      const canvas = parent.querySelector('canvas')
+      const refRect = canvas ? canvas.getBoundingClientRect() : parent.getBoundingClientRect()
+      const parentRect = parent.getBoundingClientRect()
       if (props.initialPosition === 'bottom-center') {
-        panelX.value = (parent.width - panel.width) / 2
-        panelY.value = parent.height - panel.height - props.bottomOffset
+        panelX.value = (parentRect.width - panel.width) / 2
+        // Position relative to the canvas bottom, not the parent container bottom
+        const canvasBottom = canvas ? (refRect.bottom - parentRect.top) : parentRect.height
+        panelY.value = canvasBottom - panel.height - props.bottomOffset
       } else if (props.initialPosition === 'top-right') {
-        panelX.value = parent.width - panel.width - 12
+        panelX.value = parentRect.width - panel.width - 12
         panelY.value = 12
       } else {
         panelX.value = props.initialPosition.x

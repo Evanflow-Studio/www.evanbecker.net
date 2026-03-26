@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onUnmounted } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
 
@@ -11,7 +11,8 @@ const props = withDefaults(defineProps<{
   height: 'h-[400px]',
 })
 
-const activated = ref(false)
+const mounted = ref(false)    // Has the ray marcher been created? (persists)
+const focused = ref(false)    // Is the user interacting with it? (toggles on click in/out)
 const containerRef = ref<HTMLElement | null>(null)
 
 const presetIndex = LATTICE_PRESETS.findIndex(p => p.name.toLowerCase() === props.preset.toLowerCase())
@@ -20,36 +21,41 @@ const presetName = presetIndex >= 0 ? LATTICE_PRESETS[presetIndex].name : props.
 let outsideListener: ((e: MouseEvent) => void) | null = null
 
 function activate() {
-  // Reset GL status so the engine starts fresh
-  const store = useRayMarcherStore()
-  store.gl.shaderCompiled = false
-  store.gl.shaderCompiling = false
-  store.gl.contextCreated = false
-  store.gl.error = null
-  store.gl.errors = []
-
-  // Apply the requested preset
-  if (presetIndex >= 0) {
-    store.applyLatticePreset(presetIndex)
+  if (!mounted.value) {
+    // First activation: reset GL state and apply preset
+    const store = useRayMarcherStore()
+    store.gl.shaderCompiled = false
+    store.gl.shaderCompiling = false
+    store.gl.contextCreated = false
+    store.gl.error = null
+    store.gl.errors = []
+    if (presetIndex >= 0) store.applyLatticePreset(presetIndex)
+    mounted.value = true
   }
+  focused.value = true
 
-  activated.value = true
-
-  // Register click-outside AFTER the current click event finishes propagating.
-  // Without this delay, the activate click itself triggers deactivation because
-  // v-if swaps the DOM and the original click target is no longer inside the container.
-  setTimeout(() => {
-    outsideListener = (e: MouseEvent) => {
-      if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
-        deactivate()
+  // Register click-outside after current click finishes propagating
+  if (!outsideListener) {
+    setTimeout(() => {
+      outsideListener = (e: MouseEvent) => {
+        if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
+          blur()
+        }
       }
-    }
-    window.addEventListener('click', outsideListener)
-  }, 0)
+      window.addEventListener('click', outsideListener)
+    }, 0)
+  }
 }
 
-function deactivate() {
-  activated.value = false
+function blur() {
+  // Don't destroy the component, just defocus
+  focused.value = false
+}
+
+function close() {
+  // Fully destroy the ray marcher (explicit user action only)
+  focused.value = false
+  mounted.value = false
   if (outsideListener) {
     window.removeEventListener('click', outsideListener)
     outsideListener = null
@@ -66,9 +72,9 @@ onUnmounted(() => {
 
 <template>
   <div ref="containerRef" class="not-prose my-6">
-    <!-- Inactive: thumbnail with play button -->
+    <!-- Inactive: thumbnail with play button (only before first activation) -->
     <div
-      v-if="!activated"
+      v-if="!mounted"
       class="relative cursor-pointer rounded-2xl border border-slate-700 bg-[#0B1120] overflow-hidden group"
       :class="height"
       @click="activate"
@@ -86,8 +92,24 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Active: full ray marcher -->
-    <div v-else class="rounded-2xl border border-[#2D95FC]/30 overflow-hidden" :class="height">
+    <!-- Active: ray marcher stays alive, focus/blur controls interaction -->
+    <div
+      v-else
+      class="relative rounded-2xl border overflow-hidden transition-colors"
+      :class="[
+        height,
+        focused ? 'border-[#2D95FC]/30' : 'border-slate-700 cursor-pointer',
+      ]"
+      @click="!focused && activate()"
+    >
+      <!-- Defocused overlay: dims the scene, click to re-focus -->
+      <div
+        v-if="!focused"
+        class="absolute inset-0 z-10 flex items-center justify-center bg-black/40 transition-opacity"
+      >
+        <p class="text-sm text-slate-300 bg-black/60 rounded-md px-3 py-1.5">Click to interact</p>
+      </div>
+
       <ClientOnly>
         <RayMarchDemo />
         <template #fallback>
@@ -98,9 +120,11 @@ onUnmounted(() => {
       </ClientOnly>
     </div>
 
-    <div v-if="activated" class="mt-2 flex items-center justify-center gap-3">
-      <p class="text-[11px] text-slate-500">WASD to move · Mouse to look</p>
-      <button class="text-[11px] text-slate-500 underline hover:text-slate-300 transition-colors" @click="deactivate">
+    <div v-if="mounted" class="mt-2 flex items-center justify-center gap-3">
+      <p class="text-[11px] text-slate-500">
+        {{ focused ? 'WASD to move · Mouse to look · Click outside to release' : 'Click to interact' }}
+      </p>
+      <button class="text-[11px] text-slate-500 underline hover:text-slate-300 transition-colors" @click="close">
         Close
       </button>
     </div>
