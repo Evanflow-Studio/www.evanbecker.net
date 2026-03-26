@@ -45,6 +45,8 @@ const emit = defineEmits<{
           <button class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
             title="Screenshot (P)" @click="emit('screenshot')">Screenshot</button>
           <button class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            title="Copy share URL" @click="store.exportToUrl()">Share</button>
+          <button class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
             title="Fullscreen" @click="emit('fullscreen')">Fullscreen</button>
         </div>
       </div>

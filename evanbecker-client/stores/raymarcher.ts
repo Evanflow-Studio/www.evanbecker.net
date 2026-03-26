@@ -137,8 +137,76 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       this.isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768
       if (this.isMobile) this.render.quality = 0
     },
+
+    /** Import state from URL hash. Returns true if state was restored. Clears hash after import. */
+    importFromUrl(): boolean {
+      if (typeof window === 'undefined') return false
+      const hash = window.location.hash
+      if (!hash || hash.length < 2) return false
+
+      const params = new URLSearchParams(hash.slice(1))
+      let applied = false
+
+      for (const [key, { path, type }] of Object.entries(URL_SCHEMA)) {
+        const val = params.get(key)
+        if (val === null) continue
+        const parsed = type === 'int' ? parseInt(val, 10) : type === 'bool' ? val === '1' : parseFloat(val)
+        if (typeof parsed === 'number' && isNaN(parsed)) continue
+
+        // Navigate nested path like "scene.index" → this.scene.index
+        const parts = path.split('.')
+        let target: any = this
+        for (let i = 0; i < parts.length - 1; i++) target = target[parts[i]]
+        target[parts[parts.length - 1]] = parsed
+        applied = true
+      }
+
+      if (applied) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+      return applied
+    },
+
+    /** Export current state to a shareable URL. Copies to clipboard and returns the URL. */
+    exportToUrl(): string {
+      const parts: string[] = []
+      for (const [key, { path, type }] of Object.entries(URL_SCHEMA)) {
+        const pathParts = path.split('.')
+        let val: any = this
+        for (const p of pathParts) val = val[p]
+        const serialized = type === 'int' ? String(val) : type === 'bool' ? (val ? '1' : '0') : (val as number).toFixed(4)
+        parts.push(`${key}=${serialized}`)
+      }
+      const url = `${window.location.origin}${window.location.pathname}#${parts.join('&')}`
+      navigator.clipboard.writeText(url)
+      return url
+    },
   },
 })
+
+// URL schema — maps short keys to store paths with types
+type UrlFieldType = 'int' | 'float' | 'bool'
+const URL_SCHEMA: Record<string, { path: string; type: UrlFieldType }> = {
+  s:  { path: 'scene.index',           type: 'int' },
+  p:  { path: 'scene.palette',         type: 'int' },
+  q:  { path: 'render.quality',        type: 'int' },
+  g:  { path: 'lattice.geoPreset',     type: 'int' },
+  a:  { path: 'lattice.animation',     type: 'int' },
+  cs: { path: 'lattice.cellSpacing',   type: 'float' },
+  wt: { path: 'lattice.wallThickness', type: 'float' },
+  ao: { path: 'lattice.animOffset',    type: 'float' },
+  w:  { path: 'lattice.wireframe',     type: 'bool' },
+  bl: { path: 'render.bloomStrength',  type: 'float' },
+  ca: { path: 'render.chromaticAmount',type: 'float' },
+  fd: { path: 'render.fogDensity',     type: 'float' },
+  ts: { path: 'time.speed',            type: 'float' },
+  cx: { path: 'camera.posX',           type: 'float' },
+  cy: { path: 'camera.posY',           type: 'float' },
+  cz: { path: 'camera.posZ',           type: 'float' },
+  yw: { path: 'camera.yaw',            type: 'float' },
+  pt: { path: 'camera.pitch',          type: 'float' },
+  ms: { path: 'camera.moveSpeed',      type: 'float' },
+}
 
 // Quality presets — co-located with the store that uses them
 export const QUALITY_PRESETS: QualityPreset[] = [

@@ -61,6 +61,7 @@ defineExpose({
 })
 
 onMounted(async () => {
+  store.importFromUrl()
   document.addEventListener('fullscreenchange', onFullscreenChange)
   await engine.start()
 })
