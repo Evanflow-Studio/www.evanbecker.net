@@ -393,14 +393,28 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
         }
         requestAnimationFrame(poll)
       } else {
-        // Firefox/Safari: DO NOT submit the full shader now.
-        // Even linkProgram() blocks the main thread on Firefox.
-        // Mark that we need to compile the full shader on first user interaction.
-        console.log('[RayMarcher] Full shader deferred until first interaction (no parallel ext)')
-        pendingFullProgram = null
-        needsFullShader = true
-        // shaderCompiling stays true — render loop will clear it when fast shader starts drawing
-        resolve()
+        // Firefox/Safari: No parallel compile extension.
+        // Submit the full shader after a short delay so the spinner + page paint first.
+        // The linkProgram call WILL block the main thread briefly, but the overlay
+        // hides this from the user — they see spinner → correct scene.
+        console.log('[RayMarcher] Scheduling full shader compile (no parallel ext, 100ms delay)')
+        needsFullShader = false
+        setTimeout(() => {
+          if (!gl || !glState.program) { resolve(); return }
+          const fullProg = submitProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+          if (fullProg && validateProgram(fullProg)) {
+            glState.program = fullProg
+            glState.mainCache = buildUniformCache(gl, fullProg, MAIN_UNIFORM_NAMES)
+            glState.postProgram = createProgramSync(POST_VERTEX, POST_FRAGMENT)
+            if (glState.postProgram) {
+              glState.postCache = buildUniformCache(gl, glState.postProgram, POST_UNIFORM_NAMES)
+            }
+            gl.useProgram(fullProg)
+            console.log(`[RayMarcher] Full shader ready in ${(performance.now() - t0).toFixed(0)}ms (deferred sync)`)
+          }
+          shaderCompiling.value = false
+          resolve()
+        }, 100) // 100ms lets the browser paint the spinner overlay first
       }
     })
   }
@@ -686,20 +700,8 @@ export function useRayMarchGL(options: RayMarchGLOptions) {
     uploadUniforms(elapsed, canvas.width, canvas.height)
     renderPass(canvas.width, canvas.height)
 
-    // Detect when the shader starts producing visible output.
-    // On Firefox, the fast shader is submitted without validation — first frames
-    // are black until the GPU finishes compiling. Once a center pixel is non-black,
-    // the shader is ready and we can dismiss the "Compiling shader..." overlay.
-    if (shaderCompiling.value) {
-      gl.readPixels(
-        Math.floor(canvas.width / 2), Math.floor(canvas.height / 2),
-        1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuf,
-      )
-      if (pixelBuf[0] > 0 || pixelBuf[1] > 0 || pixelBuf[2] > 0) {
-        shaderCompiling.value = false
-        console.log('[RayMarcher] Fast shader producing frames — overlay dismissed')
-      }
-    }
+    // shaderCompiling overlay is dismissed by initGL when full shader is ready.
+    // No pixel-check needed — the overlay stays until the correct scene loads.
 
     updateFrameStats(now)
   }
