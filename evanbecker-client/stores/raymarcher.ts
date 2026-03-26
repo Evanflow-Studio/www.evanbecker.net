@@ -37,6 +37,8 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       wallThickness: DEFAULT_PRESET.wallThickness,
       animOffset: DEFAULT_PRESET.animOffset,
       wireframe: DEFAULT_PRESET.wireframe,
+      isCustomized: false,
+      basePresetName: DEFAULT_PRESET.name,
     } as LatticeState,
 
     // Rendering / FX
@@ -104,9 +106,24 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       this.lattice.wallThickness = preset.wallThickness
       this.lattice.animOffset = preset.animOffset
       this.lattice.wireframe = preset.wireframe
+      this.lattice.isCustomized = false
+      this.lattice.basePresetName = preset.name
       this.scene.palette = preset.palette
       this.scene.lightAngleX = preset.lightAngleX
       this.scene.lightAngleY = preset.lightAngleY
+    },
+
+    /** Auto-fork: marks the current preset as customized. Called when any lattice/scene property is manually changed. */
+    forkPreset() {
+      if (!this.lattice.isCustomized) {
+        this.lattice.basePresetName = LATTICE_PRESETS[this.lattice.presetIndex]?.name ?? 'Unknown'
+        this.lattice.isCustomized = true
+      }
+    },
+
+    /** Reset back to the base preset, undoing all customizations. */
+    resetPreset() {
+      this.applyLatticePreset(this.lattice.presetIndex)
     },
 
     applySceneDefaults(sceneIndex: number) {

@@ -27,6 +27,8 @@ export interface LatticeState {
   wallThickness: number
   animOffset: number
   wireframe: boolean
+  isCustomized: boolean
+  basePresetName: string
 }
 
 export interface RenderState {
