@@ -1,6 +1,6 @@
 ---
-title: 'Ray Marching with Claude: Patterns for AI-Assisted Development'
-description: 'How I rebuilt my Unity ray marcher from scratch in WebGL with Claude, what patterns made it work, and where it went sideways.'
+title: 'Math Pretending to Be Architecture'
+description: 'How I rebuilt my Unity ray marcher from scratch in WebGL2 with Claude — the patterns that worked, the ones that didn't, and what fell out of a week of collaboration.'
 date: '2026-03-25'
 tags:
   - software
@@ -8,119 +8,119 @@ tags:
   - graphics
 ---
 
-Years ago, I built a ray marcher in Unity that served as the animated banner on my old website. It rendered signed distance functions — mathematical shapes defined by equations rather than polygons — directly on the GPU. When I rebuilt my portfolio site with Nuxt 3, I wanted to bring that ray marcher along. But I didn't want to just port it. I wanted to rebuild it from scratch in raw WebGL2, with no game engine, no framework, just GLSL fragment shaders and TypeScript.
+There's a rendering technique where instead of building 3D shapes out of polygons, you describe them purely as math. You want a sphere? Write a function that returns the distance from any point to its surface. That single equation, evaluated everywhere in space, *is* the sphere. The GPU doesn't model it, doesn't triangulate it, doesn't even store it. It just fires a ray from each pixel, steps forward calling your function at each step, and when the distance gets small enough, it lights the pixel. Echolocation for geometry.
 
-I built the entire thing in collaboration with Claude. Here's what that process actually looked like — the patterns that worked, the failures we hit, and what I'd do differently.
+The functions are called signed distance functions. The stepping algorithm is ray marching. And the things you can do by combining them get interesting fast. Subtract one shape from another and you get carving: a sphere carved from a cube produces a hollow cube. Apply a modulo to the input coordinates and one hollow cube tiles infinitely through space, stretching in every direction. Blend two shapes together and they melt into each other like wax. You can see some of these operations running live in the [CSG Operations scene](/sandbox/raymarcher?s=2). It's math pretending to be architecture, and the GPU recalculates the entire scene from scratch sixty times a second.
+
+My old website (rest in peace, evanbecker.com) had a modest one of these running as a Unity banner at the top of the page. It did one thing well: infinite hollow cubes, smooth color gradients. When I rebuilt the site this year, I kept looking at the empty space where it used to be. I wanted it back, but I also wanted to find out what would happen if I rebuilt it from scratch in raw WebGL2 with Claude, without Unity handling the hard parts. What happened was a week of collaboration that taught me as much about working with an AI as it did about shader programming.
 
 ::ray-march-embed{preset="Deep Sea" height="h-[400px]"}
 ::
 
-## What Is Ray Marching?
+## The Original
 
-For the uninitiated: ray marching is a rendering technique where you cast a ray from each pixel into a 3D scene and step along it until you hit something. Unlike traditional rendering (where you send triangles to the GPU), ray marching evaluates a mathematical function at each step that tells you how far away the nearest surface is. This function is called a Signed Distance Function, or SDF.
+The Unity version lived as a C# script attached to a camera. The shader was HLSL, rendered as a post-processing effect. Domain-repeated hollow cubes, Inigo Quilez cosine palettes for color, basic lighting. It worked well for what it was. But Unity is a game engine, and a game engine is doing a *lot* of work behind the scenes to get a fragment shader onto your screen: managing the GL context, the render loop, the camera, the input system, the windowing. All of which evaporates the moment you decide to render the same thing in a browser with nothing but WebGL2 and TypeScript.
 
-A sphere's SDF is trivially simple: the distance from any point to the sphere's surface is `length(point - center) - radius`. Boxes, tori, cylinders — each has a compact formula. The power comes from combining them: you can union two shapes by taking the minimum distance, subtract one from another, or smoothly blend them together. The Infinite Lattice scene above uses domain repetition — a single hollow cube SDF is repeated infinitely by wrapping the input coordinates with a modulo operation. One equation, infinite geometry.
+That gap between "write a shader" and "get a shader onto a webpage" is where most of the work went. The actual SDF math barely changed from the Unity version. Everything around it had to be built from zero.
 
-## Starting Point: The Unity Ray Marcher
+## How It Actually Went
 
-My original ray marcher was a Unity C# script that attached to a camera and rendered SDFs as a post-processing effect. It had a single scene with domain-repeated hollow cubes, Inigo Quilez's cosine palette for coloring, and basic lighting. The shader was maybe 80 lines of HLSL.
+I didn't write a spec. There was no design document or architecture diagram. The process was closer to pair programming than delegation: I described what I wanted, Claude wrote code, I told it what worked and what didn't, we iterated. Some sessions were productive. Some produced code that had to be thrown out entirely. The patterns that emerged are the interesting part.
 
-The new version needed to be pure WebGL2 — no Unity, no Three.js, no abstractions. Just a fullscreen quad, a fragment shader, and TypeScript to manage the GL state. I also wanted it to be dramatically more capable: multiple scenes, interactive controls, FPS camera movement, custom color palettes, post-processing effects, and embeddable in blog posts like this one.
+### Start with a sphere
 
-## The Collaboration Model
+The first thing we built was the dumbest possible ray marcher. A fullscreen quad. A fragment shader with a sphere SDF. Phong lighting. No controls, no UI, no architecture. Just a sphere on screen proving the WebGL2 pipeline worked end to end.
 
-I didn't hand Claude a spec and say "build this." The process was iterative and conversational, much closer to pair programming than delegation. Here are the patterns that actually worked.
+This turned out to be the most important decision of the project. Every feature after that was an incremental addition to something that already rendered. When the hollow cube lattice replaced the sphere, the GL pipeline was already proven. When we added controls, the shader was already proven. There was never a moment where we wired up five systems at once and couldn't figure out which one was broken.
 
-### Pattern 1: Start with a Working Primitive
+### Screenshots are the protocol
 
-The first thing we built was the simplest possible ray marcher: a fullscreen quad, a fragment shader with a sphere SDF, and basic Phong lighting. No controls, no UI, no abstractions. Just a sphere on screen proving the WebGL2 pipeline worked.
+Claude can't see your screen. This shapes the entire collaboration more than you'd expect. I sent screenshots constantly — not just when things broke, but when things looked *right*. When I said "this looks incredible, make this the default view," Claude had the exact visual context to understand which camera angle, zoom, and palette I meant.
 
-This was critical. Every subsequent feature was an incremental addition to something that already worked. We never had a "big bang" moment where we tried to wire up everything at once. When the hollow cube lattice replaced the sphere, we knew the GL pipeline was solid. When we added controls, we knew the shader was solid.
+The inverse was even more valuable. "The geometry is clipping" with a screenshot communicates in one image what would take three paragraphs of text. And because SDFs produce visual artifacts that are hard to describe ("there's a green tint in the void" or "the cells are bleeding through each other"), screenshots became the primary communication channel for any rendering issue.
 
-### Pattern 2: Feedback Through Screenshots
+### Name things early
 
-Claude can't see your screen. This seems obvious, but it shapes the entire collaboration. I sent screenshots constantly — not just when something was broken, but when something looked right. When I said "this looks amazing, make this the default view," Claude had the visual context to understand what camera angle, zoom level, and palette I was referring to.
+At some point I saw a configuration I liked — Forest palette, Pulse animation, specific spacing values — and said "save this as Jellyfish." That single name became a shared reference for the rest of the project. Instead of reciting six parameter values, I could say "make Jellyfish the default" and Claude knew exactly what I meant.
 
-The inverse was equally important: when something looked wrong, a screenshot was worth a thousand words of description. "The geometry is clipping" with a screenshot instantly communicates what would take paragraphs to describe textually.
+We ended up with seven named presets: Deep Sea, Jellyfish, Crystal Array, Neon Grid, Vortex, Shattered Ice, Dreamscape. Each one a stable landmark that both of us could point to. Naming things turns configuration into vocabulary, and vocabulary compounds over time.
 
-### Pattern 3: Name Your Presets, Don't Describe Them
+### Let the AI propose
 
-Early on, I saw a particular configuration — Forest palette, Pulse animation, specific spacing — and said "save this as Jellyfish." That single name became a shared reference point for the rest of the project. Instead of saying "use palette 10 with animation 3 and cellSpacing 0.15," I could say "make Jellyfish the default" and Claude knew exactly what I meant.
+When I asked "what would make this cooler?", Claude proposed audio reactivity, post-processing, shareable URLs, time controls, a scripting system, and more. I didn't accept everything. But having a menu of options to choose from was more productive than generating every idea myself.
 
-We ended up with seven named presets (Deep Sea, Jellyfish, Crystal Array, Neon Grid, Vortex, Shattered Ice, Dreamscape), each serving as a stable reference point that both of us understood.
+The important part: I always made the call. Claude proposed. I decided. When I said "get rid of all the audio stuff," it was gone within minutes. No sunk cost, no pushback. This dynamic — AI as proposal engine, human as decision maker — worked well throughout.
 
-### Pattern 4: Let the AI Propose, You Dispose
+### Refactor in waves
 
-When I asked "what changes would you suggest to make this cooler?", Claude proposed audio reactivity, post-processing, shareable URLs, time controls, scripting, and more. I didn't accept everything — I killed the audio system later because it was buggy and didn't add enough value. But having a menu of options to choose from was vastly more productive than coming up with every feature myself.
+We didn't write clean code from the start. The first version of the main composable was a 900-line file with thirty refs passed as function arguments. It worked. It was also the kind of code that makes you close your editor and take a walk.
 
-The key: I always made the final call. Claude proposed, I decided. When I said "get rid of all the audio stuff," it was gone. No pushback, no sunk cost fallacy.
+Rather than refactoring continuously (which slows feature development to a crawl), I let it grow until it became genuinely painful, then dedicated a full session to architecture. We introduced Pinia for state management, split the monolith into focused composables, extracted types, eliminated prop drilling. The 900-line file became seven files, none over 190 lines.
 
-### Pattern 5: Refactor in Waves, Not Continuously
-
-We didn't write clean code from the start. The first version of `useRayMarchGL.ts` was a 900-line monolith with 30 refs passed as function arguments. It worked, but it was unmaintainable.
-
-Rather than refactoring incrementally (which would have slowed feature development), I let it grow until it became painful, then dedicated an entire session to architecture. We introduced Pinia for state management, split the monolith into seven focused composables, extracted types into their own file, and eliminated all prop drilling. The 900-line file became seven files, none over 190 lines.
-
-This mirrors how I'd work with a human teammate: ship the feature, then clean up.
+This mirrors how I work with human teammates too: ship the feature, then clean the kitchen.
 
 ## Where It Went Wrong
 
-This wasn't all smooth sailing. Here are the real failures.
+Not everything worked. Some of the failures were instructive. Some were just expensive.
 
-### The Shader Compilation Crisis
+### The compilation crisis
 
-The worst bug we hit: the ray marcher took **123 seconds** to load. Not a typo. Two full minutes of a frozen browser tab.
+The worst bug: the ray marcher took 123 seconds to load a page. Two full minutes of a frozen browser tab.
 
-The root cause was GPU shader compilation. Every time we added a new geometry preset or animation, the GPU compiler had to analyze exponentially more branch paths. With 10 geometries and 7 animations inside a 128-iteration ray march loop, plus shadow and ambient occlusion secondary marches, the total branch analysis exploded.
+The root cause was GPU shader compilation. Every geometry preset and animation we added gave the GPU compiler exponentially more branch paths to analyze. With ten geometries and seven animations inside a 128-step ray march loop, the compiler's job was enormous.
 
-Claude's first instinct was to reduce the loop count. That helped marginally. Then it tried async shader compilation with `KHR_parallel_shader_compile`. That helped on Chrome but Firefox doesn't support it. Then it tried clamping, deferring, polling — each "fix" either broke something else or only worked on one browser.
+Claude's instinct was to reduce the loop count. That barely helped. Then it tried async shader compilation. That worked on Chrome but not Firefox. Then it tried clamping distances. Then deferred validation. Then polling. Each fix either broke something or only worked on one browser.
 
-The actual fix required understanding the problem at a deeper level: we removed the expensive secondary ray marches (shadows, AO), reduced the geometry to compile-time essentials, and implemented a two-shader strategy where a minimal placeholder shader loads instantly while the full shader compiles in the background.
+I eventually had to say: "You're in a loop. Something fundamental changed." That reframing led to the actual fix: we removed the expensive secondary ray marches (soft shadows, ambient occlusion), reduced compile-time branching, and implemented a two-shader strategy where a minimal placeholder loads instantly while the real shader compiles in the background.
 
-The lesson: Claude is excellent at implementing solutions but sometimes needs human guidance to correctly diagnose the root cause. I had to push back multiple times with "you're in a loop, something fundamental changed" before we found the real issue.
+The lesson here wasn't about shaders. It was about when to tell an AI "your diagnosis is wrong" instead of letting it keep iterating on the wrong solution. Claude is excellent at implementing fixes. But it can sometimes cycle through surface-level solutions when the real problem requires stepping back and rethinking the approach entirely.
 
-### The Audio System
+### The audio system
 
-We built a generative audio system with Web Audio API — procedural ambient drones that changed per scene, microphone input for audio reactivity, and FFT-driven geometry. It was technically impressive and worked in isolation.
+We built a generative audio system. Procedural ambient drones using Web Audio API oscillators, with different chord progressions per scene. Microphone input for audio-reactive geometry. FFT bands driving cell spacing and thickness. It was technically solid.
 
-In practice, it was buggy across browsers, the drone got monotonous, source switching had race conditions, and the FFT bands didn't drive the geometry in a visually meaningful way. I killed the entire system. Sometimes the best feature is the one you remove.
+In practice, it was buggy across browsers. The drone lacked variety. Source switching had race conditions. The FFT analysis didn't map to the geometry in a way that felt meaningful. I killed the entire system after three days.
 
-### Firefox vs Chrome
+Sometimes the right feature is the one you remove.
 
-Every WebGL feature behaves differently between Firefox and Chrome. `KHR_parallel_shader_compile` only exists in Chrome. Firefox blocks on `getProgramParameter(LINK_STATUS)`. `gl.linkProgram` is synchronous on some Firefox/Mesa combinations but async on Chrome. Touch events have different timing. The `#app-manifest` Nuxt error only appeared in certain cache states.
+### Cross-browser reality
 
-Claude couldn't test across browsers — it could only reason about differences. I had to be the cross-browser test harness, reporting behavior from both browsers and letting Claude adjust.
+Every WebGL behavior differs between Firefox and Chrome. `KHR_parallel_shader_compile` only exists in Chrome. Firefox blocks on shader status checks. Touch events have different timing. The same shader compiles in 200ms on Chrome and three seconds on Firefox.
 
-## The Architecture That Emerged
+Claude couldn't test either browser — it could only reason about the differences from documentation and my reports. I became the cross-browser test harness, running the same action on both browsers and describing what happened. This worked, but it was slow, and some bugs took multiple round-trips to isolate.
 
-After multiple refactoring passes, here's where the codebase landed:
+## The Architecture
 
-**Pinia Store** owns all state — scene configuration, camera position, lattice parameters, render quality, time controls. Any component can read or write state without prop drilling.
+After several refactoring passes, here's roughly where things landed.
 
-**Seven focused composables** under `composables/raymarcher/`, each under 190 lines:
-- `useShaderCompiler` — GL context, two-shader compile strategy
-- `useInputHandler` — mouse/keyboard/touch with strategy pattern for key actions
-- `useCameraController` — FPS movement, orbit, drift
-- `useRenderPipeline` — uniform uploads, FBO management, post-processing
-- `useScreenshot` — high-res PNG export
-- `useCustomScripting` — sandboxed JS expression evaluation
-- `useRayMarchEngine` — thin orchestrator wiring everything together
+A **Pinia store** owns all state: scene configuration, camera position, lattice parameters, render quality, time controls. Components read and write state directly without prop drilling. The store also handles URL import/export — the share button serializes everything to a URL hash, and loading that URL hydrates the store on arrival.
 
-**Auto-fork presets** — selecting a preset locks the UI. Tweaking any control auto-forks to "Custom (preset name)" with a reset button. This is a copy-on-write pattern borrowed from game engine material instances.
+Seven **focused composables** each handle one concern: shader compilation, input handling, camera movement, the render pipeline, screenshots, custom scripting, and a thin orchestrator that wires them together. None exceeds 190 lines.
 
-**URL import/export** — the Share button serializes all state to a URL hash. Loading that URL hydrates the store, then clears the hash. One-shot import, not live sync.
+An **auto-fork preset system** locks the UI when a named preset is selected. The moment you tweak any control, it forks to "Custom (from Deep Sea)" with a reset button. This is essentially copy-on-write for configuration — borrowed from how game engines handle material instances.
 
-## What I'd Tell Someone Starting This
+The **two-shader compile strategy** loads a minimal placeholder (48 steps, one geometry, no branching) that compiles in under 100ms, then swaps in the full shader once the GPU finishes. Chrome uses `KHR_parallel_shader_compile` for non-blocking compilation. Firefox falls back to a deferred swap.
 
-1. **Start with the smallest working thing.** A sphere on screen. Then iterate.
-2. **Send screenshots constantly.** Visual context is the most efficient way to communicate with an AI about visual output.
-3. **Name things early.** Shared vocabulary compounds over the life of a project.
-4. **Let features grow messy, then refactor in dedicated passes.** Don't optimize prematurely.
-5. **Be willing to kill features.** Audio reactivity sounded amazing on paper but wasn't worth the bugs.
-6. **You're the cross-browser tester.** The AI can reason about browser differences but can't experience them.
-7. **Push back when the AI is looping.** If three fixes don't work, the diagnosis is probably wrong. Say so.
+## What Held Up
 
-The ray marcher started as an 80-line Unity shader and became a 2,000+ line WebGL2 application with a Pinia store, seven composables, embeddable blog components, and shareable URLs. The journey wasn't linear, but the patterns above are what made it tractable.
+If I distilled this down to the patterns worth keeping:
+
+**Start with the smallest working thing.** Not the smallest *useful* thing. The smallest thing that proves the pipeline works. A sphere rendering on a WebGL2 canvas. Then build on it.
+
+**Visual feedback is the communication layer.** With graphics work especially, screenshots beat description by an enormous margin. Send them proactively, not just when debugging.
+
+**Name your configurations.** "Jellyfish" is worth more than six parameter values. Shared vocabulary reduces friction in every subsequent conversation.
+
+**Let the AI generate options, but make decisions yourself.** The proposal-decision split keeps the collaboration productive without surrendering judgment.
+
+**Refactor in dedicated passes.** Ship first, clean second. Trying to maintain perfect architecture while exploring features leads to neither.
+
+**Know when to override the diagnosis.** If three fixes haven't worked, the problem probably isn't what either of you thinks it is. Say so. Step back. Rethink.
+
+The ray marcher started as a Unity shader and became something considerably larger. The collaboration wasn't linear — it looped, backtracked, produced features that got deleted. But the patterns above are what kept the loops productive rather than frustrating.
+
+::ray-march-embed{preset="Jellyfish" height="h-[400px]"}
+::
 
 ::sandbox-link{to="/sandbox/raymarcher" label="Try the Ray Marcher" description="Interactive WebGL2 ray marcher — WASD to move, mouse to look"}
 ::
