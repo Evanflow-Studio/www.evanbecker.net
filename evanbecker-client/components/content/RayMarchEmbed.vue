@@ -17,6 +17,8 @@ const containerRef = ref<HTMLElement | null>(null)
 const presetIndex = LATTICE_PRESETS.findIndex(p => p.name.toLowerCase() === props.preset.toLowerCase())
 const presetName = presetIndex >= 0 ? LATTICE_PRESETS[presetIndex].name : props.preset
 
+let outsideListener: ((e: MouseEvent) => void) | null = null
+
 function activate() {
   // Reset GL status so the engine starts fresh
   const store = useRayMarcherStore()
@@ -32,26 +34,34 @@ function activate() {
   }
 
   activated.value = true
+
+  // Register click-outside AFTER the current click event finishes propagating.
+  // Without this delay, the activate click itself triggers deactivation because
+  // v-if swaps the DOM and the original click target is no longer inside the container.
+  setTimeout(() => {
+    outsideListener = (e: MouseEvent) => {
+      if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
+        deactivate()
+      }
+    }
+    window.addEventListener('click', outsideListener)
+  }, 0)
 }
 
 function deactivate() {
   activated.value = false
-}
-
-// Deactivate on click outside — but skip the frame where we just activated
-// (otherwise the activate click itself triggers deactivation via bubbling)
-function onClickOutside(e: MouseEvent) {
-  if (!activated.value) return
-  if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
-    deactivate()
+  if (outsideListener) {
+    window.removeEventListener('click', outsideListener)
+    outsideListener = null
   }
 }
 
-if (typeof window !== 'undefined') {
-  // Use capture:false + nextTick delay so the activate click doesn't immediately deactivate
-  window.addEventListener('click', onClickOutside)
-  onUnmounted(() => window.removeEventListener('click', onClickOutside))
-}
+onUnmounted(() => {
+  if (outsideListener) {
+    window.removeEventListener('click', outsideListener)
+    outsideListener = null
+  }
+})
 </script>
 
 <template>
