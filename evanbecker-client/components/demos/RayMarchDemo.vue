@@ -10,6 +10,15 @@ const store = useRayMarcherStore()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
+const shareTooltip = ref('')
+let shareTimeout: ReturnType<typeof setTimeout> | null = null
+
+function onShare() {
+  store.exportToUrl()
+  shareTooltip.value = 'Copied to clipboard!'
+  if (shareTimeout) clearTimeout(shareTimeout)
+  shareTimeout = setTimeout(() => { shareTooltip.value = '' }, 2000)
+}
 
 // Engine
 const engine = useRayMarchEngine(canvasRef)
@@ -98,6 +107,23 @@ onUnmounted(() => {
         </div>
         <div class="rounded-md bg-black/60 px-2 py-1 text-xs font-mono text-slate-300">
           {{ store.gl.fps }} FPS
+        </div>
+        <div class="relative">
+          <button
+            class="rounded-md bg-black/60 px-2 py-1 text-xs text-slate-300 hover:text-white transition-colors"
+            :title="shareTooltip || 'Share'"
+            @click="onShare"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+            </svg>
+          </button>
+          <div
+            v-if="shareTooltip"
+            class="absolute right-0 top-full mt-1 whitespace-nowrap rounded-md bg-[#2D95FC] px-2 py-1 text-[10px] font-medium text-white shadow-lg"
+          >
+            {{ shareTooltip }}
+          </div>
         </div>
         <button class="rounded-md bg-black/60 px-2 py-1 text-xs text-slate-300 hover:text-white transition-colors" @click="toggleFullscreen">
           {{ isFullscreen ? '✕' : '⛶' }}
