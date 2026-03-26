@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
 
@@ -62,7 +62,39 @@ function close() {
   }
 }
 
+function onSceneChange(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (detail) {
+    // Activate if not already mounted
+    if (!mounted.value) {
+      const store = useRayMarcherStore()
+      store.gl.shaderCompiled = false
+      store.gl.shaderCompiling = false
+      store.gl.contextCreated = false
+      store.gl.error = null
+      store.gl.errors = []
+      mounted.value = true
+    }
+    focused.value = true
+    if (!outsideListener) {
+      setTimeout(() => {
+        outsideListener = (e: MouseEvent) => {
+          if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
+            blur()
+          }
+        }
+        window.addEventListener('click', outsideListener)
+      }, 0)
+    }
+  }
+}
+
+onMounted(() => {
+  containerRef.value?.addEventListener('scene-change', onSceneChange)
+})
+
 onUnmounted(() => {
+  containerRef.value?.removeEventListener('scene-change', onSceneChange)
   if (outsideListener) {
     window.removeEventListener('click', outsideListener)
     outsideListener = null
@@ -71,7 +103,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="not-prose my-6">
+  <div ref="containerRef" class="not-prose my-6" data-ray-march-embed>
     <!-- Inactive: thumbnail with play button (only before first activation) -->
     <div
       v-if="!mounted"
