@@ -12,16 +12,20 @@ There's a rendering technique where instead of building 3D shapes out of polygon
 
 The functions are called signed distance functions. The stepping algorithm is ray marching. And the things you can do by combining them get interesting fast. Subtract one shape from another and you get carving: a sphere carved from a cube produces a hollow cube. Apply a modulo to the input coordinates and one hollow cube tiles infinitely through space, stretching in every direction. Blend two shapes together and they melt into each other like wax. You can see some of these operations running live in the :scene-link{:scene="2" :palette="4" label="CSG Operations scene"}. It's math pretending to be architecture, and the GPU recalculates the entire scene from scratch sixty times a second.
 
-My old website (rest in peace, evanbecker.com) had a modest one of these running as a Unity banner at the top of the page. It did one thing well: infinite hollow cubes, smooth color gradients. When I rebuilt the site this year, I kept looking at the empty space where it used to be. I wanted it back, but I also wanted to find out what would happen if I rebuilt it from scratch in raw WebGL2 with Claude, without Unity handling the hard parts. What happened was a week of collaboration that taught me as much about working with an AI as it did about shader programming.
+My old website (rest in peace, evanbecker.com) had a modest one of these running as a Unity banner at the top of the page. When I rebuilt the site this year, I kept looking at the empty space where it used to be. I wanted it back, but I also wanted to find out what would happen if I rebuilt it from scratch in raw WebGL2 with Claude, without Unity handling the hard parts. What happened was a week of collaboration that taught me as much about working with an AI as it did about shader programming.
 
 ::ray-march-embed{preset="Deep Sea" height="h-[400px]"}
 ::
 
 ## The Original
 
-The Unity version lived as a C# script attached to a camera. The shader was HLSL, rendered as a post-processing effect. Domain-repeated hollow cubes, Inigo Quilez cosine palettes for color, basic lighting. It worked well for what it was. But Unity is a game engine, and a game engine is doing a *lot* of work behind the scenes to get a fragment shader onto your screen: managing the GL context, the render loop, the camera, the input system, the windowing. All of which evaporates the moment you decide to render the same thing in a browser with nothing but WebGL2 and TypeScript.
+The [Unity version](https://github.com/evanjbecker/Raymarch) was more sophisticated than a quick portfolio banner might suggest. The C# script (`RaymarchCamera.cs`) attached to a camera and rendered SDFs as a post-processing effect via `OnRenderImage`. The shader itself was HLSL (Unity's Cg dialect), and the scene it rendered was a smooth boolean composition: a rounded box with a sphere subtracted out of it, intersected with a second sphere, all configurable from the Unity inspector. The `DistanceFunctions.cginc` include file had the full set of smooth boolean operators — `SmoothUnion`, `SmoothSubtraction`, `SmoothIntersection` — plus a `Modulator` function for domain repetition that could tile the geometry infinitely along any axis.
 
-That gap between "write a shader" and "get a shader onto a webpage" is where most of the work went. The actual SDF math barely changed from the Unity version. Everything around it had to be built from zero.
+The lighting was genuinely solid. Soft shadows with configurable penumbra and distance bounds. Multi-step ambient occlusion. Directional light with adjustable color and intensity. A `FlyCamera.cs` script for navigating the scene. There was even a second scene with a Sierpinski tetrahedron fractal (`TetrahedronShader.shader`). All told, roughly 250 lines of shader code, 80 lines of distance functions, and 130 lines of C# camera/material management.
+
+The irony is that some of the features the original had — soft shadows, ambient occlusion — were features we had to *remove* from the WebGL2 version to solve a performance crisis. More on that later.
+
+But Unity is a game engine, and a game engine handles an enormous amount of infrastructure: the GL context, the render loop, the camera frustum, the input system, the windowing, depth buffer integration. All of which evaporates the moment you decide to render the same thing in a browser with nothing but WebGL2 and TypeScript. That gap between "write a shader" and "get a shader onto a webpage" is where most of the work went.
 
 ## How It Actually Went
 
@@ -31,7 +35,7 @@ I didn't write a spec. There was no design document or architecture diagram. The
 
 The first thing we built was the dumbest possible ray marcher. A fullscreen quad. A fragment shader with a sphere SDF. Phong lighting. No controls, no UI, no architecture. Just a sphere on screen proving the WebGL2 pipeline worked end to end.
 
-This turned out to be the most important decision of the project. Every feature after that was an incremental addition to something that already rendered. When the hollow cube lattice replaced the sphere, the GL pipeline was already proven. When we added controls, the shader was already proven. There was never a moment where we wired up five systems at once and couldn't figure out which one was broken.
+This turned out to be the most important decision of the project. Every feature after that was an incremental addition to something that already rendered. When the smooth-subtracted box-sphere from the Unity version replaced the test sphere, the GL pipeline was already proven. When we added domain repetition, the SDF was already proven. When we added controls, the rendering was already proven. There was never a moment where we wired up five systems at once and couldn't figure out which one was broken.
 
 ### Screenshots are the protocol
 
@@ -43,7 +47,7 @@ The inverse was even more valuable. "The geometry is clipping" with a screenshot
 
 At some point I saw a configuration I liked — Forest palette, Pulse animation, specific spacing values — and said "save this as Jellyfish." That single name became a shared reference for the rest of the project. Instead of reciting six parameter values, I could say "make Jellyfish the default" and Claude knew exactly what I meant.
 
-We ended up with seven named presets: Deep Sea, Jellyfish, Crystal Array, Neon Grid, Vortex, Shattered Ice, Dreamscape. Each one a stable landmark that both of us could point to. Naming things turns configuration into vocabulary, and vocabulary compounds over time.
+We ended up with named presets like Deep Sea, Jellyfish, Crystal Array, Infinite Descent, Vortex, and more. Each one a stable landmark that both of us could point to. Naming things turns configuration into vocabulary, and vocabulary compounds over time.
 
 ### Let the AI propose
 
@@ -67,11 +71,11 @@ Not everything worked. Some of the failures were instructive. Some were just exp
 
 The worst bug: the ray marcher took 123 seconds to load a page. Two full minutes of a frozen browser tab.
 
-The root cause was GPU shader compilation. Every geometry preset and animation we added gave the GPU compiler exponentially more branch paths to analyze. With ten geometries and seven animations inside a 128-step ray march loop, the compiler's job was enormous.
+The root cause was GPU shader compilation. The Unity original had soft shadows and ambient occlusion — both of which require secondary ray marches inside the main loop. When we ported those features and added ten geometry presets and seven animations on top, the GPU compiler had exponentially more branch paths to analyze. Every geometry function and every animation function had to be considered at every step of every secondary march inside every step of the primary march.
 
-Claude's instinct was to reduce the loop count. That barely helped. Then it tried async shader compilation. That worked on Chrome but not Firefox. Then it tried clamping distances. Then deferred validation. Then polling. Each fix either broke something or only worked on one browser.
+Claude's instinct was to reduce the loop count. That barely helped. Then it tried async shader compilation with `KHR_parallel_shader_compile`. That worked on Chrome but not Firefox. Then it tried clamping distances. Then deferred validation. Then polling. Each fix either broke something or only worked on one browser.
 
-I eventually had to say: "You're in a loop. Something fundamental changed." That reframing led to the actual fix: we removed the expensive secondary ray marches (soft shadows, ambient occlusion), reduced compile-time branching, and implemented a two-shader strategy where a minimal placeholder loads instantly while the real shader compiles in the background.
+I eventually had to say: "You're in a loop. Something fundamental changed." That reframing led to the actual fix: we removed the expensive secondary ray marches (the same soft shadows and AO the Unity version had), reduced compile-time branching, and implemented a two-shader strategy where a minimal placeholder loads instantly while the real shader compiles in the background. The features that made the Unity original's lighting so good were exactly the features that made the WebGL version's compilation unbearable.
 
 The lesson here wasn't about shaders. It was about when to tell an AI "your diagnosis is wrong" instead of letting it keep iterating on the wrong solution. Claude is excellent at implementing fixes. But it can sometimes cycle through surface-level solutions when the real problem requires stepping back and rethinking the approach entirely.
 
@@ -95,7 +99,7 @@ After several refactoring passes, here's roughly where things landed.
 
 A **Pinia store** owns all state: scene configuration, camera position, lattice parameters, render quality, time controls. Components read and write state directly without prop drilling. The store also handles URL import/export — the share button serializes everything to a URL hash, and loading that URL hydrates the store on arrival.
 
-Seven **focused composables** each handle one concern: shader compilation, input handling, camera movement, the render pipeline, screenshots, custom scripting, and a thin orchestrator that wires them together. None exceeds 190 lines.
+Seven **focused composables** each handle one concern: shader compilation, input handling, camera movement, the render pipeline, screenshots, and a thin orchestrator that wires them together. None exceeds 190 lines.
 
 An **auto-fork preset system** locks the UI when a named preset is selected. The moment you tweak any control, it forks to "Custom (from Deep Sea)" with a reset button. This is essentially copy-on-write for configuration — borrowed from how game engines handle material instances.
 
@@ -117,7 +121,7 @@ If I distilled this down to the patterns worth keeping:
 
 **Know when to override the diagnosis.** If three fixes haven't worked, the problem probably isn't what either of you thinks it is. Say so. Step back. Rethink.
 
-The ray marcher started as a Unity shader and became something considerably larger. The collaboration wasn't linear — it looped, backtracked, produced features that got deleted. But the patterns above are what kept the loops productive rather than frustrating.
+The ray marcher started as a Unity shader with smooth booleans, soft shadows, and ambient occlusion, and became a WebGL2 application with a Pinia store, seven composables, ten geometry presets, a fractal fly-through, embeddable blog components, and shareable URLs — but without the soft shadows and AO it started with. The path between those two points wasn't linear. It looped, backtracked, and produced features that got deleted. But the patterns above are what kept the loops productive rather than frustrating.
 
 ::ray-march-embed{preset="Jellyfish" height="h-[400px]"}
 ::
