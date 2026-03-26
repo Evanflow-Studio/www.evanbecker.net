@@ -5,10 +5,12 @@ const props = withDefaults(defineProps<{
   initialPosition?: 'bottom-center' | 'top-right' | { x: number; y: number }
   collapsible?: boolean
   maxWidth?: string
+  bottomOffset?: number
 }>(), {
   initialPosition: 'bottom-center',
   collapsible: true,
   maxWidth: 'max-w-xl',
+  bottomOffset: 40,
 })
 
 const panelRef = ref<HTMLElement | null>(null)
@@ -83,7 +85,7 @@ onMounted(() => {
       const panel = panelRef.value.getBoundingClientRect()
       if (props.initialPosition === 'bottom-center') {
         panelX.value = (parent.width - panel.width) / 2
-        panelY.value = parent.height - panel.height - 12
+        panelY.value = parent.height - panel.height - props.bottomOffset
       } else if (props.initialPosition === 'top-right') {
         panelX.value = parent.width - panel.width - 12
         panelY.value = 12
