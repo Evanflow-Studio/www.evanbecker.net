@@ -32,7 +32,9 @@ function statusIcon(status: string): string {
     </p>
 
     <ClientOnly>
-      <RayMarchDemo ref="rayMarchRef" />
+      <div class="h-[500px]">
+        <RayMarchDemo ref="rayMarchRef" />
+      </div>
       <template #fallback>
         <div class="flex h-[500px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-[#0f1729]">
           <div class="text-center">

@@ -82,16 +82,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="relative w-full" :class="isFullscreen ? 'bg-black' : ''" tabindex="0">
-    <div v-if="store.gl.error" class="flex h-[500px] items-center justify-center rounded-2xl border border-red-500/30 bg-red-950/20 p-8">
+  <div ref="containerRef" class="relative w-full h-full" :class="isFullscreen ? 'bg-black' : ''" tabindex="0">
+    <div v-if="store.gl.error" class="flex h-full items-center justify-center rounded-2xl border border-red-500/30 bg-red-950/20 p-8">
       <p class="text-sm text-red-400">{{ store.gl.error }}</p>
     </div>
 
-    <div v-else class="relative" :class="isFullscreen ? 'h-screen' : ''">
+    <div v-else class="relative h-full" :class="isFullscreen ? 'h-screen' : ''">
       <canvas
         ref="canvasRef"
-        class="w-full cursor-grab touch-none"
-        :class="[isFullscreen ? 'h-screen' : 'h-[500px] rounded-2xl', store.isMobile ? 'h-[300px]' : '']"
+        class="w-full h-full cursor-grab touch-none"
+        :class="[isFullscreen ? 'h-screen' : 'rounded-2xl', store.isMobile ? 'max-h-[300px]' : '']"
         @mousedown="engine.onMouseDown"
         @wheel.prevent="engine.onWheel"
         @touchstart.prevent="engine.onTouchStart"
