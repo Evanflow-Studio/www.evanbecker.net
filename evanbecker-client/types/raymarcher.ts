@@ -1,5 +1,22 @@
 // === State interfaces ===
 
+export interface MeydaFeatures {
+  rms: number
+  spectralCentroid: number
+  spectralFlatness: number
+  zcr: number
+  spectralRolloff: number
+  mfcc: number[]
+  chroma: number[]
+}
+
+export interface MoodPoint {
+  energy: number   // 0-1: low=calm, high=intense
+  valence: number  // 0-1: low=dark/aggressive, high=bright/happy
+}
+
+export type MoodCategory = 'aggressive' | 'happy' | 'sad' | 'relaxed'
+
 export interface AudioState {
   bass: number
   mid: number
@@ -10,6 +27,15 @@ export interface AudioState {
   autoplayerEnabled: boolean
   autoplayerEnergy: 'calm' | 'building' | 'intense' | 'breakdown'
   autoplayerBeats: number
+  // Meyda-derived features
+  brightness: number       // spectralCentroid normalized 0-1
+  percussiveness: number   // zcr normalized 0-1
+  moodEnergy: number       // computed mood energy 0-1
+  moodValence: number      // computed mood valence 0-1
+  // Essentia-derived (when available)
+  bpm: number              // detected BPM (0 if unavailable)
+  moodCategory: MoodCategory | null
+  essentiaReady: boolean
 }
 
 export interface CameraState {

@@ -9,7 +9,7 @@ export const useRayMarcherStore = defineStore('raymarcher', {
   state: () => ({
     // Scene
     scene: {
-      index: 0,
+      index: DEFAULT_PRESET.scene ?? 0,
       palette: DEFAULT_PRESET.palette,
       iterations: 8,
       lightAngleX: DEFAULT_PRESET.lightAngleX,
@@ -66,6 +66,13 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       autoplayerEnabled: false,
       autoplayerEnergy: 'calm' as const,
       autoplayerBeats: 0,
+      brightness: 0,
+      percussiveness: 0,
+      moodEnergy: 0,
+      moodValence: 0,
+      bpm: 0,
+      moodCategory: null,
+      essentiaReady: false,
     } as AudioState,
 
     // Custom palette (IQ cosine)

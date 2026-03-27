@@ -1,36 +1,53 @@
 import { ref } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
+import type { MoodCategory } from '~/types/raymarcher'
 
-// --- Energy state machine ---
+// --- Energy state machine (kept for UI compatibility) ---
 
 export type EnergyState = 'calm' | 'building' | 'intense' | 'breakdown'
 
-// --- Preset mapping per energy state (by name) ---
+// --- Mood-space preset mapping ---
+// Each preset sits at a coordinate in (energy, valence) space.
 
-const ENERGY_PRESETS: Record<EnergyState, string[]> = {
-  calm: ['Deep Sea', 'Crystal Array'],
-  building: ['Dreamscape', 'Coral Reef'],
-  intense: ['Vortex', 'Shattered Ice', 'Jellyfish', 'Alien Hive'],
-  breakdown: ['Neon Grid', 'Crystal Array'],
+interface MoodPreset {
+  name: string
+  energy: number
+  valence: number
+}
+
+const MOOD_PRESETS: MoodPreset[] = [
+  { name: 'Deep Sea',         energy: 0.2, valence: 0.6 },
+  { name: 'Crystal Array',    energy: 0.1, valence: 0.3 },
+  { name: 'Dreamscape',       energy: 0.4, valence: 0.7 },
+  { name: 'Jellyfish',        energy: 0.5, valence: 0.8 },
+  { name: 'Coral Reef',       energy: 0.3, valence: 0.5 },
+  { name: 'Vortex',           energy: 0.8, valence: 0.4 },
+  { name: 'Shattered Ice',    energy: 0.9, valence: 0.2 },
+  { name: 'Alien Hive',       energy: 0.7, valence: 0.3 },
+  { name: 'Neon Grid',        energy: 0.6, valence: 0.6 },
+  { name: 'Clockwork',        energy: 0.5, valence: 0.4 },
+  { name: 'Infinite Descent', energy: 0.4, valence: 0.2 },
+]
+
+// --- Mood category bias in (energy, valence) space ---
+
+const MOOD_BIAS: Record<MoodCategory, { energy: number; valence: number }> = {
+  aggressive: { energy: 0.85, valence: 0.2 },
+  happy:      { energy: 0.6,  valence: 0.8 },
+  sad:        { energy: 0.2,  valence: 0.3 },
+  relaxed:    { energy: 0.15, valence: 0.6 },
 }
 
 // --- Beat detection constants ---
 
-const BEAT_THRESHOLD = 0.3
 const BEAT_COOLDOWN_MS = 200
-
-// --- Energy thresholds ---
-
-const ENERGY_INTENSE_THRESHOLD = 0.45
-const ENERGY_BUILDING_THRESHOLD = 0.25
-const ENERGY_CALM_THRESHOLD = 0.15
-const ENERGY_HYSTERESIS_SECONDS = 3.0
 
 // --- Transition speed (lerp rate per second) ---
 
-const TRANSITION_SPEED = 0.5 // reaches ~63% in 2 seconds
+const TRANSITION_SPEED = 0.5
 const PALETTE_CYCLE_SECONDS = 15
+const PRESET_SWITCH_DISTANCE = 0.15 // minimum mood-space distance to trigger a preset change
 
 // --- Helpers ---
 
@@ -44,6 +61,10 @@ function clamp(v: number, min: number, max: number): number {
 
 function findPresetIndex(name: string): number {
   return LATTICE_PRESETS.findIndex(p => p.name === name)
+}
+
+function moodDistance(e1: number, v1: number, e2: number, v2: number): number {
+  return Math.sqrt((e1 - e2) ** 2 + (v1 - v2) ** 2)
 }
 
 // --- Snapshot of store values to save/restore ---
@@ -76,7 +97,7 @@ interface StoreSnapshot {
   }
 }
 
-// --- Transition target (the preset values we're lerping toward) ---
+// --- Transition target ---
 
 interface TransitionTarget {
   cellSpacing: number
@@ -84,7 +105,6 @@ interface TransitionTarget {
   animOffset: number
   lightAngleX: number
   lightAngleY: number
-  // Integers that snap (not lerped)
   geoPreset: number
   animation: number
   palette: number
@@ -94,15 +114,14 @@ interface TransitionTarget {
 /**
  * Audio-reactive autoplayer composable.
  *
- * Analyses FFT data from the Pinia store each frame and modulates scene
- * parameters to create a music-driven visual experience. All writes go
- * through the store; the shader reads uniforms from the render pipeline.
+ * Uses Meyda features (energy, valence, brightness, percussiveness) and
+ * optional Essentia classifications (mood, BPM) to drive scene parameters
+ * via a 2D mood space that maps to preset coordinates.
  */
 export function useAudioReactiveMode() {
   const store = useRayMarcherStore()
 
   const isActive = ref(false)
-  // Use refs locally but also sync to store for cross-component visibility
   const energyState = ref<EnergyState>('calm')
   const beatCount = ref(0)
 
@@ -111,7 +130,7 @@ export function useAudioReactiveMode() {
     store.audio.autoplayerBeats = beatCount.value
   }
 
-  // Rolling average for energy tracking (~2 seconds at 60fps = 120 samples)
+  // Rolling average for energy tracking
   const ROLLING_WINDOW = 120
   let rollingBuffer: number[] = []
   let rollingSum = 0
@@ -119,31 +138,26 @@ export function useAudioReactiveMode() {
   // Beat detection state
   let lastBeatTime = 0
 
-  // Energy state hysteresis
-  let candidateState: EnergyState = 'calm'
-  let candidateTimer = 0
-
-  // Preset cycling — track last used preset per energy state
-  let presetCycleIndex: Record<EnergyState, number> = {
-    calm: 0,
-    building: 0,
-    intense: 0,
-    breakdown: 0,
-  }
+  // Mood space tracking
+  let currentMoodEnergy = 0.3
+  let currentMoodValence = 0.5
+  let currentPresetName = ''
 
   // Cumulative amplitude for palette cycling
   let cumulativeAmplitude = 0
   let lastPaletteCycleAmplitude = 0
 
-  // Bloom spike state (decays over time)
+  // Bloom spike state
   let bloomSpike = 0
+
+  // BPM sync state
+  let bpmPulsePhase = 0
 
   // Store snapshot for restoration
   let savedSnapshot: StoreSnapshot | null = null
 
-  // Transition target (what we're lerping toward)
+  // Transition target
   let target: TransitionTarget | null = null
-  // Whether we've snapped the discrete values for the current transition
   let discreteApplied = false
 
   // --- Snapshot save/restore ---
@@ -217,20 +231,28 @@ export function useAudioReactiveMode() {
       sceneIndex: preset.scene !== undefined ? preset.scene : 0,
     }
     discreteApplied = false
+    currentPresetName = presetName
   }
 
-  function pickPresetForState(state: EnergyState): string {
-    const names = ENERGY_PRESETS[state]
-    if (!names || names.length === 0) return 'Deep Sea'
+  /**
+   * Find the nearest preset in mood space to the given (energy, valence) point,
+   * excluding the current preset to encourage variety.
+   */
+  function findNearestPreset(e: number, v: number): string {
+    let bestName = MOOD_PRESETS[0].name
+    let bestDist = Infinity
 
-    // Pick the next preset in the cycle, skipping the current one if possible
-    let idx = presetCycleIndex[state]
-    const currentName = LATTICE_PRESETS[store.lattice.presetIndex]?.name
-    if (names.length > 1 && names[idx] === currentName) {
-      idx = (idx + 1) % names.length
+    for (const mp of MOOD_PRESETS) {
+      // Slightly penalize the current preset to encourage switching
+      const penalty = mp.name === currentPresetName ? 0.05 : 0
+      const dist = moodDistance(e, v, mp.energy, mp.valence) + penalty
+      if (dist < bestDist) {
+        bestDist = dist
+        bestName = mp.name
+      }
     }
-    presetCycleIndex[state] = (idx + 1) % names.length
-    return names[idx]
+
+    return bestName
   }
 
   // --- Rolling average ---
@@ -247,46 +269,49 @@ export function useAudioReactiveMode() {
     return rollingBuffer.length > 0 ? rollingSum / rollingBuffer.length : 0
   }
 
-  // --- Energy state machine ---
+  // --- Energy state derivation from mood space ---
 
-  function computeCandidateState(smoothedEnergy: number): EnergyState {
-    if (smoothedEnergy >= ENERGY_INTENSE_THRESHOLD) return 'intense'
-    if (smoothedEnergy >= ENERGY_BUILDING_THRESHOLD) return 'building'
-    if (smoothedEnergy <= ENERGY_CALM_THRESHOLD) return 'calm'
-    // In between calm and building — check current state for breakdown
-    // Breakdown = sharp drop from intense
-    if (energyState.value === 'intense' && smoothedEnergy < ENERGY_BUILDING_THRESHOLD) return 'breakdown'
-    return energyState.value // hold current
-  }
+  // Hysteresis prevents rapid state flipping — require sustained change for 2+ seconds
+  let stateTimer = 0
+  let pendingState: EnergyState | null = null
 
-  function updateEnergyState(dt: number) {
-    const smoothed = getRollingAverage()
-    const newCandidate = computeCandidateState(smoothed)
+  function deriveEnergyState(moodEnergy: number, dt: number): EnergyState {
+    let rawState: EnergyState
+    if (moodEnergy >= 0.65) rawState = 'intense'
+    else if (moodEnergy >= 0.35) rawState = 'building'
+    else if (moodEnergy >= 0.15) rawState = 'calm'
+    else rawState = 'breakdown'
 
-    if (newCandidate !== energyState.value) {
-      if (newCandidate === candidateState) {
-        candidateTimer += dt
-        if (candidateTimer >= ENERGY_HYSTERESIS_SECONDS) {
-          energyState.value = newCandidate
-          candidateTimer = 0
-          // Trigger preset transition
-          const presetName = pickPresetForState(newCandidate)
-          transitionToPreset(presetName)
+    // If the raw state differs from current, accumulate time
+    if (rawState !== energyState.value) {
+      if (rawState === pendingState) {
+        stateTimer += dt
+        if (stateTimer >= 2.0) {
+          pendingState = null
+          stateTimer = 0
+          return rawState
         }
       } else {
-        candidateState = newCandidate
-        candidateTimer = 0
+        pendingState = rawState
+        stateTimer = 0
       }
-    } else {
-      candidateTimer = 0
+      return energyState.value // stay in current state until confirmed
     }
+
+    // Raw state matches current — reset pending
+    pendingState = null
+    stateTimer = 0
+    return energyState.value
   }
 
-  // --- Beat detection ---
+  // --- Beat detection (enhanced with RMS spikes from Meyda) ---
 
-  function detectBeat(bass: number, now: number): boolean {
+  function detectBeat(bass: number, rms: number, now: number): boolean {
     const avg = getRollingAverage()
-    if (bass > avg * (1 + BEAT_THRESHOLD) && (now - lastBeatTime) > BEAT_COOLDOWN_MS) {
+    // Dual detection: bass threshold OR RMS spike
+    const bassSpike = bass > avg * 1.3 && bass > 0.2
+    const rmsSpike = rms > avg * 1.5 && rms > 0.15
+    if ((bassSpike || rmsSpike) && (now - lastBeatTime) > BEAT_COOLDOWN_MS) {
       lastBeatTime = now
       beatCount.value++
       return true
@@ -294,74 +319,150 @@ export function useAudioReactiveMode() {
     return false
   }
 
-  // --- Per-frame modulation ---
+  // --- Mood space update ---
+
+  function updateMoodSpace(dt: number) {
+    // Read Meyda-derived mood values from store
+    const targetEnergy = store.audio.moodEnergy
+    const targetValence = store.audio.moodValence
+
+    // If Essentia mood is available, bias toward its classification
+    let biasedEnergy = targetEnergy
+    let biasedValence = targetValence
+    if (store.audio.moodCategory) {
+      const bias = MOOD_BIAS[store.audio.moodCategory]
+      // Blend: 70% Meyda, 30% Essentia bias
+      biasedEnergy = targetEnergy * 0.7 + bias.energy * 0.3
+      biasedValence = targetValence * 0.7 + bias.valence * 0.3
+    }
+
+    // Smooth lerp toward target mood position
+    const lerpSpeed = 1.5 * dt
+    currentMoodEnergy = lerp(currentMoodEnergy, biasedEnergy, clamp(lerpSpeed, 0, 1))
+    currentMoodValence = lerp(currentMoodValence, biasedValence, clamp(lerpSpeed, 0, 1))
+
+    // Derive energy state from mood energy
+    energyState.value = deriveEnergyState(currentMoodEnergy, dt)
+
+    // Check if we should switch presets (only if mood has moved far enough)
+    const currentMoodPreset = MOOD_PRESETS.find(p => p.name === currentPresetName)
+    if (currentMoodPreset) {
+      const dist = moodDistance(
+        currentMoodEnergy, currentMoodValence,
+        currentMoodPreset.energy, currentMoodPreset.valence,
+      )
+      if (dist > PRESET_SWITCH_DISTANCE) {
+        const newPreset = findNearestPreset(currentMoodEnergy, currentMoodValence)
+        if (newPreset !== currentPresetName) {
+          transitionToPreset(newPreset)
+        }
+      }
+    } else {
+      // No current preset — pick nearest
+      const newPreset = findNearestPreset(currentMoodEnergy, currentMoodValence)
+      transitionToPreset(newPreset)
+    }
+  }
+
+  // --- Per-frame modulation from Meyda features ---
 
   function modulatePerFrame(dt: number) {
-    const { bass, mid, treble, amplitude } = store.audio
+    const { bass, mid, treble, amplitude, brightness, percussiveness } = store.audio
 
-    // --- Continuous geometry modulation ---
-    // These are additive on top of the transitioning base values
+    // --- Geometry modulation ---
     store.lattice.cellSpacing = clamp(store.lattice.cellSpacing + bass * 0.15 * dt, 0, 1)
-    store.lattice.wallThickness = clamp(
-      store.lattice.wallThickness + (mid - 0.5) * 0.3 * dt,
-      0.05,
-      0.95,
-    )
+
+    // Percussiveness drives wall thickness sharpness
+    const wallTarget = percussiveness > 0.5
+      ? store.lattice.wallThickness + (percussiveness - 0.5) * 0.4 * dt
+      : store.lattice.wallThickness + (mid - 0.5) * 0.2 * dt
+    store.lattice.wallThickness = clamp(wallTarget, 0.05, 0.95)
+
     store.lattice.animOffset = clamp(
       store.lattice.animOffset + amplitude * 0.2 * dt,
-      0,
-      1,
+      0, 1,
     )
 
-    // --- Camera drift ---
-    store.camera.yaw += amplitude * 0.03 * dt
-    store.camera.pitch += (treble - 0.3) * 0.01 * dt
-    store.camera.pitch = clamp(store.camera.pitch, -0.8, 0.8)
+    // --- Camera movement ---
+    // Yaw drifts with amplitude — faster music = faster rotation
+    store.camera.yaw += amplitude * 0.15 * dt
+
+    // Pitch sways with a sine wave modulated by treble
+    const pitchWave = Math.sin(cumulativeAmplitude * 2.0) * treble * 0.3
+    store.camera.pitch = clamp(
+      lerp(store.camera.pitch, pitchWave, dt * 1.5),
+      -1.2, 1.2,
+    )
+
+    // Forward movement: bass pushes camera forward, silence drifts backward
+    const forwardSpeed = (bass - 0.2) * 0.8 * dt
+    const cy = Math.cos(store.camera.yaw), sy = Math.sin(store.camera.yaw)
+    const cp = Math.cos(store.camera.pitch)
+    store.camera.posX += -sy * cp * forwardSpeed
+    store.camera.posY += Math.sin(store.camera.pitch) * forwardSpeed * 0.3
+    store.camera.posZ += -cy * cp * forwardSpeed
+
+    // On intense beats: a small lateral strafe for impact
+    if (bloomSpike > 0.5) {
+      const strafeDir = Math.sin(beatCount.value * 1.7) * 0.05
+      store.camera.posX += -cy * strafeDir
+      store.camera.posZ += sy * strafeDir
+    }
 
     // --- Palette cycling via cumulative amplitude ---
     cumulativeAmplitude += amplitude * dt
     if (cumulativeAmplitude - lastPaletteCycleAmplitude > PALETTE_CYCLE_SECONDS) {
       lastPaletteCycleAmplitude = cumulativeAmplitude
-      // Shift palette forward
-      const totalPalettes = 12 // number of palettes in shader
+      const totalPalettes = 12
       store.scene.palette = (store.scene.palette + 1) % totalPalettes
     }
 
-    // --- Post-processing modulation ---
-    // Bloom: base from render quality + spike from beats (decays)
-    bloomSpike = Math.max(0, bloomSpike - dt * 3.0) // decay over ~0.3s
+    // --- Post-processing ---
+    // Bloom: base + beat spike (decays)
+    bloomSpike = Math.max(0, bloomSpike - dt * 3.0)
     store.render.bloomStrength = clamp(
       store.render.bloomStrength + bloomSpike * 0.5 * dt,
-      0,
-      2.0,
+      0, 2.0,
     )
 
-    // Chromatic aberration driven by treble
-    store.render.chromaticAmount = clamp(treble * 0.2, 0, 0.2)
+    // Chromatic aberration: driven by brightness (spectral centroid)
+    store.render.chromaticAmount = clamp(
+      brightness * 0.15 + treble * 0.1,
+      0, 0.25,
+    )
 
-    // Fog density: louder = less fog
+    // Fog density: spectral flatness drives fog (noisy = foggy, tonal = clear)
+    const flatnessFog = store.audio.moodValence > 0.5 ? 0.0005 : 0.003
     store.render.fogDensity = clamp(
-      lerp(store.render.fogDensity, 0.002 - amplitude * 0.0015, dt * 2.0),
-      0.0001,
-      0.01,
+      lerp(store.render.fogDensity, flatnessFog + (1 - amplitude) * 0.002, dt * 2.0),
+      0.0001, 0.01,
     )
+
+    // --- BPM sync: pulse geometry at detected BPM ---
+    if (store.audio.bpm > 0) {
+      const bpmHz = store.audio.bpm / 60
+      bpmPulsePhase += bpmHz * dt * Math.PI * 2
+      const pulse = Math.sin(bpmPulsePhase) * 0.5 + 0.5 // 0-1
+      store.lattice.animOffset = clamp(
+        store.lattice.animOffset + pulse * 0.02 * dt,
+        0, 1,
+      )
+    }
   }
 
-  // --- Smooth preset transition (lerp continuous values each frame) ---
+  // --- Smooth preset transition ---
 
   function applyTransition(dt: number) {
     if (!target) return
 
     const t = clamp(TRANSITION_SPEED * dt, 0, 1)
 
-    // Lerp continuous values
     store.lattice.cellSpacing = lerp(store.lattice.cellSpacing, target.cellSpacing, t)
     store.lattice.wallThickness = lerp(store.lattice.wallThickness, target.wallThickness, t)
     store.lattice.animOffset = lerp(store.lattice.animOffset, target.animOffset, t)
     store.scene.lightAngleX = lerp(store.scene.lightAngleX, target.lightAngleX, t)
     store.scene.lightAngleY = lerp(store.scene.lightAngleY, target.lightAngleY, t)
 
-    // Snap discrete values once (early in transition)
     if (!discreteApplied) {
       store.lattice.geoPreset = target.geoPreset
       store.lattice.animation = target.animation
@@ -370,7 +471,6 @@ export function useAudioReactiveMode() {
       discreteApplied = true
     }
 
-    // Check if transition is ~complete (close enough to target)
     const dist =
       Math.abs(store.lattice.cellSpacing - target.cellSpacing) +
       Math.abs(store.lattice.wallThickness - target.wallThickness) +
@@ -394,12 +494,14 @@ export function useAudioReactiveMode() {
     lastPaletteCycleAmplitude = 0
     lastBeatTime = 0
     bloomSpike = 0
-    candidateTimer = 0
-    candidateState = 'calm'
+    bpmPulsePhase = 0
+    currentMoodEnergy = 0.3
+    currentMoodValence = 0.5
+    currentPresetName = ''
     target = null
 
-    // Start with a calm preset
-    const presetName = pickPresetForState('calm')
+    // Start with nearest preset to initial mood
+    const presetName = findNearestPreset(currentMoodEnergy, currentMoodValence)
     transitionToPreset(presetName)
   }
 
@@ -408,7 +510,6 @@ export function useAudioReactiveMode() {
     isActive.value = false
     target = null
 
-    // Restore original settings
     if (savedSnapshot) {
       restoreSnapshot(savedSnapshot)
       savedSnapshot = null
@@ -417,35 +518,34 @@ export function useAudioReactiveMode() {
 
   /**
    * Called each frame from the audio analysis loop when autoplayer is active.
-   * @param deltaTime - seconds since last frame
    */
   function update(deltaTime: number) {
     if (!isActive.value) return
 
-    const dt = Math.min(deltaTime, 0.1) // cap to prevent huge jumps
+    const dt = Math.min(deltaTime, 0.1)
     const now = performance.now()
 
-    // Push current amplitude into rolling buffer
+    // Push amplitude into rolling buffer for beat detection baseline
     pushRolling(store.audio.amplitude)
 
-    // Beat detection
-    const isBeat = detectBeat(store.audio.bass, now)
+    // Enhanced beat detection using both bass and Meyda RMS
+    const rms = store.audio.moodEnergy // approximate from mood energy
+    const isBeat = detectBeat(store.audio.bass, rms, now)
     if (isBeat) {
-      bloomSpike = 1.0 // spike bloom on beat
-      // Brief geometry pulse via animOffset
+      bloomSpike = 1.0
       store.lattice.animOffset = clamp(store.lattice.animOffset + 0.05, 0, 1)
     }
 
-    // Energy state machine
-    updateEnergyState(dt)
+    // Update mood space position and trigger preset transitions
+    updateMoodSpace(dt)
 
     // Apply smooth preset transition
     applyTransition(dt)
 
-    // Per-frame continuous modulation
+    // Per-frame continuous modulation from Meyda features
     modulatePerFrame(dt)
 
-    // Sync state to store for UI visibility
+    // Sync to store for UI
     syncToStore()
   }
 

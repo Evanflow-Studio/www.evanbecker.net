@@ -1,6 +1,8 @@
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, watch } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { useAudioReactiveMode } from './useAudioReactiveMode'
+import { useMeydaAnalyzer } from './useMeydaAnalyzer'
+import { useEssentiaClassifier } from './useEssentiaClassifier'
 
 const FFT_SIZE = 256
 const SMOOTHING = 0.8
@@ -8,12 +10,15 @@ const BASS_END = 0.1
 const MID_END = 0.4
 
 /**
- * Audio capture composable — plays audio files/URLs via a native <audio>
- * element and feeds FFT analysis into the Pinia store for shader reactivity.
+ * Audio capture composable -- plays audio files/URLs via a native <audio>
+ * element and feeds FFT analysis + Meyda features + Essentia classification
+ * into the Pinia store for shader reactivity.
  */
 export function useAudioCapture() {
   const store = useRayMarcherStore()
   const reactiveMode = useAudioReactiveMode()
+  const meydaAnalyzer = useMeydaAnalyzer()
+  const essentiaClassifier = useEssentiaClassifier()
 
   const isPlaying = ref(false)
   const fileName = ref('')
@@ -28,6 +33,7 @@ export function useAudioCapture() {
   let dataArray: Uint8Array | null = null
   let animFrameId = 0
   let lastAnalyseTime = 0
+  let essentiaInitialized = false
 
   function createAudioContext() {
     if (audioCtx) return
@@ -47,7 +53,31 @@ export function useAudioCapture() {
     }
     sourceNode = audioCtx.createMediaElementSource(element)
     sourceNode.connect(analyser)
+
+    // Start Meyda analyzer (needs source node, not analyser)
+    meydaAnalyzer.start(audioCtx, sourceNode)
   }
+
+  /**
+   * Lazily initialize Essentia when the autoplayer is first enabled.
+   * This avoids loading the WASM module until it's actually needed.
+   */
+  async function initEssentiaIfNeeded() {
+    if (essentiaInitialized || !audioCtx || !sourceNode) return
+    essentiaInitialized = true
+    await essentiaClassifier.start(audioCtx, sourceNode)
+    store.audio.essentiaReady = essentiaClassifier.isReady.value
+  }
+
+  // Watch for autoplayer toggle to lazy-init Essentia
+  watch(
+    () => store.audio.autoplayerEnabled,
+    async (enabled) => {
+      if (enabled && isPlaying.value) {
+        await initEssentiaIfNeeded()
+      }
+    },
+  )
 
   function analyse() {
     if (!analyser || !dataArray) return
@@ -70,6 +100,21 @@ export function useAudioCapture() {
     store.audio.mid = (midEnd - bassEnd) > 0 ? midSum / (midEnd - bassEnd) : 0
     store.audio.treble = (bins - midEnd) > 0 ? trebleSum / (bins - midEnd) : 0
     store.audio.amplitude = bins > 0 ? totalSum / bins : 0
+
+    // Sync Meyda features to store
+    if (meydaAnalyzer.isActive.value) {
+      store.audio.brightness = meydaAnalyzer.brightness.value
+      store.audio.percussiveness = meydaAnalyzer.percussiveness.value
+      store.audio.moodEnergy = meydaAnalyzer.energy.value
+      store.audio.moodValence = meydaAnalyzer.valence.value
+    }
+
+    // Sync Essentia results to store
+    if (essentiaClassifier.isReady.value) {
+      store.audio.bpm = essentiaClassifier.bpm.value
+      store.audio.moodCategory = essentiaClassifier.mood.value
+      store.audio.essentiaReady = true
+    }
 
     // Drive autoplayer when enabled
     if (store.audio.autoplayerEnabled && reactiveMode.isActive.value) {
@@ -153,6 +198,11 @@ export function useAudioCapture() {
     store.audio.isCapturing = true
     animFrameId = requestAnimationFrame(analyse)
     requestAnimationFrame(updateTime)
+
+    // Lazy-init Essentia if autoplayer is already enabled
+    if (store.audio.autoplayerEnabled) {
+      initEssentiaIfNeeded()
+    }
   }
 
   function pause() {
@@ -164,6 +214,10 @@ export function useAudioCapture() {
     store.audio.mid = 0
     store.audio.treble = 0
     store.audio.amplitude = 0
+    store.audio.brightness = 0
+    store.audio.percussiveness = 0
+    store.audio.moodEnergy = 0
+    store.audio.moodValence = 0
   }
 
   function seek(time: number) {
@@ -173,6 +227,13 @@ export function useAudioCapture() {
   function stop() {
     pause()
     store.audio.isCapturing = false
+
+    // Stop Meyda
+    meydaAnalyzer.stop()
+
+    // Stop Essentia
+    essentiaClassifier.stop()
+
     if (sourceNode) {
       try { sourceNode.disconnect() } catch { /* ignore */ }
       sourceNode = null
@@ -185,10 +246,12 @@ export function useAudioCapture() {
     fileName.value = ''
     duration.value = 0
     currentTime.value = 0
+    essentiaInitialized = false
   }
 
   function cleanup() {
     stop()
+    essentiaClassifier.cleanup()
     if (audioCtx) {
       audioCtx.close()
       audioCtx = null
@@ -213,5 +276,7 @@ export function useAudioCapture() {
     stop,
     cleanup,
     reactiveMode,
+    meydaAnalyzer,
+    essentiaClassifier,
   }
 }
