@@ -10,14 +10,16 @@ const presetNames = LATTICE_PRESETS.map(p => p.name)
 const emit = defineEmits<{
   screenshot: []
   fullscreen: []
+  openPlayer: []
 }>()
 
 const showAdvanced = ref(false)
-const activeTags = ref(new Set(['scene', 'color', 'fx', 'tools']))
+const activeTags = ref(new Set(['scene', 'color', 'fx', 'audio', 'tools']))
 const tags = [
   { id: 'scene', label: 'Scene' },
   { id: 'color', label: 'Color' },
   { id: 'fx', label: 'FX' },
+  { id: 'audio', label: 'Audio' },
   { id: 'tools', label: 'Tools' },
 ]
 
@@ -120,7 +122,9 @@ const presetDisplayName = computed(() => {
       <ColorTab v-if="activeTags.has('color')" />
       <div v-if="activeTags.has('color') && activeTags.has('fx')" class="border-t border-slate-700/30" />
       <FxTab v-if="activeTags.has('fx')" />
-      <div v-if="activeTags.has('fx') && activeTags.has('tools')" class="border-t border-slate-700/30" />
+      <div v-if="activeTags.has('fx') && activeTags.has('audio')" class="border-t border-slate-700/30" />
+      <AudioTab v-if="activeTags.has('audio')" @open-player="emit('openPlayer')" />
+      <div v-if="activeTags.has('audio') && activeTags.has('tools')" class="border-t border-slate-700/30" />
       <ToolsTab v-if="activeTags.has('tools')" @screenshot="emit('screenshot')" @fullscreen="emit('fullscreen')" />
     </div>
   </FloatingPanel>

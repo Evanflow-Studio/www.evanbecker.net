@@ -44,6 +44,12 @@ uniform vec3 u_paletteB;
 uniform vec3 u_paletteC;
 uniform vec3 u_paletteD;
 
+// Audio reactivity (0.0 - 1.0)
+uniform float u_bass;
+uniform float u_mid;
+uniform float u_treble;
+uniform float u_amplitude;
+
 `
 
 export const FRAGMENT_SHADER = [

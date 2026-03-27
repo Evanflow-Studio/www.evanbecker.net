@@ -67,6 +67,12 @@ export function uploadUniforms(res: GLResources, elapsed: number) {
   gl.uniform3fv(mainCache['u_paletteB'], store.customPalette.b)
   gl.uniform3fv(mainCache['u_paletteC'], store.customPalette.c)
   gl.uniform3fv(mainCache['u_paletteD'], store.customPalette.d)
+
+  // Audio reactivity (defaults to 0 when not capturing)
+  gl.uniform1f(mainCache['u_bass'], store.audio.bass)
+  gl.uniform1f(mainCache['u_mid'], store.audio.mid)
+  gl.uniform1f(mainCache['u_treble'], store.audio.treble)
+  gl.uniform1f(mainCache['u_amplitude'], store.audio.amplitude)
 }
 
 export function ensureFBO(res: GLResources, width: number, height: number) {

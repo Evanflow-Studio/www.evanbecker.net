@@ -1,5 +1,14 @@
 // === State interfaces ===
 
+export interface AudioState {
+  bass: number
+  mid: number
+  treble: number
+  amplitude: number
+  isCapturing: boolean
+  youtubeUrl: string
+}
+
 export interface CameraState {
   posX: number
   posY: number

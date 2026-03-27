@@ -12,6 +12,13 @@ const isFullscreen = ref(false)
 const shareTooltip = ref('')
 let shareTimeout: ReturnType<typeof setTimeout> | null = null
 
+// YouTube player
+const ytPlayerRef = ref<{ show: () => void; hide: () => void; visible: boolean } | null>(null)
+
+function openYouTubePlayer() {
+  ytPlayerRef.value?.show()
+}
+
 function onShare() {
   store.exportToUrl()
   shareTooltip.value = 'Copied to clipboard!'
@@ -139,7 +146,11 @@ onUnmounted(() => {
       <RayMarchControls
         @screenshot="engine.captureScreenshot"
         @fullscreen="toggleFullscreen"
+        @open-player="openYouTubePlayer"
       />
+
+      <!-- YouTube player (floating, teleported to body) -->
+      <YouTubePlayer ref="ytPlayerRef" />
     </div>
   </div>
 </template>

@@ -15,6 +15,7 @@ export const MAIN_UNIFORM_NAMES = [
   'u_animOffset', 'u_maxSteps', 'u_hitThreshold',
   'u_maxDist', 'u_warpCorrection', 'u_fogDensity', 'u_zoom',
   'u_paletteA', 'u_paletteB', 'u_paletteC', 'u_paletteD',
+  'u_bass', 'u_mid', 'u_treble', 'u_amplitude',
 ]
 
 export const FAST_UNIFORM_NAMES = [
