@@ -128,8 +128,6 @@ app.UseSwaggerUI(o =>
     o.OAuthUsePkce();
 });
 
-app.UseCors();
-
 app.UseCors("cors");
 app.UseAuthentication();
 app.UseAuthorization();
