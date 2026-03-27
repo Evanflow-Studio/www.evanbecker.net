@@ -2,7 +2,7 @@ import { useAuth0 } from '@auth0/auth0-vue'
 
 export function useApi() {
   const config = useRuntimeConfig()
-  const baseUrl = config.public.apiUrl
+  const baseUrl = config.public.apiUrl?.replace(/\/$/, '') || ''
 
   async function fetchWithAuth(path: string, options: RequestInit = {}) {
     let headers: Record<string, string> = {
@@ -20,7 +20,7 @@ export function useApi() {
       // Not authenticated — continue without token
     }
 
-    const response = await fetch(`${baseUrl}api/v1/${path}`, {
+    const response = await fetch(`${baseUrl}/api/v1/${path}`, {
       ...options,
       headers,
       mode: 'cors',
@@ -34,7 +34,7 @@ export function useApi() {
   }
 
   async function fetchPublic(path: string, options: RequestInit = {}) {
-    const response = await fetch(`${baseUrl}api/v1/${path}`, {
+    const response = await fetch(`${baseUrl}/api/v1/${path}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',

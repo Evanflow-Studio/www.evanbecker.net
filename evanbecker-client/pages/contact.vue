@@ -43,7 +43,8 @@ async function submitContact() {
   errorMsg.value = ''
   try {
     const recaptchaToken = await getRecaptchaToken()
-    const res = await fetch(`${config.public.apiUrl}api/v1/contact`, {
+    const apiBase = config.public.apiUrl?.replace(/\/$/, '') || ''
+    const res = await fetch(`${apiBase}/api/v1/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, recaptchaToken }),
