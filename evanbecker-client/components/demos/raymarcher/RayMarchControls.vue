@@ -13,13 +13,23 @@ const emit = defineEmits<{
 }>()
 
 const showAdvanced = ref(false)
-const activeTab = ref('scene')
-const tabs = [
+const activeTags = ref(new Set(['scene', 'color', 'fx', 'tools']))
+const tags = [
   { id: 'scene', label: 'Scene' },
   { id: 'color', label: 'Color' },
   { id: 'fx', label: 'FX' },
   { id: 'tools', label: 'Tools' },
 ]
+
+function toggleTag(id: string) {
+  if (activeTags.value.has(id)) {
+    activeTags.value.delete(id)
+  } else {
+    activeTags.value.add(id)
+  }
+  // Force reactivity (Set mutations aren't tracked)
+  activeTags.value = new Set(activeTags.value)
+}
 
 /** Wraps a store mutation with auto-fork */
 function editLattice<K extends keyof typeof store.lattice>(key: K, value: typeof store.lattice[K]) {
@@ -89,12 +99,29 @@ const presetDisplayName = computed(() => {
 
     <!-- Advanced panel -->
     <div v-if="showAdvanced" class="flex flex-col gap-2 border-t border-slate-700/50 pt-2">
-      <TabBar :tabs="tabs" :model-value="activeTab" @update:model-value="activeTab = $event" />
+      <!-- Toggleable tags — multiple can be active at once -->
+      <div class="flex gap-1 pb-1">
+        <button
+          v-for="tag in tags"
+          :key="tag.id"
+          class="px-3 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider transition-colors"
+          :class="activeTags.has(tag.id)
+            ? 'bg-[#2D95FC]/20 text-[#2D95FC] border border-[#2D95FC]/40'
+            : 'text-slate-500 hover:text-slate-300 border border-slate-700/50'"
+          @click="toggleTag(tag.id)"
+        >
+          {{ tag.label }}
+        </button>
+      </div>
 
-      <SceneTab v-if="activeTab === 'scene'" />
-      <ColorTab v-if="activeTab === 'color'" />
-      <FxTab v-if="activeTab === 'fx'" />
-      <ToolsTab v-if="activeTab === 'tools'" @screenshot="emit('screenshot')" @fullscreen="emit('fullscreen')" />
+      <!-- All active sections render simultaneously -->
+      <SceneTab v-if="activeTags.has('scene')" />
+      <div v-if="activeTags.has('scene') && activeTags.has('color')" class="border-t border-slate-700/30" />
+      <ColorTab v-if="activeTags.has('color')" />
+      <div v-if="activeTags.has('color') && activeTags.has('fx')" class="border-t border-slate-700/30" />
+      <FxTab v-if="activeTags.has('fx')" />
+      <div v-if="activeTags.has('fx') && activeTags.has('tools')" class="border-t border-slate-700/30" />
+      <ToolsTab v-if="activeTags.has('tools')" @screenshot="emit('screenshot')" @fullscreen="emit('fullscreen')" />
     </div>
   </FloatingPanel>
 </template>
