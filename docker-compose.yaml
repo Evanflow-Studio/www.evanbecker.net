@@ -1,68 +1,64 @@
-services:
-  proxy:
-    image: traefik:latest
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.postgres.address=:5432"
-      - "--entrypoints.web.address=:3000"
-      - "--entrypoints.api.address=:5002"
-    ports:
-      - "6969:8080" # Traefik dashboard
-      - "5432:5432" # PostgreSQL port
-      - "5002"
-      - "3000"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+# Local development: just the database.
+# Run frontend and API natively for hot-reload:
+#   cd evanbecker-client && npm run dev        → http://localhost:3000
+#   cd evanbecker-api/evanbecker-api && dotnet run  → http://localhost:5002
+#
+# Or run the full stack in Docker:
+#   docker compose --profile fullstack up --build
+#
+# Database credentials match appsettings.Development.json:
+#   Host=localhost; Username=EvanBecker; Password=P@55W0RD123; Database=evanbecker-db
 
+services:
   evanbecker-db:
-    image: postgres
-    restart: always
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${Prod_DB_USER}
-      - POSTGRES_PASSWORD=${Prod_DB_PASSWORD}
+      POSTGRES_DB: evanbecker-db
+      POSTGRES_USER: EvanBecker
+      POSTGRES_PASSWORD: P@55W0RD123
+    ports:
+      - "5432:5432"
     volumes:
       - ./appdata/postgres:/var/lib/postgresql
-    labels:
-      - "traefik.enable=true"
-      - "traefik.tcp.routers.postgres.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.postgres.entryPoints=postgres"
-      - "traefik.tcp.routers.postgres.service=postgres"
-      - "traefik.tcp.services.postgres.loadbalancer.server.port=5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U EvanBecker -d evanbecker-db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  evanbecker:
+  # --- Full stack (optional): docker compose --profile fullstack up --build ---
+
+  evanbecker-api:
     container_name: evanbecker-server
+    profiles: ["fullstack"]
     build:
       context: .
       dockerfile: evanbecker-api/Dockerfile
-    image: ${DOCKER_REGISTRY-}evanbecker
     environment:
-      - ASPNETCORE_ENVIRONMENT=${ENVIRONMENT}
-      - ASPNETCORE_URLS=http://+:80
+      ASPNETCORE_ENVIRONMENT: LocalDocker
+      ASPNETCORE_URLS: http://+:80
     ports:
       - "5002:80"
     depends_on:
-      - evanbecker-db
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.aspnetapp.rule=Host(`api.localhost`)"
-      - "traefik.http.routers.aspnetapp.entrypoints=api"
+      evanbecker-db:
+        condition: service_healthy
 
   evanbecker-client:
     container_name: evanbecker-client
+    profiles: ["fullstack"]
     build:
       context: evanbecker-client
       dockerfile: Dockerfile
-    image: ${DOCKER_REGISTRY-}evanbecker-client
+      args:
+        NUXT_PUBLIC_SITE_URL: http://localhost:3000
+        NUXT_PUBLIC_API_URL: http://localhost:5002/
+        NUXT_PUBLIC_AUTH0_DOMAIN: dev-m3uiopcp.us.auth0.com
+        NUXT_PUBLIC_AUTH0_CLIENT_ID: 2evqEjBNUmBVt6fNwcGkicfjNNrYsjV0
+        NUXT_PUBLIC_AUTH0_AUDIENCE: evanbecker.api
+        NUXT_PUBLIC_AUTH0_REDIRECT_URI: http://localhost:3000/
+        NUXT_PUBLIC_RECAPTCHA_SITE_KEY: 6Lfb5pksAAAAAHnzNOV1DxBqF_EYU9UPVimOR6WZ
     depends_on:
-      - evanbecker-db
-      - evanbecker
+      - evanbecker-api
     ports:
       - "3000:3000"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.client.entrypoints=web"
-      - "traefik.http.routers.client.rule=Host(`localhost`)"
-      - "traefik.http.services.client.loadbalancer.server.port=3000"

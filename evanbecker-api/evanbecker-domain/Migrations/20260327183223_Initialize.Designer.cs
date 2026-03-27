@@ -12,22 +12,22 @@ using evanbecker_domain;
 namespace evanbeckerdomain.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20260327163338_AddUserColumns")]
-    partial class AddUserColumns
+    [Migration("20260327183223_Initialize")]
+    partial class Initialize
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.11")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("evanbecker_domain.Entities.Comment", b =>
                 {
-                    b.Property<Guid?>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
@@ -59,7 +59,7 @@ namespace evanbeckerdomain.Migrations
 
             modelBuilder.Entity("evanbecker_domain.Entities.ContactMessage", b =>
                 {
-                    b.Property<Guid?>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
@@ -93,7 +93,7 @@ namespace evanbeckerdomain.Migrations
 
             modelBuilder.Entity("evanbecker_domain.Entities.NewsLetterEntry", b =>
                 {
-                    b.Property<Guid?>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
@@ -112,7 +112,7 @@ namespace evanbeckerdomain.Migrations
 
             modelBuilder.Entity("evanbecker_domain.Entities.Reply", b =>
                 {
-                    b.Property<Guid?>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 

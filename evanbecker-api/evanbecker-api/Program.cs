@@ -9,7 +9,8 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Configuration.AddJsonFile("./secrets/appsettings.Secrets.json", optional: true, reloadOnChange: true);
+// In Development, secrets come from .NET User Secrets (dotnet user-secrets).
+// In Production/Test, secrets come from Infisical via SecretsConfigurationProvider.
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddSecrets();
 

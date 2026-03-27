@@ -51,22 +51,27 @@ Swagger docs available at `/swagger` on any running instance.
 
 ## Local Development
 
-### Standalone
+### Recommended: Database in Docker, API native
 
 ```bash
-cd evanbecker-api
+# From repo root — starts just PostgreSQL
+docker compose up -d
+
+# Then run the API with hot-reload
+cd evanbecker-api/evanbecker-api
 dotnet run
 ```
 
-Requires a local PostgreSQL instance. Configure connection string in `appsettings.Development.json`.
+The connection string in `appsettings.Development.json` points to `localhost:5432` with credentials matching `docker-compose.yaml` (user: `EvanBecker`, password: `P@55W0RD123`, db: `evanbecker-db`). No `.env` file needed.
 
-### With Docker Compose (from repo root)
+### Full Stack in Docker
 
 ```bash
-docker compose up --build
+# From repo root — starts DB + API + Client
+docker compose --profile fullstack up --build
 ```
 
-This starts PostgreSQL + the API together. The API is available at `http://localhost:5002`.
+API available at `http://localhost:5002`. Migrations auto-apply at container startup.
 
 ## Configuration
 
@@ -85,21 +90,43 @@ The API uses a provider-agnostic secrets system:
 - **`InfisicalSecretsMapper`** — Infisical-specific key mapping (the only class that knows Infisical's naming)
 - **`SecretsConfigurationProvider`** — pulls secrets from Infisical REST API and applies the mapper
 
-When `INFISICAL_CLIENT_ID` is not set (local dev), the provider skips gracefully and falls back to local config files.
+When `INFISICAL_CLIENT_ID` is not set (local dev), the provider skips gracefully and falls back to .NET User Secrets and appsettings files.
 
 ### Local Development Secrets
 
-For local dev, copy the template and fill in your values:
+Secrets are stored in .NET User Secrets (never on disk in the project):
 
 ```bash
-cp secrets/appsettings.Secrets.template.json secrets/appsettings.Secrets.json
+cd evanbecker-api/evanbecker-api
+dotnet user-secrets init  # only needed once
+
+# Required — database
+dotnet user-secrets set "ConnectionStrings:Database" "Host=localhost;Port=5432;Username=EvanBecker;Password=P@55W0RD123;Database=evanbecker-db"
+
+# Required — Auth0
+dotnet user-secrets set "Auth0:Domain" "dev-m3uiopcp.us.auth0.com"
+dotnet user-secrets set "Auth0:Audience" "evanbecker.api"
+dotnet user-secrets set "Auth0:ClientId" "YOUR_CLIENT_ID"
+dotnet user-secrets set "Auth0:ClientSecret" "YOUR_CLIENT_SECRET"
+dotnet user-secrets set "Auth0:Url" "https://dev-m3uiopcp.us.auth0.com"
+
+# Optional — Spotify (ray marcher audio integration)
+dotnet user-secrets set "Spotify:ClientId" "YOUR_SPOTIFY_CLIENT_ID"
+dotnet user-secrets set "Spotify:ClientSecret" "YOUR_SPOTIFY_CLIENT_SECRET"
+
+# Optional — reCAPTCHA (contact form)
+dotnet user-secrets set "Recaptcha:SecretKey" "YOUR_RECAPTCHA_SECRET"
+
+# Optional — Email (contact form notifications)
+dotnet user-secrets set "Email:ApiKey" "YOUR_SMTP2GO_API_KEY"
+dotnet user-secrets set "Email:ToAddress" "you@example.com"
 ```
 
-Then edit `secrets/appsettings.Secrets.json` with your actual credentials. This file is loaded by `Program.cs` and is gitignored.
+User Secrets are stored in `%APPDATA%\Microsoft\UserSecrets\` (Windows) or `~/.microsoft/usersecrets/` (macOS/Linux), completely outside the project tree. No secrets files exist in the repo.
 
 ### Secrets Reference
 
-All secrets managed via Infisical in production. For local dev, set them in `secrets/appsettings.Secrets.json`.
+All secrets managed via Infisical in production. For local dev, use `dotnet user-secrets`.
 
 | Infisical Key | .NET Config Path | Required | What happens without it |
 |---------------|-----------------|----------|------------------------|

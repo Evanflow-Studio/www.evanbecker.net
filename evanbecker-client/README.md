@@ -64,11 +64,24 @@ WebGL2 GPU ray marcher with 4 scenes, 10 geometry presets, 9 animation modes, FP
 ## Development
 
 ```bash
+# From repo root — start just the database
+docker compose up -d
+
+# Then run the frontend
+cd evanbecker-client
 npm install
 npm run dev
 ```
 
-Opens at [http://localhost:3000](http://localhost:3000).
+Opens at [http://localhost:3000](http://localhost:3000). The API should also be running at `localhost:5002` for comments, auth, and Spotify features to work. See the [API README](../evanbecker-api/README.md) for setup.
+
+For Auth0 login to work locally, create `evanbecker-client/.env`:
+```
+NUXT_PUBLIC_AUTH0_DOMAIN=dev-m3uiopcp.us.auth0.com
+NUXT_PUBLIC_AUTH0_CLIENT_ID=2evqEjBNUmBVt6fNwcGkicfjNNrYsjV0
+NUXT_PUBLIC_AUTH0_AUDIENCE=evanbecker.api
+```
+This file is gitignored.
 
 ## Build
 

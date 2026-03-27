@@ -174,44 +174,51 @@ Each sub-project has its own README with detailed structure, setup, and configur
 - [Node.js 20+](https://nodejs.org/) (for frontend-only dev)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (for API-only dev)
 
-### Quick Start (Full Stack)
+### Quick Start (Recommended)
 
-1. **Clone the repo:**
-   ```bash
-   git clone https://github.com/Evanflow-Studio/www.evanbecker.net.git
-   cd www.evanbecker.net
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   cp evanbecker-client/.env.example evanbecker-client/.env.local
-   ```
-   Fill in your Auth0 credentials, database credentials, and API URLs.
-
-3. **Start all services:**
-   ```bash
-   docker compose up --build
-   ```
-
-4. **Open in your browser:**
-   - Frontend: [http://localhost:3000](http://localhost:3000)
-   - API + Swagger: [http://localhost:5002/swagger](http://localhost:5002/swagger)
-   - Traefik Dashboard: [http://localhost:6969](http://localhost:6969)
-
-### Frontend Only
+Start PostgreSQL, then run the frontend and API natively for hot-reload:
 
 ```bash
+# 1. Clone the repo
+git clone https://github.com/Evanflow-Studio/www.evanbecker.net.git
+cd www.evanbecker.net
+
+# 2. Start just the database
+docker compose up -d
+
+# 3. Run the API (in one terminal)
+cd evanbecker-api/evanbecker-api
+dotnet run
+
+# 4. Run the frontend (in another terminal)
 cd evanbecker-client
 npm install
 npm run dev
 ```
 
-### API Only
+- **Frontend:** [http://localhost:3000](http://localhost:3000)
+- **API + Swagger:** [http://localhost:5002/swagger](http://localhost:5002/swagger)
+- **PostgreSQL:** `localhost:5432` (user: `EvanBecker`, password: `P@55W0RD123`, db: `evanbecker-db`)
+
+The database credentials are hardcoded in `docker-compose.yaml` and match `appsettings.Development.json`. No `.env` file needed for the database.
+
+For API secrets (Auth0, Spotify, etc.), use .NET User Secrets — see [`evanbecker-api/README.md`](evanbecker-api/README.md#local-development-secrets) for setup.
+
+### Full Stack in Docker (Optional)
+
+Runs everything in containers — useful for testing the production-like setup:
 
 ```bash
-cd evanbecker-api/evanbecker-api
-dotnet run
+docker compose --profile fullstack up --build
+```
+
+### Database Migrations
+
+Migrations auto-apply when the API runs in Docker (`/app` working directory). For local development, apply manually:
+
+```bash
+cd evanbecker-api/evanbecker-domain
+dotnet ef database update --startup-project ../evanbecker-api
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
