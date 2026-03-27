@@ -99,12 +99,19 @@ const navLinks = [
           <!-- Authenticated user menu -->
           <template v-if="auth0Available && !isLoading && isAuthenticated">
             <Menu as="div" class="relative">
-              <MenuButton class="flex rounded-full ring-2 ring-slate-200 transition hover:ring-[#2D95FC] dark:ring-slate-700">
+              <MenuButton class="flex items-center gap-2 rounded-full ring-2 ring-slate-200 transition hover:ring-[#2D95FC] dark:ring-slate-700 px-1">
                 <img
-                  :src="user?.picture"
+                  v-if="user?.picture"
+                  :src="user.picture"
                   alt="Profile"
                   class="h-8 w-8 rounded-full"
                 />
+                <div
+                  v-else
+                  class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0C65E5] text-xs font-bold text-white"
+                >
+                  {{ (user?.name || user?.email || '?')[0].toUpperCase() }}
+                </div>
               </MenuButton>
               <transition
                 enter-active-class="transition duration-100 ease-out"
@@ -129,8 +136,9 @@ const navLinks = [
           </template>
 
           <!-- Sign In button -->
-          <template v-else-if="auth0Available && !isLoading && !isAuthenticated">
+          <template v-else-if="!isLoading && !isAuthenticated">
             <button
+              v-if="auth0Available"
               @click="loginWithRedirect?.()"
               class="rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC]"
             >
@@ -140,7 +148,9 @@ const navLinks = [
 
           <!-- Loading spinner -->
           <template v-else-if="isLoading">
-            <LoadingSpinner />
+            <div class="h-8 w-8 flex items-center justify-center">
+              <div class="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-[#2D95FC]" />
+            </div>
           </template>
 
           <!-- Color mode toggle -->
