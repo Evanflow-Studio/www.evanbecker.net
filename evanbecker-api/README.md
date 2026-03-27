@@ -40,6 +40,12 @@ All under `/api/v1/`:
 | `contact` | POST | No | Submit contact form (with reCAPTCHA) |
 | `newsletter` | POST | No | Subscribe to newsletter |
 | `user` | GET | Required | Get authenticated user info |
+| `spotify/auth-url` | GET | No | Get Spotify OAuth URL |
+| `spotify/callback` | POST | No | Exchange Spotify auth code for tokens |
+| `spotify/refresh` | POST | No | Refresh Spotify access token |
+| `spotify/now-playing` | GET | Spotify token | Get currently playing track |
+| `spotify/analysis/{trackId}` | GET | Spotify token | Get audio analysis (cached 24h) |
+| `spotify/features/{trackId}` | GET | Spotify token | Get audio features (cached 24h) |
 
 Swagger docs available at `/swagger` on any running instance.
 
@@ -80,6 +86,42 @@ The API uses a provider-agnostic secrets system:
 - **`SecretsConfigurationProvider`** — pulls secrets from Infisical REST API and applies the mapper
 
 When `INFISICAL_CLIENT_ID` is not set (local dev), the provider skips gracefully and falls back to local config files.
+
+### Local Development Secrets
+
+For local dev, copy the template and fill in your values:
+
+```bash
+cp secrets/appsettings.Secrets.template.json secrets/appsettings.Secrets.json
+```
+
+Then edit `secrets/appsettings.Secrets.json` with your actual credentials. This file is loaded by `Program.cs` and is gitignored.
+
+### Secrets Reference
+
+All secrets managed via Infisical in production. For local dev, set them in `secrets/appsettings.Secrets.json`.
+
+| Infisical Key | .NET Config Path | Required | What happens without it |
+|---------------|-----------------|----------|------------------------|
+| `DB_CONNECTION_STRING` | `ConnectionStrings:Database` | **Yes** | API won't start (no database) |
+| `AUTH0_DOMAIN` | `Auth0:Domain` | **Yes** | Auth0 login/JWT validation fails |
+| `AUTH0_AUDIENCE` | `Auth0:Audience` | **Yes** | JWT validation fails |
+| `AUTH0_CLIENT_ID` | `Auth0:ClientId` | **Yes** | Swagger UI OAuth flow breaks |
+| `AUTH0_CLIENT_SECRET` | `Auth0:ClientSecret` | **Yes** | User profile sync fails |
+| `AUTH0_URL` | `Auth0:Url` | **Yes** | Swagger UI OAuth redirect fails |
+| `SMTP_HOST` | `Smtp:Host` | No | Contact form emails won't send |
+| `SMTP_PORT` | `Smtp:Port` | No | Contact form emails won't send |
+| `SMTP_USERNAME` | `Smtp:Username` | No | Contact form emails won't send |
+| `SMTP_PASSWORD` | `Smtp:Password` | No | Contact form emails won't send |
+| `SMTP_FROM_ADDRESS` | `Smtp:FromAddress` | No | Contact form emails won't send |
+| `SMTP_FROM_NAME` | `Smtp:FromName` | No | Contact form emails won't send |
+| `SMTP_TO_ADDRESS` | `Smtp:ToAddress` | No | Contact form emails won't send |
+| `RECAPTCHA_SECRET_KEY` | `Recaptcha:SecretKey` | No | Contact form submits without verification |
+| `SPOTIFY_CLIENT_ID` | `Spotify:ClientId` | No | Spotify integration disabled (ray marcher still works with file upload) |
+| `SPOTIFY_CLIENT_SECRET` | `Spotify:ClientSecret` | No | Spotify integration disabled |
+| `SPOTIFY_REDIRECT_URI` | `Spotify:RedirectUri` | No | Defaults to `http://localhost:3000/sandbox/raymarcher` |
+
+**Minimum to run locally:** `DB_CONNECTION_STRING` + Auth0 secrets. Everything else degrades gracefully.
 
 ### Required Environment Variables (Production/Test)
 
