@@ -7,6 +7,9 @@ export interface AudioState {
   amplitude: number
   isCapturing: boolean
   youtubeUrl: string
+  autoplayerEnabled: boolean
+  autoplayerEnergy: 'calm' | 'building' | 'intense' | 'breakdown'
+  autoplayerBeats: number
 }
 
 export interface CameraState {

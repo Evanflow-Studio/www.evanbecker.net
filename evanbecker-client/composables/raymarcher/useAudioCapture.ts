@@ -1,5 +1,6 @@
 import { ref, onUnmounted } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
+import { useAudioReactiveMode } from './useAudioReactiveMode'
 
 const FFT_SIZE = 256
 const SMOOTHING = 0.8
@@ -12,6 +13,7 @@ const MID_END = 0.4
  */
 export function useAudioCapture() {
   const store = useRayMarcherStore()
+  const reactiveMode = useAudioReactiveMode()
 
   const isPlaying = ref(false)
   const fileName = ref('')
@@ -25,6 +27,7 @@ export function useAudioCapture() {
   let audioElement: HTMLAudioElement | null = null
   let dataArray: Uint8Array | null = null
   let animFrameId = 0
+  let lastAnalyseTime = 0
 
   function createAudioContext() {
     if (audioCtx) return
@@ -67,6 +70,16 @@ export function useAudioCapture() {
     store.audio.mid = (midEnd - bassEnd) > 0 ? midSum / (midEnd - bassEnd) : 0
     store.audio.treble = (bins - midEnd) > 0 ? trebleSum / (bins - midEnd) : 0
     store.audio.amplitude = bins > 0 ? totalSum / bins : 0
+
+    // Drive autoplayer when enabled
+    if (store.audio.autoplayerEnabled && reactiveMode.isActive.value) {
+      const now = performance.now()
+      const dt = lastAnalyseTime > 0 ? (now - lastAnalyseTime) / 1000 : 1 / 60
+      lastAnalyseTime = now
+      reactiveMode.update(dt)
+    } else {
+      lastAnalyseTime = 0
+    }
 
     animFrameId = requestAnimationFrame(analyse)
   }
@@ -199,5 +212,6 @@ export function useAudioCapture() {
     seek,
     stop,
     cleanup,
+    reactiveMode,
   }
 }

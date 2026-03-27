@@ -1,11 +1,31 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useAudioCapture } from '~/composables/raymarcher/useAudioCapture'
+import { useRayMarcherStore } from '~/stores/raymarcher'
 
+const store = useRayMarcherStore()
 const audio = useAudioCapture()
 const urlInput = ref('')
 const isDragOver = ref(false)
 const minimized = ref(false)
+
+// Start/stop reactive mode when the store flag toggles
+watch(() => store.audio.autoplayerEnabled, (enabled) => {
+  if (enabled && audio.isPlaying.value) {
+    audio.reactiveMode.start()
+  } else {
+    audio.reactiveMode.stop()
+  }
+})
+
+// Also start reactive mode when playback starts if autoplayer is already enabled
+watch(() => audio.isPlaying.value, (playing) => {
+  if (playing && store.audio.autoplayerEnabled) {
+    audio.reactiveMode.start()
+  } else if (!playing) {
+    audio.reactiveMode.stop()
+  }
+})
 
 function onLoadUrl() {
   const url = urlInput.value.trim()

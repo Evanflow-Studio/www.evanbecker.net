@@ -63,6 +63,9 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       amplitude: 0,
       isCapturing: false,
       youtubeUrl: '',
+      autoplayerEnabled: false,
+      autoplayerEnergy: 'calm' as const,
+      autoplayerBeats: 0,
     } as AudioState,
 
     // Custom palette (IQ cosine)
