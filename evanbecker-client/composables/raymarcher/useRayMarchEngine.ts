@@ -62,6 +62,7 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
 
   function onContextRestored() {
     contextLost = false
+    stableFrameCount = 0
     store.gl.shaderCompiling = true
     console.log('[RayMarcher] WebGL context restored — reinitializing.')
     const canvas = canvasRef.value
@@ -74,6 +75,8 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     }
   }
 
+  let stableFrameCount = 0
+
   function render() {
     frame.animFrameId = requestAnimationFrame(render)
     if (contextLost) return
@@ -83,14 +86,15 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     const canvas = canvasRef.value
     if (!canvas) return
 
-    // Resize
-    const dpr = Math.min(window.devicePixelRatio, MAX_DPR)
-    const w = canvas.clientWidth * dpr
-    const h = canvas.clientHeight * dpr
+    // Resize — start at DPR 1 to reduce GPU pressure, scale up after context is stable
+    const effectiveDpr = stableFrameCount < 60 ? 1 : Math.min(window.devicePixelRatio, MAX_DPR)
+    const w = Math.floor(canvas.clientWidth * effectiveDpr)
+    const h = Math.floor(canvas.clientHeight * effectiveDpr)
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w
       canvas.height = h
     }
+    stableFrameCount++
     gl.viewport(0, 0, canvas.width, canvas.height)
 
     // Time

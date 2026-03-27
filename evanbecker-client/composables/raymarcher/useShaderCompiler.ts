@@ -111,7 +111,14 @@ export async function compileShaders(
   const store = useRayMarcherStore()
   const t0 = performance.now()
 
-  const gl = canvas.getContext('webgl2', { antialias: false, powerPreference: 'high-performance' })
+  // Don't force high-performance GPU — it causes context loss on some devices
+  // when the discrete GPU isn't available or the driver fails to switch.
+  const gl = canvas.getContext('webgl2', {
+    antialias: false,
+    powerPreference: 'default',
+    failIfMajorPerformanceCaveat: false,
+    preserveDrawingBuffer: false,
+  })
   if (!gl) {
     store.gl.error = 'WebGL2 is not supported in this browser.'
     return false
