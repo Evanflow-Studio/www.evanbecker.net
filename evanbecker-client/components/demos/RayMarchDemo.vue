@@ -66,25 +66,31 @@ onMounted(async () => {
   document.addEventListener('fullscreenchange', onFullscreenChange)
 
   // Handle Spotify OAuth callback BEFORE starting the engine.
-  // The page just reloaded from Spotify's redirect — handle auth first.
   const urlParams = new URLSearchParams(window.location.search)
   const spotifyCode = urlParams.get('code')
   if (spotifyCode) {
-    // Clean the URL immediately to prevent re-processing on HMR/refresh
+    console.log('[RayMarchDemo] Spotify OAuth code detected, handling callback...')
     const cleanUrl = window.location.pathname + (window.location.hash || '')
     window.history.replaceState(null, '', cleanUrl)
     try {
       await spotifyPlayer.handleCallback(spotifyCode)
+      console.log('[RayMarchDemo] Spotify callback complete, starting engine...')
     } catch (e) {
-      console.warn('[Spotify] OAuth callback failed:', e)
+      console.warn('[RayMarchDemo] Spotify OAuth callback failed:', e)
     }
   } else {
-    // No OAuth redirect — try restoring an existing session
     spotifyPlayer.restoreSession()
   }
 
-  // Start the ray marcher engine after Spotify auth is settled
+  // Small delay after Spotify redirect to let the browser settle
+  // (prevents GPU context loss from navigation-related resource pressure)
+  if (spotifyCode) {
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
+
+  console.log('[RayMarchDemo] Starting engine...')
   await engine.start()
+  console.log('[RayMarchDemo] Engine started.')
 })
 
 onUnmounted(() => {

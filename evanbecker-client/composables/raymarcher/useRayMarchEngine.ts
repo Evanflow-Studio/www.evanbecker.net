@@ -42,20 +42,28 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
 
   // === Render loop ===
 
+  let contextLossCount = 0
+
   function onContextLost(e: Event) {
     e.preventDefault() // allows restoration
     contextLost = true
+    contextLossCount++
     cancelAnimationFrame(frame.animFrameId)
-    store.gl.error = null // not a fatal error — may restore
-    store.gl.shaderCompiling = true // show overlay
-    console.warn('[RayMarcher] WebGL context was lost.')
+    store.gl.error = null
+    store.gl.shaderCompiling = true
+    console.warn(`[RayMarcher] WebGL context was lost (count: ${contextLossCount}).`)
+
+    // If context keeps getting lost, reduce quality to prevent GPU overload
+    if (contextLossCount >= 2 && store.render.quality > 0) {
+      store.render.quality = Math.max(0, store.render.quality - 1)
+      console.warn(`[RayMarcher] Reducing quality to ${store.render.quality} to prevent further context loss.`)
+    }
   }
 
   function onContextRestored() {
     contextLost = false
-    store.gl.shaderCompiling = false
+    store.gl.shaderCompiling = true
     console.log('[RayMarcher] WebGL context restored — reinitializing.')
-    // Re-run init on the existing canvas
     const canvas = canvasRef.value
     if (canvas) {
       Object.assign(res, createGLResources())
