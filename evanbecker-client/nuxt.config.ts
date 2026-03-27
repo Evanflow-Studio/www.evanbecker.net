@@ -58,6 +58,7 @@ export default defineNuxtConfig({
       auth0Audience: process.env.NUXT_PUBLIC_AUTH0_AUDIENCE || '',
       auth0RedirectUri: process.env.NUXT_PUBLIC_AUTH0_REDIRECT_URI || 'http://localhost:3000/',
       recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
+      appVersion: process.env.NUXT_PUBLIC_APP_VERSION || 'dev',
     },
   },
 })
