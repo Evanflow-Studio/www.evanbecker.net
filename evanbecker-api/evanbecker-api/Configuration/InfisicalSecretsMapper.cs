@@ -23,6 +23,9 @@ public class InfisicalSecretsMapper : ISecretsMapper
         ["SMTP_FROM_NAME"] = "Smtp:FromName",
         ["SMTP_TO_ADDRESS"] = "Smtp:ToAddress",
         ["RECAPTCHA_SECRET_KEY"] = "Recaptcha:SecretKey",
+        ["SPOTIFY_CLIENT_ID"] = "Spotify:ClientId",
+        ["SPOTIFY_CLIENT_SECRET"] = "Spotify:ClientSecret",
+        ["SPOTIFY_REDIRECT_URI"] = "Spotify:RedirectUri",
     };
 
     public string? MapKey(string secretKey)

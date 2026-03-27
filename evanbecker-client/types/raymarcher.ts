@@ -36,6 +36,11 @@ export interface AudioState {
   bpm: number              // detected BPM (0 if unavailable)
   moodCategory: MoodCategory | null
   essentiaReady: boolean
+  // Spotify integration
+  spotifyConnected: boolean
+  spotifyPremium: boolean
+  spotifyTrackId: string
+  isOnBeat: boolean
 }
 
 export interface CameraState {

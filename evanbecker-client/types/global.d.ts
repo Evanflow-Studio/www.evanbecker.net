@@ -3,4 +3,6 @@ interface Window {
     ready(cb: () => void): void
     execute(siteKey: string, options: { action: string }): Promise<string>
   }
+  Spotify: any
+  onSpotifyWebPlaybackSDKReady: (() => void) | undefined
 }

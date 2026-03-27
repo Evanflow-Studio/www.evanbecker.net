@@ -2,8 +2,10 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRayMarcherStore, QUALITY_PRESETS } from '~/stores/raymarcher'
 import { useRayMarchEngine } from '~/composables/raymarcher/useRayMarchEngine'
+import { useSpotifyPlayer } from '~/composables/raymarcher/audio/useSpotifyPlayer'
 
 const store = useRayMarcherStore()
+const spotifyPlayer = useSpotifyPlayer()
 
 // Canvas
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -62,6 +64,20 @@ defineExpose({
 onMounted(async () => {
   store.importFromUrl()
   document.addEventListener('fullscreenchange', onFullscreenChange)
+
+  // Handle Spotify OAuth callback
+  const urlParams = new URLSearchParams(window.location.search)
+  const spotifyCode = urlParams.get('code')
+  if (spotifyCode) {
+    await spotifyPlayer.handleCallback(spotifyCode)
+    // Clean the URL to remove ?code=...
+    const cleanUrl = window.location.pathname + (window.location.hash || '')
+    window.history.replaceState(null, '', cleanUrl)
+  } else {
+    // Try to restore an existing Spotify session
+    spotifyPlayer.restoreSession()
+  }
+
   await engine.start()
 })
 

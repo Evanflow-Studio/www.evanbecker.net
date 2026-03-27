@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
+import { useSpotifyPlayer } from '~/composables/raymarcher/audio/useSpotifyPlayer'
 
 const store = useRayMarcherStore()
+const spotify = useSpotifyPlayer()
 
 const emit = defineEmits<{
   openPlayer: []
@@ -67,6 +69,67 @@ function toggleAutoplayer() {
 
 <template>
   <div class="flex flex-col gap-2">
+    <!-- Spotify connect section -->
+    <div class="flex flex-col gap-2 rounded-lg border border-slate-700/50 bg-slate-900/30 p-2">
+      <div v-if="!spotify.isConnected.value" class="flex items-center gap-2">
+        <button
+          class="h-8 rounded-md border border-green-600/50 bg-green-600/15 px-3 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25"
+          @click="spotify.connect"
+        >
+          <span class="mr-1.5">&#9835;</span>Connect Spotify
+        </button>
+        <span class="text-[10px] text-slate-500">Stream from your Spotify account</span>
+      </div>
+      <div v-else class="flex flex-col gap-1.5">
+        <div class="flex items-center gap-2">
+          <div class="h-1.5 w-1.5 rounded-full bg-green-400" />
+          <span class="text-[11px] text-slate-300">{{ spotify.displayName.value }}</span>
+          <span
+            v-if="spotify.isPremium.value"
+            class="rounded-full border border-yellow-500/40 bg-yellow-500/15 px-1.5 py-0.5 text-[9px] font-medium text-yellow-400"
+          >PREMIUM</span>
+          <span
+            v-else
+            class="rounded-full border border-slate-600 bg-slate-800/50 px-1.5 py-0.5 text-[9px] font-medium text-slate-400"
+          >FREE</span>
+          <button
+            class="ml-auto text-[10px] text-slate-500 hover:text-red-400 transition-colors"
+            @click="spotify.disconnect"
+          >Disconnect</button>
+        </div>
+        <!-- Current track -->
+        <div v-if="spotify.currentTrack.value" class="flex items-center gap-2 rounded-md bg-slate-800/50 p-1.5">
+          <img
+            v-if="spotify.currentTrack.value.albumArt"
+            :src="spotify.currentTrack.value.albumArt"
+            class="h-8 w-8 rounded-sm"
+            alt=""
+          />
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-[11px] text-slate-200">{{ spotify.currentTrack.value.name }}</p>
+            <p class="truncate text-[10px] text-slate-500">{{ spotify.currentTrack.value.artist }}</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="h-1.5 w-1.5 rounded-full" :class="spotify.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
+            <span class="text-[9px]" :class="spotify.isPlaying.value ? 'text-green-400' : 'text-slate-500'">
+              {{ spotify.isPlaying.value ? 'Playing' : 'Paused' }}
+            </span>
+          </div>
+        </div>
+        <!-- Analysis status -->
+        <div v-if="spotify.currentTrack.value && spotify.analysis.value" class="flex items-center gap-2">
+          <span class="text-[9px] text-slate-600">Analysis loaded</span>
+          <div class="h-1 flex-1 rounded-full bg-slate-800">
+            <div
+              class="h-full rounded-full bg-green-500/40 transition-all duration-300"
+              :style="{ width: '100%' }"
+            />
+          </div>
+        </div>
+        <p v-if="spotify.error.value" class="text-[10px] text-red-400">{{ spotify.error.value }}</p>
+      </div>
+    </div>
+
     <div class="flex flex-wrap items-center gap-3">
       <button
         class="h-8 rounded-md border px-3 text-xs font-medium transition-colors"

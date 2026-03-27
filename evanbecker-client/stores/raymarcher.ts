@@ -73,6 +73,10 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       bpm: 0,
       moodCategory: null,
       essentiaReady: false,
+      spotifyConnected: false,
+      spotifyPremium: false,
+      spotifyTrackId: '',
+      isOnBeat: false,
     } as AudioState,
 
     // Custom palette (IQ cosine)

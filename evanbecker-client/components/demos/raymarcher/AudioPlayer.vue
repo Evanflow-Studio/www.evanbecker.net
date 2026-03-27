@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useAudioCapture } from '~/composables/raymarcher/useAudioCapture'
+import { useSpotifyPlayer } from '~/composables/raymarcher/audio/useSpotifyPlayer'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 
 const store = useRayMarcherStore()
 const audio = useAudioCapture()
+const spotify = useSpotifyPlayer()
 const urlInput = ref('')
 const isDragOver = ref(false)
 const minimized = ref(false)
+const activeTab = ref<'file' | 'spotify'>('file')
 
 // Start/stop reactive mode when the store flag toggles
 watch(() => store.audio.autoplayerEnabled, (enabled) => {
@@ -96,90 +99,163 @@ function togglePlay() {
       </div>
 
       <div v-if="!minimized" class="px-3 pb-3 pt-2 space-y-2">
-        <!-- Drop zone / file picker -->
-        <div
-          class="relative rounded-lg border border-dashed transition-colors text-center py-3 cursor-pointer"
-          :class="isDragOver ? 'border-[#2D95FC] bg-[#2D95FC]/10' : 'border-slate-600 hover:border-slate-400'"
-          @drop.prevent="onDrop"
-          @dragover="onDragOver"
-          @dragleave="isDragOver = false"
-          @click="($refs.fileInput as HTMLInputElement)?.click()"
-        >
-          <input ref="fileInput" type="file" accept="audio/*" class="hidden" @change="onFileInput" />
-          <p class="text-[11px] text-slate-400">
-            <span class="text-[#2D95FC]">Drop audio file</span> or click to browse
-          </p>
-        </div>
-
-        <!-- URL input -->
-        <div class="flex gap-1">
-          <input
-            v-model="urlInput"
-            type="text"
-            placeholder="Paste audio URL..."
-            class="flex-1 rounded-md bg-slate-800 border border-slate-600 px-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:border-[#2D95FC] focus:outline-none"
-            @keydown.enter="onLoadUrl"
-          />
+        <!-- Tab toggle: File | Spotify -->
+        <div class="flex rounded-md border border-slate-700 bg-slate-800/50 p-0.5">
           <button
-            class="rounded-md bg-[#0C65E5] px-2 py-1 text-xs text-white hover:bg-[#2D95FC] transition-colors"
-            @click="onLoadUrl"
-          >
-            Load
-          </button>
+            class="flex-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors"
+            :class="activeTab === 'file' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'"
+            @click="activeTab = 'file'"
+          >File</button>
+          <button
+            class="flex-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors"
+            :class="activeTab === 'spotify' ? 'bg-green-600/30 text-green-400' : 'text-slate-400 hover:text-slate-200'"
+            @click="activeTab = 'spotify'"
+          >Spotify</button>
         </div>
 
-        <!-- Error -->
-        <p v-if="audio.error.value" class="text-[10px] text-red-400">{{ audio.error.value }}</p>
-
-        <!-- Player controls (shown when file loaded) -->
-        <div v-if="audio.fileName.value" class="space-y-1.5">
-          <!-- Play/Pause + time -->
-          <div class="flex items-center gap-2">
-            <button
-              class="flex items-center justify-center h-7 w-7 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
-              @click="togglePlay"
-            >
-              <svg v-if="!audio.isPlaying.value" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white ml-0.5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-              </svg>
-            </button>
-
-            <span class="text-[10px] text-slate-500 font-mono w-16">
-              {{ formatTime(audio.currentTime.value) }} / {{ formatTime(audio.duration.value) }}
-            </span>
-
-            <!-- Status dot -->
-            <div class="flex items-center gap-1 ml-auto">
-              <div class="h-1.5 w-1.5 rounded-full" :class="audio.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
-              <span class="text-[10px]" :class="audio.isPlaying.value ? 'text-green-400' : 'text-slate-500'">
-                {{ audio.isPlaying.value ? 'Analyzing' : 'Paused' }}
-              </span>
-            </div>
+        <!-- FILE TAB -->
+        <template v-if="activeTab === 'file'">
+          <!-- Drop zone / file picker -->
+          <div
+            class="relative rounded-lg border border-dashed transition-colors text-center py-3 cursor-pointer"
+            :class="isDragOver ? 'border-[#2D95FC] bg-[#2D95FC]/10' : 'border-slate-600 hover:border-slate-400'"
+            @drop.prevent="onDrop"
+            @dragover="onDragOver"
+            @dragleave="isDragOver = false"
+            @click="($refs.fileInput as HTMLInputElement)?.click()"
+          >
+            <input ref="fileInput" type="file" accept="audio/*" class="hidden" @change="onFileInput" />
+            <p class="text-[11px] text-slate-400">
+              <span class="text-[#2D95FC]">Drop audio file</span> or click to browse
+            </p>
           </div>
 
-          <!-- Seek bar -->
-          <input
-            type="range"
-            :min="0"
-            :max="audio.duration.value || 0"
-            :value="audio.currentTime.value"
-            step="0.1"
-            class="w-full h-1 accent-[#2D95FC] cursor-pointer"
-            @input="onSeek"
-          />
-        </div>
+          <!-- URL input -->
+          <div class="flex gap-1">
+            <input
+              v-model="urlInput"
+              type="text"
+              placeholder="Paste audio URL..."
+              class="flex-1 rounded-md bg-slate-800 border border-slate-600 px-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:border-[#2D95FC] focus:outline-none"
+              @keydown.enter="onLoadUrl"
+            />
+            <button
+              class="rounded-md bg-[#0C65E5] px-2 py-1 text-xs text-white hover:bg-[#2D95FC] transition-colors"
+              @click="onLoadUrl"
+            >
+              Load
+            </button>
+          </div>
+
+          <!-- Error -->
+          <p v-if="audio.error.value" class="text-[10px] text-red-400">{{ audio.error.value }}</p>
+
+          <!-- Player controls (shown when file loaded) -->
+          <div v-if="audio.fileName.value" class="space-y-1.5">
+            <!-- Play/Pause + time -->
+            <div class="flex items-center gap-2">
+              <button
+                class="flex items-center justify-center h-7 w-7 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
+                @click="togglePlay"
+              >
+                <svg v-if="!audio.isPlaying.value" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white ml-0.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+
+              <span class="text-[10px] text-slate-500 font-mono w-16">
+                {{ formatTime(audio.currentTime.value) }} / {{ formatTime(audio.duration.value) }}
+              </span>
+
+              <!-- Status dot -->
+              <div class="flex items-center gap-1 ml-auto">
+                <div class="h-1.5 w-1.5 rounded-full" :class="audio.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
+                <span class="text-[10px]" :class="audio.isPlaying.value ? 'text-green-400' : 'text-slate-500'">
+                  {{ audio.isPlaying.value ? 'Analyzing' : 'Paused' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Seek bar -->
+            <input
+              type="range"
+              :min="0"
+              :max="audio.duration.value || 0"
+              :value="audio.currentTime.value"
+              step="0.1"
+              class="w-full h-1 accent-[#2D95FC] cursor-pointer"
+              @input="onSeek"
+            />
+          </div>
+        </template>
+
+        <!-- SPOTIFY TAB -->
+        <template v-if="activeTab === 'spotify'">
+          <div v-if="!spotify.isConnected.value" class="text-center py-4">
+            <button
+              class="rounded-md border border-green-600/50 bg-green-600/15 px-4 py-2 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25"
+              @click="spotify.connect"
+            >
+              Connect Spotify
+            </button>
+            <p class="mt-2 text-[10px] text-slate-500">Link your Spotify to drive the visualizer</p>
+          </div>
+          <div v-else class="space-y-2">
+            <!-- Track info -->
+            <div v-if="spotify.currentTrack.value" class="flex items-center gap-2">
+              <img
+                v-if="spotify.currentTrack.value.albumArt"
+                :src="spotify.currentTrack.value.albumArt"
+                class="h-10 w-10 rounded-sm"
+                alt=""
+              />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-[11px] text-slate-200">{{ spotify.currentTrack.value.name }}</p>
+                <p class="truncate text-[10px] text-slate-500">{{ spotify.currentTrack.value.artist }}</p>
+              </div>
+            </div>
+            <div v-else class="text-center py-2">
+              <p class="text-[11px] text-slate-500">Play something on Spotify...</p>
+            </div>
+            <!-- Status -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <div class="h-1.5 w-1.5 rounded-full" :class="spotify.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
+                <span class="text-[10px]" :class="spotify.isPlaying.value ? 'text-green-400' : 'text-slate-500'">
+                  {{ spotify.isPlaying.value ? 'Streaming' : 'Paused' }}
+                </span>
+                <span
+                  v-if="spotify.isPremium.value"
+                  class="text-[9px] text-yellow-400/60"
+                >SDK</span>
+                <span v-else class="text-[9px] text-slate-600">Poll</span>
+              </div>
+              <button
+                class="text-[10px] text-slate-500 hover:text-red-400 transition-colors"
+                @click="spotify.disconnect"
+              >Disconnect</button>
+            </div>
+            <p v-if="spotify.error.value" class="text-[10px] text-red-400">{{ spotify.error.value }}</p>
+          </div>
+        </template>
       </div>
 
       <!-- Minimized: just play/pause + name + status -->
-      <div v-else-if="audio.fileName.value" class="flex items-center gap-2 px-3 py-1.5">
-        <button class="text-slate-400 hover:text-white" @click="togglePlay">
-          {{ audio.isPlaying.value ? '⏸' : '▶' }}
-        </button>
-        <span class="text-[10px] text-slate-400 truncate flex-1">{{ audio.fileName.value }}</span>
-        <div class="h-1.5 w-1.5 rounded-full" :class="audio.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
+      <div v-else-if="audio.fileName.value || spotify.currentTrack.value" class="flex items-center gap-2 px-3 py-1.5">
+        <template v-if="activeTab === 'file' && audio.fileName.value">
+          <button class="text-slate-400 hover:text-white" @click="togglePlay">
+            {{ audio.isPlaying.value ? '&#9208;' : '&#9654;' }}
+          </button>
+          <span class="text-[10px] text-slate-400 truncate flex-1">{{ audio.fileName.value }}</span>
+          <div class="h-1.5 w-1.5 rounded-full" :class="audio.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
+        </template>
+        <template v-else-if="activeTab === 'spotify' && spotify.currentTrack.value">
+          <div class="h-1.5 w-1.5 rounded-full" :class="spotify.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
+          <span class="text-[10px] text-slate-400 truncate flex-1">{{ spotify.currentTrack.value.name }}</span>
+        </template>
       </div>
     </div>
   </Teleport>

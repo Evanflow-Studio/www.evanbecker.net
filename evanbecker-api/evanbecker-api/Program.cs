@@ -38,6 +38,10 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.Configure<RecaptchaSettings>(builder.Configuration.GetSection("Recaptcha"));
 builder.Services.AddHttpClient<IRecaptchaService, RecaptchaService>();
 
+builder.Services.Configure<SpotifyConfiguration>(builder.Configuration.GetSection("Spotify"));
+builder.Services.AddHttpClient<ISpotifyService, SpotifyService>();
+builder.Services.AddMemoryCache();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o =>
 {

@@ -148,45 +148,19 @@ No secrets in CI. The API pulls all secrets from Infisical at startup. Migration
 ```
 www.evanbecker.net/
 │
-├── evanbecker-client/              # Nuxt 3 frontend
-│   ├── pages/                      # File-based routing
-│   ├── components/                 # Vue components (auto-imported)
-│   ├── composables/                # Vue composables
-│   ├── content/articles/           # Markdown blog articles
-│   ├── layouts/                    # Page layouts
-│   ├── assets/                     # CSS, images
-│   ├── Dockerfile
-│   └── package.json
-│
-├── evanbecker-api/                 # .NET backend
-│   ├── evanbecker-api/             # API project
-│   │   ├── Controllers/            # REST endpoints
-│   │   ├── Services/               # Business logic
-│   │   ├── Configuration/          # Auth0, Infisical config
-│   │   ├── Dto/                    # Data transfer objects
-│   │   └── Program.cs              # Startup & DI
-│   └── evanbecker-domain/          # Data layer
-│       ├── Entities/               # EF Core models
-│       ├── Migrations/             # Database migrations
-│       └── ApplicationContext.cs   # DbContext
-│
-├── infrastructure/                 # Homelab infrastructure
-│   ├── README.md                   # Infrastructure overview
-│   ├── adr/                        # Architecture Decision Records
-│   ├── database-lxc-setup.md       # LXC 105/106 — PostgreSQL
-│   ├── infisical-lxc-setup.md      # LXC 107 — Secrets management
-│   ├── ci-lxc-setup.md             # LXC 108 — CI/CD
-│   ├── website-lxc-setup.md        # LXC 109 — App stack
-│   └── scripts/                    # One-shot LXC install scripts
-│
+├── evanbecker-client/              # Nuxt 3 frontend → see evanbecker-client/README.md
+├── evanbecker-api/                 # .NET backend   → see evanbecker-api/README.md
+├── infrastructure/                 # Homelab infra  → see infrastructure/README.md
 ├── .github/workflows/              # CI/CD pipelines
-│   ├── build-and-push-to-prod.yml  # main → prod (:latest)
-│   ├── build-and-push-to-test.yml  # develop → test (:test)
-│   └── dotnet-pull_request.yml     # PR build validation
-│
 ├── docker-compose.yaml             # Local development
 └── docker-compose.production.yaml  # Production (LXC 109)
 ```
+
+Each sub-project has its own README with detailed structure, setup, and configuration:
+
+- **[`evanbecker-client/README.md`](evanbecker-client/README.md)** — Frontend development, demos, environment variables
+- **[`evanbecker-api/README.md`](evanbecker-api/README.md)** — API endpoints, secrets architecture, database setup
+- **[`infrastructure/README.md`](infrastructure/README.md)** — LXC containers, deployment, security
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -246,33 +220,11 @@ dotnet run
 
 ## API Reference
 
-Base path: `/api/v1/`
-
-| Endpoint | Method | Auth | Description |
-|---|---|---|---|
-| `comment/{targetLocation}` | GET | No | Get comments for a page |
-| `comment/{targetLocation}` | POST | Required | Post a new comment |
-| `comment/{targetLocation}/reply/{commentId}` | POST | Required | Reply to a comment |
-| `comment/{id}` | DELETE | Required | Soft-delete a comment |
-| `contact` | POST | No | Submit a contact message |
-| `newsletter` | POST | No | Subscribe to newsletter |
-| `user` | GET | Required | Get authenticated user info |
-
-Full interactive docs available via Swagger at `/swagger` on any running API instance.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
----
+See [`evanbecker-api/README.md`](evanbecker-api/README.md) for full endpoint documentation, secrets architecture, and database setup. Interactive Swagger docs available at `/swagger` on any running API instance.
 
 ## Deployment
 
-See [`infrastructure/README.md`](infrastructure/README.md) for full deployment documentation including:
-- LXC container inventory and setup guides
-- Branch strategy and CI/CD pipeline details
-- Secrets management (Infisical)
-- Monitoring (Uptime Kuma)
-- Network security and firewall configuration
-- Architecture Decision Records
+See [`infrastructure/README.md`](infrastructure/README.md) for full deployment documentation including LXC container setup, CI/CD pipeline, secrets management, monitoring, and security.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

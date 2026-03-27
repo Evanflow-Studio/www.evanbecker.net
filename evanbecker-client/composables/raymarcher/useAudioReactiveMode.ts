@@ -528,9 +528,21 @@ export function useAudioReactiveMode() {
     // Push amplitude into rolling buffer for beat detection baseline
     pushRolling(store.audio.amplitude)
 
-    // Enhanced beat detection using both bass and Meyda RMS
-    const rms = store.audio.moodEnergy // approximate from mood energy
-    const isBeat = detectBeat(store.audio.bass, rms, now)
+    // Beat detection: prefer Spotify's frame-perfect beat data when available
+    let isBeat = false
+    if (store.audio.spotifyConnected && store.audio.isOnBeat) {
+      // Spotify analysis provides precise beat timing
+      if ((now - lastBeatTime) > BEAT_COOLDOWN_MS) {
+        isBeat = true
+        lastBeatTime = now
+        beatCount.value++
+      }
+    } else {
+      // Fall back to threshold-based detection from Meyda RMS
+      const rms = store.audio.moodEnergy // approximate from mood energy
+      isBeat = detectBeat(store.audio.bass, rms, now)
+    }
+
     if (isBeat) {
       bloomSpike = 1.0
       store.lattice.animOffset = clamp(store.lattice.animOffset + 0.05, 0, 1)
