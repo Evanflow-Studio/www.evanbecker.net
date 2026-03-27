@@ -11,49 +11,23 @@ namespace evanbeckerdomain.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Comments_Users_AuthorId",
-                table: "Comments");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Replies_Users_AuthorId",
-                table: "Replies");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Users_Projects_ProjectId",
-                table: "Users");
-
-            migrationBuilder.DropTable(
-                name: "ActivityLog");
-
-            migrationBuilder.DropTable(
-                name: "Commit");
-
-            migrationBuilder.DropTable(
-                name: "Deployment");
-
-            migrationBuilder.DropTable(
-                name: "EmailSubscriber");
-
-            migrationBuilder.DropTable(
-                name: "Environment");
-
-            migrationBuilder.DropTable(
-                name: "EnvironmentUrl");
-
-            migrationBuilder.DropTable(
-                name: "Photo");
-
-            migrationBuilder.DropTable(
-                name: "Projects");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Users_ProjectId",
-                table: "Users");
-
-            migrationBuilder.DropColumn(
-                name: "ProjectId",
-                table: "Users");
+            // Use raw SQL with IF EXISTS for all drops — the test and prod databases
+            // may have different histories (some tables/constraints may already be gone).
+            migrationBuilder.Sql(@"
+                ALTER TABLE ""Comments"" DROP CONSTRAINT IF EXISTS ""FK_Comments_Users_AuthorId"";
+                ALTER TABLE ""Replies"" DROP CONSTRAINT IF EXISTS ""FK_Replies_Users_AuthorId"";
+                ALTER TABLE ""Users"" DROP CONSTRAINT IF EXISTS ""FK_Users_Projects_ProjectId"";
+                DROP TABLE IF EXISTS ""ActivityLog"" CASCADE;
+                DROP TABLE IF EXISTS ""Commit"" CASCADE;
+                DROP TABLE IF EXISTS ""Deployment"" CASCADE;
+                DROP TABLE IF EXISTS ""EmailSubscriber"" CASCADE;
+                DROP TABLE IF EXISTS ""Environment"" CASCADE;
+                DROP TABLE IF EXISTS ""EnvironmentUrl"" CASCADE;
+                DROP TABLE IF EXISTS ""Photo"" CASCADE;
+                DROP TABLE IF EXISTS ""Projects"" CASCADE;
+                DROP INDEX IF EXISTS ""IX_Users_ProjectId"";
+                ALTER TABLE ""Users"" DROP COLUMN IF EXISTS ""ProjectId"";
+            ");
 
             migrationBuilder.AlterColumn<string>(
                 name: "LastName",
