@@ -160,17 +160,25 @@ export async function compileShaders(
       }
       requestAnimationFrame(poll)
     } else {
-      // Firefox: deferred sync compile behind spinner
+      // Firefox: no parallel compile support. Defer the full shader
+      // compilation to give the fast shader time to render several frames.
+      // This keeps the GPU watchdog happy (it sees frames being produced)
+      // before we block with the full compile.
+      // Resolve immediately so the render loop starts with the fast shader.
+      resolve(true)
+
+      // After 3 seconds of fast-shader rendering, compile the full shader
       setTimeout(() => {
-        if (!gl || !res.program) { resolve(true); return }
+        if (!gl || gl.isContextLost()) return
+        console.log('[RayMarcher] Firefox: starting deferred full shader compile...')
         const fullProg = submitProgram(gl, VERTEX_SHADER, FRAGMENT_SHADER)
         if (fullProg && validateProgram(gl, fullProg)) {
           swapToFullShader(gl, res, fullProg, t0)
         } else {
           store.gl.shaderCompiling = false
+          console.warn('[RayMarcher] Full shader compilation failed, staying on fast shader')
         }
-        resolve(true)
-      }, 100)
+      }, 3000)
     }
   })
 }
