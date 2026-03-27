@@ -138,9 +138,10 @@ const navLinks = [
           <!-- Sign In button -->
           <template v-else-if="!isLoading && !isAuthenticated">
             <button
-              v-if="auth0Available"
               @click="loginWithRedirect?.()"
-              class="rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC]"
+              class="rounded-lg px-4 py-2 text-sm font-medium text-white transition"
+              :class="auth0Available ? 'bg-[#0C65E5] hover:bg-[#2D95FC] cursor-pointer' : 'bg-slate-600 cursor-wait'"
+              :disabled="!auth0Available"
             >
               Sign In
             </button>
