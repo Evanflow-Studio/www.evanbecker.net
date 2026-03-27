@@ -26,7 +26,7 @@ const bands = computed(() => [
           : 'border-slate-600 bg-slate-800 text-slate-300 hover:text-white'"
         @click="emit('openPlayer')"
       >
-        {{ store.audio.isCapturing ? 'Audio Active' : 'Open YouTube Player' }}
+        {{ store.audio.isCapturing ? '♫ Audio Active' : '♫ Open Audio Player' }}
       </button>
 
       <!-- Mini FFT bars -->

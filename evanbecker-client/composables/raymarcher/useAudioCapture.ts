@@ -1,255 +1,203 @@
 import { ref, onUnmounted } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 
-declare global {
-  interface Window {
-    YT: any
-    onYouTubeIframeAPIReady: (() => void) | undefined
-  }
-}
+const FFT_SIZE = 256
+const SMOOTHING = 0.8
+const BASS_END = 0.1
+const MID_END = 0.4
 
-const YT_API_URL = 'https://www.youtube.com/iframe_api'
-
-/** Extract a YouTube video ID from various URL formats */
-export function extractVideoId(url: string): string | null {
-  if (!url) return null
-  // youtu.be/ID
-  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
-  if (shortMatch) return shortMatch[1]
-  // youtube.com/watch?v=ID or youtube.com/embed/ID or youtube.com/v/ID
-  const longMatch = url.match(/(?:youtube\.com\/(?:watch\?.*v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/)
-  if (longMatch) return longMatch[1]
-  // youtube.com/shorts/ID
-  const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/)
-  if (shortsMatch) return shortsMatch[1]
-  // Bare ID (11 chars)
-  if (/^[a-zA-Z0-9_-]{11}$/.test(url.trim())) return url.trim()
-  return null
-}
-
-/** Load the YouTube IFrame API script (idempotent) */
-function loadYouTubeAPI(): Promise<void> {
-  return new Promise((resolve) => {
-    if (window.YT?.Player) { resolve(); return }
-    const existing = document.querySelector(`script[src="${YT_API_URL}"]`)
-    if (existing) {
-      // Script tag exists but API not ready yet — wait
-      const check = setInterval(() => {
-        if (window.YT?.Player) { clearInterval(check); resolve() }
-      }, 100)
-      return
-    }
-    const prev = window.onYouTubeIframeAPIReady
-    window.onYouTubeIframeAPIReady = () => {
-      if (prev) prev()
-      resolve()
-    }
-    const tag = document.createElement('script')
-    tag.src = YT_API_URL
-    document.head.appendChild(tag)
-  })
-}
-
+/**
+ * Audio capture composable — plays audio files/URLs via a native <audio>
+ * element and feeds FFT analysis into the Pinia store for shader reactivity.
+ */
 export function useAudioCapture() {
   const store = useRayMarcherStore()
-  const isCapturing = ref(false)
-  const isPlayerReady = ref(false)
+
+  const isPlaying = ref(false)
+  const fileName = ref('')
+  const duration = ref(0)
+  const currentTime = ref(0)
   const error = ref<string | null>(null)
 
-  let player: any = null
-  let audioContext: AudioContext | null = null
+  let audioCtx: AudioContext | null = null
   let analyser: AnalyserNode | null = null
-  let mediaStream: MediaStream | null = null
-  let sourceNode: MediaStreamAudioSourceNode | null = null
-  let rafId = 0
-  let frequencyData: Uint8Array | null = null
+  let sourceNode: MediaElementAudioSourceNode | null = null
+  let audioElement: HTMLAudioElement | null = null
+  let dataArray: Uint8Array | null = null
+  let animFrameId = 0
 
-  /** Create or replace the YouTube player in the given container */
-  async function loadVideo(containerId: string, videoId: string) {
-    error.value = null
-    try {
-      await loadYouTubeAPI()
-    } catch (e) {
-      error.value = 'Failed to load YouTube API'
-      return
-    }
-
-    // Destroy existing player
-    if (player) {
-      try { player.destroy() } catch (_) { /* noop */ }
-      player = null
-      isPlayerReady.value = false
-    }
-
-    player = new window.YT.Player(containerId, {
-      videoId,
-      width: '100%',
-      height: '100%',
-      playerVars: {
-        autoplay: 0,
-        controls: 1,
-        modestbranding: 1,
-        rel: 0,
-        fs: 0,
-      },
-      events: {
-        onReady: () => { isPlayerReady.value = true },
-        onError: (e: any) => { error.value = `YouTube error: ${e.data}` },
-      },
-    })
+  function createAudioContext() {
+    if (audioCtx) return
+    audioCtx = new AudioContext()
+    analyser = audioCtx.createAnalyser()
+    analyser.fftSize = FFT_SIZE
+    analyser.smoothingTimeConstant = SMOOTHING
+    dataArray = new Uint8Array(analyser.frequencyBinCount)
+    analyser.connect(audioCtx.destination)
   }
 
-  /** Start capturing tab audio via getDisplayMedia */
-  async function startCapture() {
-    error.value = null
-
-    if (isCapturing.value) return
-
-    try {
-      // Request tab audio capture — requires user gesture
-      const constraints: any = { audio: true, video: false }
-      try {
-        mediaStream = await navigator.mediaDevices.getDisplayMedia(constraints)
-      } catch (_) {
-        // Firefox fallback: must request video too, then discard it
-        mediaStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true })
-        // Stop video tracks to save resources
-        mediaStream.getVideoTracks().forEach(t => t.stop())
-      }
-
-      // Check that we got audio tracks
-      if (!mediaStream.getAudioTracks().length) {
-        error.value = 'No audio track captured. Make sure to select "Share tab audio" in the dialog.'
-        mediaStream.getTracks().forEach(t => t.stop())
-        mediaStream = null
-        return
-      }
-
-      // Set up Web Audio API
-      audioContext = new AudioContext()
-      sourceNode = audioContext.createMediaStreamSource(mediaStream)
-      analyser = audioContext.createAnalyser()
-      analyser.fftSize = 256
-      analyser.smoothingTimeConstant = 0.8
-      sourceNode.connect(analyser)
-      // Don't connect to destination — we don't want to play audio through speakers twice
-
-      frequencyData = new Uint8Array(analyser.frequencyBinCount)
-      isCapturing.value = true
-      store.audio.isCapturing = true
-
-      // Listen for track end (user stops sharing)
-      mediaStream.getAudioTracks()[0].addEventListener('ended', () => {
-        stopCapture()
-      })
-
-      // Start FFT analysis loop
-      analyzeFrame()
-    } catch (e: any) {
-      error.value = e?.message || 'Failed to capture audio'
-      stopCapture()
+  function connectSource(element: HTMLAudioElement) {
+    if (!audioCtx || !analyser) return
+    // Disconnect previous source if any
+    if (sourceNode) {
+      try { sourceNode.disconnect() } catch { /* ignore */ }
     }
+    sourceNode = audioCtx.createMediaElementSource(element)
+    sourceNode.connect(analyser)
   }
 
-  function analyzeFrame() {
-    if (!isCapturing.value || !analyser || !frequencyData) return
+  function analyse() {
+    if (!analyser || !dataArray) return
+    analyser.getByteFrequencyData(dataArray)
 
-    analyser.getByteFrequencyData(frequencyData)
-    const binCount = frequencyData.length
+    const bins = dataArray.length
+    const bassEnd = Math.floor(bins * BASS_END)
+    const midEnd = Math.floor(bins * MID_END)
 
-    // Frequency bands (indices into FFT bins)
-    const bassEnd = Math.floor(binCount * 0.10)
-    const midEnd = Math.floor(binCount * 0.40)
-
-    let bassSum = 0
-    let midSum = 0
-    let trebleSum = 0
-    let totalSum = 0
-
-    for (let i = 0; i < binCount; i++) {
-      const val = frequencyData[i]
+    let bassSum = 0, midSum = 0, trebleSum = 0, totalSum = 0
+    for (let i = 0; i < bins; i++) {
+      const val = dataArray[i] / 255
       totalSum += val
       if (i < bassEnd) bassSum += val
       else if (i < midEnd) midSum += val
       else trebleSum += val
     }
 
-    // Normalize to 0-1
-    const bassCount = bassEnd || 1
-    const midCount = (midEnd - bassEnd) || 1
-    const trebleCount = (binCount - midEnd) || 1
+    store.audio.bass = bassEnd > 0 ? bassSum / bassEnd : 0
+    store.audio.mid = (midEnd - bassEnd) > 0 ? midSum / (midEnd - bassEnd) : 0
+    store.audio.treble = (bins - midEnd) > 0 ? trebleSum / (bins - midEnd) : 0
+    store.audio.amplitude = bins > 0 ? totalSum / bins : 0
 
-    store.audio.bass = (bassSum / bassCount) / 255
-    store.audio.mid = (midSum / midCount) / 255
-    store.audio.treble = (trebleSum / trebleCount) / 255
-    store.audio.amplitude = (totalSum / binCount) / 255
-
-    rafId = requestAnimationFrame(analyzeFrame)
+    animFrameId = requestAnimationFrame(analyse)
   }
 
-  function stopCapture() {
-    cancelAnimationFrame(rafId)
-    rafId = 0
+  function updateTime() {
+    if (audioElement) {
+      currentTime.value = audioElement.currentTime
+      duration.value = audioElement.duration || 0
+    }
+    if (isPlaying.value) requestAnimationFrame(updateTime)
+  }
 
-    if (sourceNode) { try { sourceNode.disconnect() } catch (_) { /* noop */ } sourceNode = null }
-    if (analyser) { try { analyser.disconnect() } catch (_) { /* noop */ } analyser = null }
-    if (audioContext) { try { audioContext.close() } catch (_) { /* noop */ } audioContext = null }
-    if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null }
-    frequencyData = null
+  /** Load an audio file from a File object (drag-and-drop or file picker) */
+  function loadFile(file: File) {
+    stop()
+    error.value = null
+    createAudioContext()
 
-    isCapturing.value = false
-    store.audio.isCapturing = false
+    const url = URL.createObjectURL(file)
+    audioElement = new Audio()
+    audioElement.crossOrigin = 'anonymous'
+    audioElement.src = url
+    fileName.value = file.name
+
+    audioElement.addEventListener('canplay', () => {
+      connectSource(audioElement!)
+      duration.value = audioElement!.duration || 0
+    }, { once: true })
+
+    audioElement.addEventListener('ended', () => {
+      isPlaying.value = false
+      store.audio.isCapturing = false
+    })
+
+    audioElement.addEventListener('error', () => {
+      error.value = 'Failed to load audio file'
+    })
+  }
+
+  /** Load audio from a direct URL (must be CORS-friendly for analysis) */
+  function loadUrl(url: string) {
+    stop()
+    error.value = null
+    createAudioContext()
+
+    audioElement = new Audio()
+    audioElement.crossOrigin = 'anonymous'
+    audioElement.src = url
+    fileName.value = url.split('/').pop()?.split('?')[0] || 'Audio'
+
+    audioElement.addEventListener('canplay', () => {
+      connectSource(audioElement!)
+      duration.value = audioElement!.duration || 0
+    }, { once: true })
+
+    audioElement.addEventListener('ended', () => {
+      isPlaying.value = false
+      store.audio.isCapturing = false
+    })
+
+    audioElement.addEventListener('error', () => {
+      error.value = 'Failed to load audio URL — must be a direct link to an audio file (CORS-enabled)'
+    })
+  }
+
+  function play() {
+    if (!audioElement) return
+    if (audioCtx?.state === 'suspended') audioCtx.resume()
+    audioElement.play()
+    isPlaying.value = true
+    store.audio.isCapturing = true
+    animFrameId = requestAnimationFrame(analyse)
+    requestAnimationFrame(updateTime)
+  }
+
+  function pause() {
+    audioElement?.pause()
+    isPlaying.value = false
+    cancelAnimationFrame(animFrameId)
+    // Zero out audio values so shader returns to normal
     store.audio.bass = 0
     store.audio.mid = 0
     store.audio.treble = 0
     store.audio.amplitude = 0
   }
 
-  function destroyPlayer() {
-    if (player) {
-      try { player.destroy() } catch (_) { /* noop */ }
-      player = null
-      isPlayerReady.value = false
+  function seek(time: number) {
+    if (audioElement) audioElement.currentTime = time
+  }
+
+  function stop() {
+    pause()
+    store.audio.isCapturing = false
+    if (sourceNode) {
+      try { sourceNode.disconnect() } catch { /* ignore */ }
+      sourceNode = null
+    }
+    if (audioElement) {
+      audioElement.pause()
+      if (audioElement.src.startsWith('blob:')) URL.revokeObjectURL(audioElement.src)
+      audioElement = null
+    }
+    fileName.value = ''
+    duration.value = 0
+    currentTime.value = 0
+  }
+
+  function cleanup() {
+    stop()
+    if (audioCtx) {
+      audioCtx.close()
+      audioCtx = null
+      analyser = null
+      dataArray = null
     }
   }
 
-  function getPlayerState(): number {
-    if (!player || !isPlayerReady.value) return -1
-    try { return player.getPlayerState() } catch (_) { return -1 }
-  }
-
-  function togglePlayPause() {
-    if (!player || !isPlayerReady.value) return
-    try {
-      const state = player.getPlayerState()
-      if (state === 1) player.pauseVideo()
-      else player.playVideo()
-    } catch (_) { /* noop */ }
-  }
-
-  function getVideoTitle(): string {
-    if (!player || !isPlayerReady.value) return ''
-    try {
-      const data = player.getVideoData?.()
-      return data?.title || ''
-    } catch (_) { return '' }
-  }
-
-  onUnmounted(() => {
-    stopCapture()
-    destroyPlayer()
-  })
+  onUnmounted(cleanup)
 
   return {
-    startCapture,
-    stopCapture,
-    loadVideo,
-    destroyPlayer,
-    isCapturing,
-    isPlayerReady,
+    isPlaying,
+    fileName,
+    duration,
+    currentTime,
     error,
-    getPlayerState,
-    togglePlayPause,
-    getVideoTitle,
+    loadFile,
+    loadUrl,
+    play,
+    pause,
+    seek,
+    stop,
+    cleanup,
   }
 }

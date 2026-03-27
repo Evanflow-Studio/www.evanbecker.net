@@ -12,12 +12,8 @@ const isFullscreen = ref(false)
 const shareTooltip = ref('')
 let shareTimeout: ReturnType<typeof setTimeout> | null = null
 
-// YouTube player
-const ytPlayerRef = ref<{ show: () => void; hide: () => void; visible: boolean } | null>(null)
-
-function openYouTubePlayer() {
-  ytPlayerRef.value?.show()
-}
+// Audio player
+const showAudioPlayer = ref(false)
 
 function onShare() {
   store.exportToUrl()
@@ -146,11 +142,11 @@ onUnmounted(() => {
       <RayMarchControls
         @screenshot="engine.captureScreenshot"
         @fullscreen="toggleFullscreen"
-        @open-player="openYouTubePlayer"
+        @open-player="showAudioPlayer = true"
       />
 
-      <!-- YouTube player (floating, teleported to body) -->
-      <YouTubePlayer ref="ytPlayerRef" />
+      <!-- Audio player (floating, teleported to body) -->
+      <AudioPlayer v-if="showAudioPlayer" @close="showAudioPlayer = false" />
     </div>
   </div>
 </template>
