@@ -129,23 +129,14 @@ const navLinks = [
             </Menu>
           </template>
 
-          <!-- Sign In button -->
-          <template v-else-if="!isLoading && !isAuthenticated">
+          <!-- Sign In button — shown whenever not authenticated (regardless of loading state) -->
+          <template v-else-if="!isAuthenticated && auth0Available">
             <button
               @click="loginWithRedirect?.()"
-              class="rounded-lg px-4 py-2 text-sm font-medium text-white transition"
-              :class="auth0Available ? 'bg-[#0C65E5] hover:bg-[#2D95FC] cursor-pointer' : 'bg-slate-600 cursor-wait'"
-              :disabled="!auth0Available"
+              class="rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC]"
             >
               Sign In
             </button>
-          </template>
-
-          <!-- Loading spinner -->
-          <template v-else-if="isLoading">
-            <div class="h-8 w-8 flex items-center justify-center">
-              <div class="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-[#2D95FC]" />
-            </div>
           </template>
 
           <!-- Color mode toggle -->
