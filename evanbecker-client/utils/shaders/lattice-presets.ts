@@ -13,6 +13,17 @@ export interface LatticePreset {
 
 export const LATTICE_PRESETS: LatticePreset[] = [
   {
+    name: 'Deep Sea',
+    palette: 3,       // Ocean
+    geoPreset: 2,     // Nested Spheres
+    animation: 1,     // Wave
+    cellSpacing: 0.2,
+    wallThickness: 0.6,
+    animOffset: 0.0,
+    lightAngleX: 0.4,
+    lightAngleY: 0.8,
+  },
+  {
     name: 'Infinite Descent',
     scene: 3,         // Fractal Descent
     palette: 4,       // Electric
@@ -23,17 +34,6 @@ export const LATTICE_PRESETS: LatticePreset[] = [
     animOffset: 0.0,
     lightAngleX: 0.5,
     lightAngleY: 0.7,
-  },
-  {
-    name: 'Deep Sea',
-    palette: 3,       // Ocean
-    geoPreset: 2,     // Nested Spheres
-    animation: 1,     // Wave
-    cellSpacing: 0.2,
-    wallThickness: 0.6,
-    animOffset: 0.0,
-    lightAngleX: 0.4,
-    lightAngleY: 0.8,
   },
   {
     name: 'Jellyfish',
