@@ -7,12 +7,12 @@
         <RootNamespace>evanbecker_api</RootNamespace>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <LangVersion>12</LangVersion>
+        <UserSecretsId>a35d3fbb-a6b9-4cf9-9ee7-6465a56f0ad3</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Auth0.AuthenticationApi" Version="7.22.3" />
         <PackageReference Include="Auth0.ManagementApi" Version="7.22.3" />
-        <PackageReference Include="MailKit" Version="4.15.1" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.12" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.9" />
         <PackageReference Include="Octokit" Version="8.1.1" />

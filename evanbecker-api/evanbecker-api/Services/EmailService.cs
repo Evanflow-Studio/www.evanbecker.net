@@ -1,17 +1,13 @@
+using System.Net.Http.Json;
 using evanbecker_domain.Entities;
-using MailKit.Net.Smtp;
 using Microsoft.Extensions.Options;
-using MimeKit;
 
 namespace evanbecker_api.Services;
 
-public class SmtpSettings
+public class EmailSettings
 {
-    public string Host { get; set; } = "";
-    public int Port { get; set; } = 587;
-    public string Username { get; set; } = "";
-    public string Password { get; set; } = "";
-    public string FromAddress { get; set; } = "";
+    public string ApiKey { get; set; } = "";
+    public string FromAddress { get; set; } = "noreply@evanbecker.net";
     public string FromName { get; set; } = "evanbecker.net";
     public string ToAddress { get; set; } = "";
 }
@@ -21,33 +17,29 @@ public interface IEmailService
     Task SendContactNotificationAsync(ContactMessage message);
 }
 
-public class EmailService : IEmailService
+public class EmailService(
+    IOptions<EmailSettings> settings,
+    HttpClient httpClient,
+    ILogger<EmailService> logger) : IEmailService
 {
-    private readonly SmtpSettings _settings;
-    private readonly ILogger<EmailService> _logger;
-
-    public EmailService(IOptions<SmtpSettings> settings, ILogger<EmailService> logger)
-    {
-        _settings = settings.Value;
-        _logger = logger;
-    }
+    private const string Smtp2GoEndpoint = "https://api.smtp2go.com/v3/email/send";
+    private readonly EmailSettings _settings = settings.Value;
 
     public async Task SendContactNotificationAsync(ContactMessage message)
     {
-        if (string.IsNullOrEmpty(_settings.Host) || string.IsNullOrEmpty(_settings.ToAddress))
+        if (string.IsNullOrEmpty(_settings.ApiKey) || string.IsNullOrEmpty(_settings.ToAddress))
         {
-            _logger.LogWarning("SMTP not configured, skipping contact notification email.");
+            logger.LogWarning("SMTP2Go not configured (missing API key or recipient), skipping contact notification.");
             return;
         }
 
-        var email = new MimeMessage();
-        email.From.Add(new MailboxAddress(_settings.FromName, _settings.FromAddress));
-        email.To.Add(MailboxAddress.Parse(_settings.ToAddress));
-        email.Subject = $"Contact Form: {message.FirstName} {message.LastName}";
-
-        email.Body = new TextPart("html")
+        var body = new
         {
-            Text = $"""
+            api_key = _settings.ApiKey,
+            to = new[] { $"{_settings.ToAddress}" },
+            sender = $"{_settings.FromName} <{_settings.FromAddress}>",
+            subject = $"Contact Form: {message.FirstName} {message.LastName}",
+            html_body = $"""
                 <h2>New Contact Form Submission</h2>
                 <p><strong>Name:</strong> {System.Net.WebUtility.HtmlEncode(message.FirstName)} {System.Net.WebUtility.HtmlEncode(message.LastName)}</p>
                 <p><strong>Email:</strong> {System.Net.WebUtility.HtmlEncode(message.Email)}</p>
@@ -56,15 +48,25 @@ public class EmailService : IEmailService
                 <blockquote>{System.Net.WebUtility.HtmlEncode(message.Message)}</blockquote>
                 <hr />
                 <p style="color:#888;font-size:12px;">Sent from evanbecker.net contact form at {message.Created:u}</p>
-                """
+                """,
         };
 
-        using var client = new SmtpClient();
-        await client.ConnectAsync(_settings.Host, _settings.Port, MailKit.Security.SecureSocketOptions.StartTls);
-        await client.AuthenticateAsync(_settings.Username, _settings.Password);
-        await client.SendAsync(email);
-        await client.DisconnectAsync(true);
-
-        _logger.LogInformation("Contact notification email sent for {Email}", message.Email);
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync(Smtp2GoEndpoint, body);
+            if (response.IsSuccessStatusCode)
+            {
+                logger.LogInformation("Contact notification email sent for {Email}", message.Email);
+            }
+            else
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                logger.LogWarning("SMTP2Go returned {Status}: {Body}", response.StatusCode, responseBody);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to send contact notification email via SMTP2Go");
+        }
     }
 }

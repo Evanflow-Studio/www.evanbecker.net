@@ -109,13 +109,9 @@ All secrets managed via Infisical in production. For local dev, set them in `sec
 | `AUTH0_CLIENT_ID` | `Auth0:ClientId` | **Yes** | Swagger UI OAuth flow breaks |
 | `AUTH0_CLIENT_SECRET` | `Auth0:ClientSecret` | **Yes** | User profile sync fails |
 | `AUTH0_URL` | `Auth0:Url` | **Yes** | Swagger UI OAuth redirect fails |
-| `SMTP_HOST` | `Smtp:Host` | No | Contact form emails won't send |
-| `SMTP_PORT` | `Smtp:Port` | No | Contact form emails won't send |
-| `SMTP_USERNAME` | `Smtp:Username` | No | Contact form emails won't send |
-| `SMTP_PASSWORD` | `Smtp:Password` | No | Contact form emails won't send |
-| `SMTP_FROM_ADDRESS` | `Smtp:FromAddress` | No | Contact form emails won't send |
-| `SMTP_FROM_NAME` | `Smtp:FromName` | No | Contact form emails won't send |
-| `SMTP_TO_ADDRESS` | `Smtp:ToAddress` | No | Contact form emails won't send |
+| `SMTP2GO_API_KEY` | `Email:ApiKey` | No | Contact form emails won't send |
+| `EMAIL_FROM_ADDRESS` | `Email:FromAddress` | No | Defaults to `noreply@evanbecker.net` |
+| `EMAIL_TO_ADDRESS` | `Email:ToAddress` | No | Contact form emails won't send |
 | `RECAPTCHA_SECRET_KEY` | `Recaptcha:SecretKey` | No | Contact form submits without verification |
 | `SPOTIFY_CLIENT_ID` | `Spotify:ClientId` | No | Spotify integration disabled (ray marcher still works with file upload) |
 | `SPOTIFY_CLIENT_SECRET` | `Spotify:ClientSecret` | No | Spotify integration disabled |
