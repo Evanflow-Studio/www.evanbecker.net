@@ -5,12 +5,23 @@ import { useSpotifyPlayer } from '~/composables/raymarcher/audio/useSpotifyPlaye
 
 const store = useRayMarcherStore()
 const spotify = useSpotifyPlayer()
-const route = useRoute()
-const isOnSandboxPage = computed(() => route.path.includes('/sandbox/raymarcher'))
 
 const emit = defineEmits<{
   openPlayer: []
 }>()
+
+// Auth0 state
+const isAuthenticated = ref(false)
+if (import.meta.client) {
+  try {
+    const { useAuth0 } = await import('@auth0/auth0-vue')
+    const auth0 = useAuth0()
+    isAuthenticated.value = auth0.isAuthenticated.value
+    watch(() => auth0.isAuthenticated.value, (val: boolean) => { isAuthenticated.value = val })
+  } catch {
+    // Auth0 not available
+  }
+}
 
 const bands = computed(() => [
   { label: 'Bass', value: store.audio.bass, color: '#FF6B6B' },
@@ -26,13 +37,6 @@ const ENERGY_COLORS: Record<string, string> = {
   building: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
   intense: 'bg-red-500/20 text-red-400 border-red-500/40',
   breakdown: 'bg-purple-500/20 text-purple-400 border-purple-500/40',
-}
-
-const MOOD_EMOJI: Record<string, string> = {
-  aggressive: 'fire',
-  happy: 'note',
-  sad: 'drop',
-  relaxed: 'zen',
 }
 
 const MOOD_LABEL: Record<string, string> = {
@@ -74,21 +78,20 @@ function toggleAutoplayer() {
     <!-- Spotify connect section -->
     <div class="flex flex-col gap-2 rounded-lg border border-slate-700/50 bg-slate-900/30 p-2">
       <div v-if="!spotify.isConnected.value" class="flex flex-wrap items-center gap-2">
-        <button
-          v-if="isOnSandboxPage"
-          class="h-8 rounded-md border border-green-600/50 bg-green-600/15 px-3 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25"
-          @click="spotify.connect()"
-        >
-          <span class="mr-1.5">&#9835;</span>Connect Spotify
-        </button>
-        <NuxtLink
-          v-else
-          to="/sandbox/raymarcher"
-          class="h-8 flex items-center rounded-md border border-green-600/50 bg-green-600/15 px-3 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25 no-underline"
-        >
-          <span class="mr-1.5">&#9835;</span>Open in Sandbox for Spotify
-        </NuxtLink>
-        <span class="text-[10px] text-slate-500">{{ isOnSandboxPage ? 'Stream from your Spotify account' : 'Spotify requires the full sandbox' }}</span>
+        <!-- Not logged in -->
+        <template v-if="!isAuthenticated">
+          <span class="text-[10px] text-slate-500">Sign in to connect Spotify</span>
+        </template>
+        <!-- Logged in but Spotify not connected -->
+        <template v-else>
+          <NuxtLink
+            to="/account"
+            class="h-8 flex items-center rounded-md border border-green-600/50 bg-green-600/15 px-3 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25 no-underline"
+          >
+            <span class="mr-1.5">&#9835;</span>Connect in Account Settings
+          </NuxtLink>
+          <span class="text-[10px] text-slate-500">Link your Spotify account to stream music</span>
+        </template>
         <p v-if="spotify.error.value" class="text-[10px] text-red-400 w-full">{{ spotify.error.value }}</p>
       </div>
       <div v-else class="flex flex-col gap-1.5">

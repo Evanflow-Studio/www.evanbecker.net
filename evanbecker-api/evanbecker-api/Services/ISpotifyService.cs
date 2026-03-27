@@ -8,6 +8,7 @@ public interface ISpotifyService
     Task<object?> GetNowPlayingAsync(string accessToken);
     Task<object?> GetAudioAnalysisAsync(string trackId, string accessToken);
     Task<object?> GetAudioFeaturesAsync(string trackId, string accessToken);
+    Task SaveUserChangesAsync();
 }
 
 public class SpotifyTokenResult

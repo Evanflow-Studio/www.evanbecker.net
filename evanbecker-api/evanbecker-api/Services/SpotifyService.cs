@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using evanbecker_api.Configuration;
+using evanbecker_domain;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
@@ -13,6 +14,7 @@ public class SpotifyService : ISpotifyService
     private readonly HttpClient _httpClient;
     private readonly IMemoryCache _cache;
     private readonly ILogger<SpotifyService> _logger;
+    private readonly ApplicationContext _context;
 
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
 
@@ -20,12 +22,14 @@ public class SpotifyService : ISpotifyService
         IOptions<SpotifyConfiguration> config,
         HttpClient httpClient,
         IMemoryCache cache,
-        ILogger<SpotifyService> logger)
+        ILogger<SpotifyService> logger,
+        ApplicationContext context)
     {
         _config = config.Value;
         _httpClient = httpClient;
         _cache = cache;
         _logger = logger;
+        _context = context;
     }
 
     public string GetAuthorizationUrl(string state)
@@ -191,5 +195,10 @@ public class SpotifyService : ISpotifyService
             _logger.LogWarning(ex, "Failed to fetch Spotify user profile");
             return null;
         }
+    }
+
+    public async Task SaveUserChangesAsync()
+    {
+        await _context.SaveChangesAsync();
     }
 }

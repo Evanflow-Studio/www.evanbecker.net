@@ -21,60 +21,66 @@ export function useSpotifyPlayer() {
   const error = ref<string | null>(null)
 
   let accessToken = ''
-  let refreshToken = ''
   let tokenExpiry = 0
   let pollInterval: ReturnType<typeof setInterval> | null = null
   let sdkPlayer: any = null
 
-  // --- OAuth flow ---
+  // --- Auth helper ---
 
-  async function connect() {
+  async function getAuth0Token(): Promise<string | null> {
     try {
-      error.value = null
-      const redirectUrl = window.location.href.split('?')[0]
-      console.log('[Spotify] Connecting, redirect:', redirectUrl)
-      console.log('[Spotify] API URL:', `${apiBase}/api/v1/spotify/auth-url`)
-      const data = await $fetch<{ url: string }>(
-        `${apiBase}/api/v1/spotify/auth-url`,
-        { query: { redirectUrl } },
-      )
-      console.log('[Spotify] Got auth URL:', data.url)
-      if (data?.url) {
-        window.location.href = data.url
-      } else {
-        error.value = 'No auth URL returned from API'
-      }
-    } catch (e: any) {
-      console.error('[Spotify] Connect failed:', e)
-      error.value = e.message || 'Failed to connect to Spotify'
+      if (!import.meta.client) return null
+      const { useAuth0 } = await import('@auth0/auth0-vue')
+      const auth0 = useAuth0()
+      if (!auth0.isAuthenticated.value) return null
+      return await auth0.getAccessTokenSilently()
+    } catch {
+      return null
     }
   }
 
-  async function handleCallback(code: string) {
+  async function authFetch(path: string, options: RequestInit = {}) {
+    const token = await getAuth0Token()
+    if (!token) throw new Error('Not authenticated')
+    const res = await fetch(`${apiBase}/api/v1/${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(options.headers as Record<string, string> || {}),
+      },
+      mode: 'cors',
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.error || `API error: ${res.status}`)
+    }
+    return res.json()
+  }
+
+  // --- Connect: redirect to account page ---
+
+  function connect() {
+    navigateTo('/account')
+  }
+
+  // --- Restore session from API (replaces sessionStorage) ---
+
+  async function restoreSession(): Promise<boolean> {
     try {
-      const result = await $fetch<{
-        accessToken: string
-        refreshToken: string
-        expiresIn: number
-        isPremium: boolean
-        displayName: string
-      }>(`${apiBase}/api/v1/spotify/callback`, {
-        method: 'POST',
-        body: { code },
-      })
+      const auth0Token = await getAuth0Token()
+      if (!auth0Token) return false
 
-      accessToken = result.accessToken
-      refreshToken = result.refreshToken
-      tokenExpiry = Date.now() + result.expiresIn * 1000
-      isPremium.value = result.isPremium
-      displayName.value = result.displayName || ''
+      const status = await authFetch('spotify/me')
+      if (!status.connected || !status.tokenValid) return false
+
+      // Fetch a fresh access token
+      const tokenData = await authFetch('spotify/token')
+      accessToken = tokenData.accessToken
+      tokenExpiry = Date.now() + tokenData.expiresIn * 1000
+      isPremium.value = tokenData.premium
+      displayName.value = status.displayName || ''
       isConnected.value = true
-
-      sessionStorage.setItem('spotify_access', accessToken)
-      sessionStorage.setItem('spotify_refresh', refreshToken)
-      sessionStorage.setItem('spotify_expiry', String(tokenExpiry))
-      sessionStorage.setItem('spotify_premium', String(result.isPremium))
-      sessionStorage.setItem('spotify_name', displayName.value)
 
       store.audio.spotifyConnected = true
       store.audio.spotifyPremium = isPremium.value
@@ -84,55 +90,18 @@ export function useSpotifyPlayer() {
       } else {
         startPolling()
       }
-    } catch (e: any) {
-      error.value = e?.data?.message || 'Failed to complete Spotify login'
-    }
-  }
-
-  function restoreSession(): boolean {
-    const stored = sessionStorage.getItem('spotify_access')
-    if (!stored) return false
-
-    accessToken = stored
-    refreshToken = sessionStorage.getItem('spotify_refresh') || ''
-    tokenExpiry = parseInt(sessionStorage.getItem('spotify_expiry') || '0')
-    isPremium.value = sessionStorage.getItem('spotify_premium') === 'true'
-    displayName.value = sessionStorage.getItem('spotify_name') || ''
-
-    if (Date.now() > tokenExpiry) {
-      refreshAccessToken()
+      return true
+    } catch (e) {
+      console.warn('[Spotify] Failed to restore session from API:', e)
       return false
     }
-
-    isConnected.value = true
-    store.audio.spotifyConnected = true
-    store.audio.spotifyPremium = isPremium.value
-
-    if (isPremium.value) {
-      initWebPlaybackSDK()
-    } else {
-      startPolling()
-    }
-    return true
   }
 
   async function refreshAccessToken() {
-    if (!refreshToken) return
     try {
-      const result = await $fetch<{
-        accessToken: string
-        refreshToken?: string
-        expiresIn: number
-      }>(`${apiBase}/api/v1/spotify/refresh`, {
-        method: 'POST',
-        body: { refreshToken },
-      })
-      accessToken = result.accessToken
-      if (result.refreshToken) refreshToken = result.refreshToken
-      tokenExpiry = Date.now() + result.expiresIn * 1000
-      sessionStorage.setItem('spotify_access', accessToken)
-      sessionStorage.setItem('spotify_refresh', refreshToken)
-      sessionStorage.setItem('spotify_expiry', String(tokenExpiry))
+      const tokenData = await authFetch('spotify/token')
+      accessToken = tokenData.accessToken
+      tokenExpiry = Date.now() + tokenData.expiresIn * 1000
     } catch {
       error.value = 'Failed to refresh Spotify token'
       disconnect()
@@ -283,13 +252,7 @@ export function useSpotifyPlayer() {
       sdkPlayer.disconnect()
       sdkPlayer = null
     }
-    sessionStorage.removeItem('spotify_access')
-    sessionStorage.removeItem('spotify_refresh')
-    sessionStorage.removeItem('spotify_expiry')
-    sessionStorage.removeItem('spotify_premium')
-    sessionStorage.removeItem('spotify_name')
     accessToken = ''
-    refreshToken = ''
     isConnected.value = false
     isPremium.value = false
     currentTrack.value = null
@@ -299,6 +262,9 @@ export function useSpotifyPlayer() {
     store.audio.spotifyConnected = false
     store.audio.spotifyPremium = false
     store.audio.spotifyTrackId = ''
+
+    // Also disconnect on the server side
+    authFetch('spotify/disconnect', { method: 'POST' }).catch(() => {})
   }
 
   return {
@@ -312,7 +278,6 @@ export function useSpotifyPlayer() {
     analysis,
     features,
     connect,
-    handleCallback,
     restoreSession,
     disconnect,
   }

@@ -65,28 +65,8 @@ onMounted(async () => {
   store.importFromUrl()
   document.addEventListener('fullscreenchange', onFullscreenChange)
 
-  // Handle Spotify OAuth callback BEFORE starting the engine.
-  const urlParams = new URLSearchParams(window.location.search)
-  const spotifyCode = urlParams.get('code')
-  if (spotifyCode) {
-    console.log('[RayMarchDemo] Spotify OAuth code detected, handling callback...')
-    const cleanUrl = window.location.pathname + (window.location.hash || '')
-    window.history.replaceState(null, '', cleanUrl)
-    try {
-      await spotifyPlayer.handleCallback(spotifyCode)
-      console.log('[RayMarchDemo] Spotify callback complete, starting engine...')
-    } catch (e) {
-      console.warn('[RayMarchDemo] Spotify OAuth callback failed:', e)
-    }
-  } else {
-    spotifyPlayer.restoreSession()
-  }
-
-  // Small delay after Spotify redirect to let the browser settle
-  // (prevents GPU context loss from navigation-related resource pressure)
-  if (spotifyCode) {
-    await new Promise(resolve => setTimeout(resolve, 500))
-  }
+  // Restore Spotify session from API (tokens now stored server-side)
+  spotifyPlayer.restoreSession()
 
   console.log('[RayMarchDemo] Starting engine...')
   await engine.start()
