@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using evanbecker_api.Dto;
 using evanbecker_api.Extensions;
 using evanbecker_domain;
 using evanbecker_domain.Entities;
@@ -8,7 +9,18 @@ namespace evanbecker_api.Services;
 
 public interface IUserService
 {
+    /// <summary>Fetch the current user row. Returns null if not found.</summary>
     Task<User?> GetUserAsync(ClaimsPrincipal claimsUser);
+
+    /// <summary>
+    /// Create-or-update the user row from Auth0 ID token data supplied by the client.
+    /// Auth0 is used only for identity (sub). Name/email come from the frontend.
+    /// Returns (user, isNew) — isNew is true when the row was just created.
+    /// </summary>
+    Task<(User? User, bool IsNew)> SyncUserAsync(ClaimsPrincipal claimsUser, SyncUserDto dto);
+
+    /// <summary>Update the user's own profile fields.</summary>
+    Task<User?> UpdateUserAsync(ClaimsPrincipal claimsUser, UpdateUserDto dto);
 }
 
 public class UserService(ApplicationContext context) : IUserService
@@ -16,47 +28,57 @@ public class UserService(ApplicationContext context) : IUserService
     public async Task<User?> GetUserAsync(ClaimsPrincipal claimsUser)
     {
         var authId = claimsUser?.GetAuthId();
-        if (authId == null)
-            return null;
+        if (authId == null) return null;
 
-        var user = await context.Users
-            .SingleOrDefaultAsync(x => x.Auth0Id == authId);
+        return await context.Users.SingleOrDefaultAsync(x => x.Auth0Id == authId);
+    }
+
+    public async Task<(User? User, bool IsNew)> SyncUserAsync(ClaimsPrincipal claimsUser, SyncUserDto dto)
+    {
+        var authId = claimsUser?.GetAuthId();
+        if (authId == null) return (null, false);
+
+        var user = await context.Users.SingleOrDefaultAsync(x => x.Auth0Id == authId);
 
         if (user != null)
-            return user;
-
-        // New user — create from JWT claims (no Auth0 Management API needed).
-        // Auth0 JWTs include standard claims when configured with default scopes.
-        var email = claimsUser!.FindFirstValue(ClaimTypes.Email)
-                    ?? claimsUser.FindFirstValue("email");
-        var name = claimsUser.FindFirstValue("name")
-                   ?? claimsUser.FindFirstValue(ClaimTypes.Name);
-        var picture = claimsUser.FindFirstValue("picture");
-
-        // Split "name" into first/last if available
-        string? firstName = null;
-        string? lastName = null;
-        if (!string.IsNullOrEmpty(name))
         {
-            var parts = name.Split(' ', 2);
-            firstName = parts[0];
-            lastName = parts.Length > 1 ? parts[1] : null;
+            // Backfill any fields that were null when the row was first created
+            var dirty = false;
+            if (user.FirstName == null && dto.FirstName != null) { user.FirstName = dto.FirstName; dirty = true; }
+            if (user.LastName  == null && dto.LastName  != null) { user.LastName  = dto.LastName;  dirty = true; }
+            if (user.Email     == null && dto.Email     != null) { user.Email     = dto.Email;     dirty = true; }
+            if (dirty) await context.SaveChangesAsync();
+            return (user, false);
         }
 
         var newUser = new User
         {
-            Auth0Id = authId,
-            Email = email,
-            FirstName = firstName,
-            LastName = lastName,
-            Avatar = picture,
-            IsAdmin = false,
-            IsOwner = false,
+            Auth0Id   = authId,
+            FirstName = dto.FirstName,
+            LastName  = dto.LastName,
+            Email     = dto.Email,
+            IsAdmin   = false,
+            IsOwner   = false,
         };
 
         await context.Users.AddAsync(newUser);
         await context.SaveChangesAsync();
+        return (newUser, true);
+    }
 
-        return newUser;
+    public async Task<User?> UpdateUserAsync(ClaimsPrincipal claimsUser, UpdateUserDto dto)
+    {
+        var authId = claimsUser?.GetAuthId();
+        if (authId == null) return null;
+
+        var user = await context.Users.SingleOrDefaultAsync(x => x.Auth0Id == authId);
+        if (user == null) return null;
+
+        if (dto.FirstName != null) user.FirstName = dto.FirstName;
+        if (dto.LastName  != null) user.LastName  = dto.LastName;
+        if (dto.Avatar    != null) user.Avatar    = dto.Avatar == "" ? null : dto.Avatar;
+
+        await context.SaveChangesAsync();
+        return user;
     }
 }

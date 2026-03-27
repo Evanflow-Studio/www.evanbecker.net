@@ -13,7 +13,6 @@ public class User
     [MaxLength(255)]
     public string? Auth0Id { get; set; }
     
-    [MaxLength(255)]
     public string? Avatar { get; set; }
     
     [MaxLength(255)]

@@ -3,12 +3,13 @@ useHead({ title: 'Account - Evan Becker' })
 
 const config = useRuntimeConfig()
 const apiBase = config.public.apiUrl?.replace(/\/$/, '') || ''
+const currentUser = useCurrentUser()
+const { fetchWithAuth } = useApi()
 
 // Auth0 state — same pattern as AppHeader
 const auth0Available = ref(false)
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
-const user = ref<any>(null)
 let loginWithRedirect: (() => void) | null = null
 let logoutFn: (() => void) | null = null
 let getAccessTokenSilently: (() => Promise<string>) | null = null
@@ -20,20 +21,40 @@ if (import.meta.client) {
     auth0Available.value = true
     isAuthenticated.value = auth0.isAuthenticated.value
     isLoading.value = auth0.isLoading.value
-    user.value = auth0.user.value
     loginWithRedirect = () => auth0.loginWithRedirect()
     logoutFn = () => auth0.logout({ logoutParams: { returnTo: window.location.origin } })
     getAccessTokenSilently = () => auth0.getAccessTokenSilently()
 
     watch(() => auth0.isAuthenticated.value, (val: boolean) => { isAuthenticated.value = val })
     watch(() => auth0.isLoading.value, (val: boolean) => { isLoading.value = val })
-    watch(() => auth0.user.value, (val: any) => { user.value = val })
   } catch {
     auth0Available.value = false
     isLoading.value = false
   }
 } else {
   isLoading.value = false
+}
+
+// Profile editing
+const profileSaving = ref(false)
+const profileSaved = ref(false)
+
+async function onProfileSave(payload: { firstName: string; lastName: string; avatar: string | null }) {
+  profileSaving.value = true
+  profileSaved.value = false
+  try {
+    const updated = await fetchWithAuth('user', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    })
+    currentUser.value = updated
+    profileSaved.value = true
+    setTimeout(() => { profileSaved.value = false }, 3000)
+  } catch (e) {
+    console.error('Failed to update profile:', e)
+  } finally {
+    profileSaving.value = false
+  }
 }
 
 // Spotify connection state
@@ -48,22 +69,7 @@ const spotifyError = ref('')
 const spotifyConnecting = ref(false)
 
 async function authFetch(path: string, options: RequestInit = {}) {
-  if (!getAccessTokenSilently) throw new Error('Not authenticated')
-  const token = await getAccessTokenSilently()
-  const res = await fetch(`${apiBase}/api/v1/${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(options.headers as Record<string, string> || {}),
-    },
-    mode: 'cors',
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `API error: ${res.status}`)
-  }
-  return res.json()
+  return fetchWithAuth(path, options)
 }
 
 async function fetchSpotifyStatus() {
@@ -168,27 +174,26 @@ onMounted(async () => {
 
         <!-- Profile card -->
         <div class="rounded-xl border border-slate-700/50 bg-slate-900/50 p-6">
-          <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">Profile</h2>
-          <div class="flex items-center gap-4">
-            <img
-              v-if="user?.picture"
-              :src="user.picture"
-              :alt="user.name || 'Avatar'"
-              class="h-14 w-14 rounded-full border-2 border-slate-700"
-            />
-            <div class="h-14 w-14 rounded-full border-2 border-slate-700 bg-slate-800 flex items-center justify-center text-slate-400 text-xl" v-else>
-              {{ user?.name?.[0]?.toUpperCase() || '?' }}
-            </div>
-            <div>
-              <p class="text-lg font-medium text-white">{{ user?.name || 'Unknown' }}</p>
-              <p class="text-sm text-slate-400">{{ user?.email || '' }}</p>
-            </div>
-            <button
-              class="ml-auto rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
-              @click="logoutFn?.()"
+          <div class="mb-5 flex items-center justify-between">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Profile</h2>
+            <Transition
+              enter-active-class="transition duration-300"
+              enter-from-class="opacity-0 translate-y-1"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition duration-200"
+              leave-from-class="opacity-100"
+              leave-to-class="opacity-0"
             >
-              Sign Out
-            </button>
+              <span v-if="profileSaved" class="text-xs font-medium text-green-400">Saved!</span>
+            </Transition>
+          </div>
+
+          <div v-if="currentUser">
+            <div class="mb-1 text-xs text-slate-500">{{ currentUser.email }}</div>
+            <ProfileForm :user="currentUser" :saving="profileSaving" @save="onProfileSave" />
+          </div>
+          <div v-else class="flex items-center justify-center py-8">
+            <LoadingSpinner size="md" />
           </div>
         </div>
 

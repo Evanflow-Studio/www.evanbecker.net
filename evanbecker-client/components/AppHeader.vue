@@ -10,13 +10,53 @@ import {
   MenuItem,
 } from '@headlessui/vue'
 
+const config = useRuntimeConfig()
+const currentUser = useCurrentUser()
+const needsProfileSetup = useNeedsProfileSetup()
 const isScrolled = ref(false)
 const auth0Available = ref(false)
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
-const user = ref<any>(null)
 let loginWithRedirect: (() => void) | null = null
 let logout: (() => void) | null = null
+
+let syncInProgress = false
+async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
+  if (syncInProgress) return
+  syncInProgress = true
+  console.log('[Auth] syncUserToApi called, auth0User:', auth0User)
+  try {
+    const token = await getToken()
+    const baseUrl = config.public.apiUrl?.replace(/\/$/, '') || ''
+    const nameParts = (auth0User?.name || '').split(' ')
+    console.log('[Auth] POSTing to:', `${baseUrl}/api/v1/user`)
+    const res = await fetch(`${baseUrl}/api/v1/user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        firstName: nameParts[0] || null,
+        lastName: nameParts.slice(1).join(' ') || null,
+        email: auth0User?.email || null,
+      }),
+      mode: 'cors',
+    })
+    console.log('[Auth] sync response status:', res.status)
+    if (res.ok) {
+      currentUser.value = await res.json()
+      if (res.status === 201) {
+        console.log('[Auth] new user created, showing profile setup modal')
+        needsProfileSetup.value = true
+      }
+    }
+  } catch (e) {
+    console.warn('[Auth] Failed to sync user to API:', e)
+  } finally {
+    syncInProgress = false
+  }
+}
 
 // Auth0 setup — must happen in synchronous setup scope because useAuth0()
 // calls inject() which doesn't work inside onMounted/async callbacks.
@@ -29,19 +69,46 @@ if (import.meta.client) {
     auth0Available.value = true
     isAuthenticated.value = auth0.isAuthenticated.value
     isLoading.value = auth0.isLoading.value
-    user.value = auth0.user.value
     loginWithRedirect = () => auth0.loginWithRedirect()
-    logout = () => auth0.logout({ logoutParams: { returnTo: window.location.origin } })
+    logout = () => {
+      currentUser.value = null
+      auth0.logout({ logoutParams: { returnTo: window.location.origin } })
+    }
 
-    watch(() => auth0.isAuthenticated.value, (val: boolean) => { isAuthenticated.value = val })
-    watch(() => auth0.isLoading.value, (val: boolean) => { isLoading.value = val })
-    watch(() => auth0.user.value, (val: any) => { user.value = val })
+    // Fire sync once Auth0 finishes loading — user and isAuthenticated are both settled at this point
+    watch(() => auth0.isLoading.value, async (loading: boolean) => {
+      isLoading.value = loading
+      isAuthenticated.value = auth0.isAuthenticated.value
+      console.log('[Auth] isLoading:', loading, 'isAuthenticated:', auth0.isAuthenticated.value, 'user:', auth0.user.value)
+      if (!loading && auth0.isAuthenticated.value && auth0.user.value) {
+        await syncUserToApi(auth0.user.value, auth0.getAccessTokenSilently)
+      }
+    })
+
+    // Also watch isAuthenticated in case it changes after initial load (e.g. login redirect)
+    watch(() => auth0.isAuthenticated.value, async (val: boolean) => {
+      isAuthenticated.value = val
+      if (val && !auth0.isLoading.value && auth0.user.value) {
+        await syncUserToApi(auth0.user.value, auth0.getAccessTokenSilently)
+      }
+    })
+
+    // Already settled on mount (no loading state change will fire)
+    if (!auth0.isLoading.value && auth0.isAuthenticated.value && auth0.user.value) {
+      syncUserToApi(auth0.user.value, auth0.getAccessTokenSilently)
+    }
   } catch {
     auth0Available.value = false
     isLoading.value = false
   }
 } else {
   isLoading.value = false
+}
+
+function userInitials() {
+  const first = currentUser.value?.firstName?.[0] ?? ''
+  const last = currentUser.value?.lastName?.[0] ?? ''
+  return (first + last).toUpperCase() || '?'
 }
 
 onMounted(() => {
@@ -62,6 +129,9 @@ const navLinks = [
 </script>
 
 <template>
+  <ClientOnly>
+    <ProfileSetupModal />
+  </ClientOnly>
   <header
     class="sticky top-0 z-50 px-4 transition duration-500 sm:px-6 lg:px-8"
     :class="isScrolled
@@ -96,8 +166,8 @@ const navLinks = [
               <Menu as="div" class="relative">
                 <MenuButton class="flex items-center gap-2 rounded-full ring-2 ring-slate-200 transition hover:ring-[#2D95FC] dark:ring-slate-700 px-1">
                   <img
-                    v-if="user?.picture"
-                    :src="user.picture"
+                    v-if="currentUser?.avatar"
+                    :src="currentUser.avatar"
                     alt="Profile"
                     class="h-8 w-8 rounded-full"
                   />
@@ -105,7 +175,7 @@ const navLinks = [
                     v-else
                     class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0C65E5] text-xs font-bold text-white"
                   >
-                    {{ (user?.name || user?.email || '?')[0].toUpperCase() }}
+                    {{ userInitials() }}
                   </div>
                 </MenuButton>
                 <transition
@@ -117,6 +187,14 @@ const navLinks = [
                   leave-to-class="transform scale-95 opacity-0"
                 >
                   <MenuItems class="absolute right-0 z-10 mt-2 w-48 rounded-lg bg-white py-1 shadow-lg ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+                    <MenuItem v-slot="{ active }">
+                      <NuxtLink
+                        to="/account"
+                        :class="[active ? 'bg-slate-100 dark:bg-slate-700' : '', 'block w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300']"
+                      >
+                        Account
+                      </NuxtLink>
+                    </MenuItem>
                     <MenuItem v-slot="{ active }">
                       <button
                         @click="logout?.()"

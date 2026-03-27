@@ -7,6 +7,7 @@ const route = useRoute()
 const comments = ref<any[] | null>(null)
 const currentUser = ref<any>(null)
 const commentText = ref('')
+const posting = ref(false)
 
 const targetLocation = computed(() => {
   const parts = route.path.split('/')
@@ -31,7 +32,8 @@ async function loadUser() {
 }
 
 async function addComment() {
-  if (!commentText.value.trim()) return
+  if (!commentText.value.trim() || posting.value) return
+  posting.value = true
   try {
     const added = await fetchWithAuth(`comment/${targetLocation.value}`, {
       method: 'POST',
@@ -41,6 +43,8 @@ async function addComment() {
     commentText.value = ''
   } catch (e) {
     console.error('Failed to post comment:', e)
+  } finally {
+    posting.value = false
   }
 }
 
@@ -71,9 +75,11 @@ onMounted(() => {
         </div>
         <button
           type="submit"
-          class="rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC]"
+          :disabled="posting"
+          class="inline-flex items-center gap-2 rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC] disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Post comment
+          <LoadingSpinner v-if="posting" size="sm" />
+          {{ posting ? 'Posting...' : 'Post comment' }}
         </button>
       </form>
 

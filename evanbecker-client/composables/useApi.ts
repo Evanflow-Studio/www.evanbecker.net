@@ -3,6 +3,7 @@ import { useAuth0 } from '@auth0/auth0-vue'
 export function useApi() {
   const config = useRuntimeConfig()
   const baseUrl = config.public.apiUrl?.replace(/\/$/, '') || ''
+  const { getAccessTokenSilently } = useAuth0()
 
   async function fetchWithAuth(path: string, options: RequestInit = {}) {
     let headers: Record<string, string> = {
@@ -11,13 +12,12 @@ export function useApi() {
     }
 
     try {
-      const { getAccessTokenSilently } = useAuth0()
       const token = await getAccessTokenSilently()
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }
-    } catch {
-      // Not authenticated — continue without token
+    } catch (e) {
+      console.warn('useApi: could not get access token:', e)
     }
 
     const response = await fetch(`${baseUrl}/api/v1/${path}`, {

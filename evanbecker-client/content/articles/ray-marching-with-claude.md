@@ -123,8 +123,5 @@ If I distilled this down to the patterns worth keeping:
 
 The ray marcher started as a Unity shader with smooth booleans, soft shadows, and ambient occlusion, and became a WebGL2 application with a Pinia store, seven composables, ten geometry presets, a fractal fly-through, embeddable blog components, and shareable URLs — but without the soft shadows and AO it started with. The path between those two points wasn't linear. It looped, backtracked, and produced features that got deleted. But the patterns above are what kept the loops productive rather than frustrating.
 
-::ray-march-embed{preset="Jellyfish" height="h-[400px]"}
-::
-
 ::sandbox-link{to="/sandbox/raymarcher" label="Try the Ray Marcher" description="Interactive WebGL2 ray marcher — WASD to move, mouse to look"}
 ::

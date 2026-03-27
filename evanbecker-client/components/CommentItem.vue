@@ -61,6 +61,12 @@ function formatDate(dateStr: string) {
     day: 'numeric',
   })
 }
+
+function initials(author: any) {
+  const first = author?.firstName?.[0] ?? ''
+  const last = author?.lastName?.[0] ?? ''
+  return (first + last).toUpperCase() || '?'
+}
 </script>
 
 <template>
@@ -76,10 +82,17 @@ function formatDate(dateStr: string) {
       <footer class="mb-2 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <img
+            v-if="localComment.author.avatar"
             :src="localComment.author.avatar"
             :alt="localComment.author.firstName"
             class="h-7 w-7 rounded-full"
           />
+          <div
+            v-else
+            class="flex h-7 w-7 items-center justify-center rounded-full bg-[#0C65E5] text-xs font-bold text-white"
+          >
+            {{ initials(localComment.author) }}
+          </div>
           <span class="text-sm font-semibold text-slate-800 dark:text-slate-200">
             {{ localComment.author.firstName }} {{ localComment.author.lastName }}
           </span>
