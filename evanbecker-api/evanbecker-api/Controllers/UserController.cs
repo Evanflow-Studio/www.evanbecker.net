@@ -29,7 +29,7 @@ public class UserController(IUserService userService) : ControllerBase
     {
         var (user, isNew) = await userService.SyncUserAsync(User, dto);
         if (user == null) return Unauthorized();
-        return isNew ? StatusCode(201, user) : Ok(user);
+        return isNew ? Created(string.Empty, user) : Ok(user);
     }
 
     /// <summary>Update the current user's profile (name, avatar).</summary>

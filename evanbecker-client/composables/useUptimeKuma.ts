@@ -9,7 +9,7 @@ export interface MonitorStatus {
 
 // Fetches via Nuxt server proxy at /api/health to avoid CORS.
 // The proxy calls health.evanbecker.net server-side.
-const POLL_INTERVAL_MS = 30_000
+const POLL_INTERVAL_MS = 30000
 
 export function useUptimeKuma() {
   const monitors = ref<Map<number, MonitorStatus>>(new Map())

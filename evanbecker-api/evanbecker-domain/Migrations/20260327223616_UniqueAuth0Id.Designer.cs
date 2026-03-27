@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using evanbecker_domain;
@@ -11,9 +12,11 @@ using evanbecker_domain;
 namespace evanbeckerdomain.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20260327223616_UniqueAuth0Id")]
+    partial class UniqueAuth0Id
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,8 +36,8 @@ namespace evanbeckerdomain.Migrations
 
                     b.Property<string>("CommentText")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -50,8 +53,6 @@ namespace evanbeckerdomain.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
-
-                    b.HasIndex("TargetLocation", "IsDeleted");
 
                     b.ToTable("Comments");
                 });
@@ -123,8 +124,8 @@ namespace evanbeckerdomain.Migrations
 
                     b.Property<string>("CommentText")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");

@@ -15,7 +15,7 @@ public class NewsLetterController(ApplicationContext context) : ControllerBase
         var entry = new NewsLetterEntry
         {
             EmailAddress = dto.EmailAddress,
-            Created = DateTime.Now.ToUniversalTime()
+            Created = DateTime.UtcNow
         };
         context.NewsLetterEntries.Add(entry);
         await context.SaveChangesAsync();

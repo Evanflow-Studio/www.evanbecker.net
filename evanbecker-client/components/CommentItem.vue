@@ -18,6 +18,7 @@ const emit = defineEmits<{
 const { fetchWithAuth } = useApi()
 const showReply = ref(false)
 const replyText = ref('')
+const posting = ref(false)
 const localComment = ref(props.comment)
 
 const canModerate = computed(() => {
@@ -39,8 +40,9 @@ async function deleteComment() {
 }
 
 async function addReply() {
-  if (!replyText.value.trim()) return
+  if (!replyText.value.trim() || posting.value) return
   const replyToId = props.isChild ? props.parentComment?.id : localComment.value.id
+  posting.value = true
   try {
     await fetchWithAuth(`comment/${props.targetLocation}/reply/${replyToId}`, {
       method: 'POST',
@@ -48,18 +50,24 @@ async function addReply() {
     })
     replyText.value = ''
     showReply.value = false
-    emit('updated')
+    // SignalR broadcasts the reply back; CommentSection's onNewReply adds it.
+    // For child replies the parent hub event is still keyed by parentComment.id.
   } catch (e) {
     console.error('Failed to reply:', e)
+  } finally {
+    posting.value = false
   }
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+function relativeDate(dateStr: string | undefined) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 function initials(author: any) {
@@ -96,8 +104,12 @@ function initials(author: any) {
           <span class="text-sm font-semibold text-slate-800 dark:text-slate-200">
             {{ localComment.author.firstName }} {{ localComment.author.lastName }}
           </span>
-          <span v-if="localComment.createdAt" class="text-xs text-slate-400 dark:text-slate-500">
-            {{ formatDate(localComment.createdAt) }}
+          <span
+            v-if="localComment.published"
+            :title="new Date(localComment.published).toLocaleString()"
+            class="text-xs text-slate-400 dark:text-slate-500"
+          >
+            {{ relativeDate(localComment.published) }}
           </span>
         </div>
 
@@ -153,9 +165,11 @@ function initials(author: any) {
       </div>
       <button
         @click="addReply"
-        class="rounded-lg bg-[#0C65E5] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#2D95FC]"
+        :disabled="posting"
+        class="inline-flex items-center gap-2 rounded-lg bg-[#0C65E5] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#2D95FC] disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        Post reply
+        <LoadingSpinner v-if="posting" size="sm" />
+        {{ posting ? 'Posting...' : 'Post reply' }}
       </button>
     </div>
 

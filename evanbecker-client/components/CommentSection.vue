@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const { fetchWithAuth, fetchPublic } = useApi()
 const route = useRoute()
@@ -13,6 +13,20 @@ const targetLocation = computed(() => {
   const parts = route.path.split('/')
   return parts[parts.length - 1]
 })
+
+const hub = useCommentHub(targetLocation.value)
+
+function onNewComment(comment: any) {
+  if (comments.value?.some((c) => c.id === comment.id)) return
+  comments.value = [...(comments.value || []), comment]
+}
+
+function onNewReply(commentId: string, reply: any) {
+  const parent = comments.value?.find((c) => c.id === commentId)
+  if (!parent) return
+  if (parent.replies?.some((r: any) => r.id === reply.id)) return
+  parent.replies = [...(parent.replies || []), reply]
+}
 
 async function loadComments() {
   try {
@@ -35,12 +49,13 @@ async function addComment() {
   if (!commentText.value.trim() || posting.value) return
   posting.value = true
   try {
-    const added = await fetchWithAuth(`comment/${targetLocation.value}`, {
+    await fetchWithAuth(`comment/${targetLocation.value}`, {
       method: 'POST',
       body: JSON.stringify({ commentText: commentText.value }),
     })
-    comments.value = [...(comments.value || []), added]
     commentText.value = ''
+    // SignalR broadcasts the new comment back to all clients including us;
+    // onNewComment handles deduplication.
   } catch (e) {
     console.error('Failed to post comment:', e)
   } finally {
@@ -48,9 +63,18 @@ async function addComment() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadUser()
   loadComments()
+  try {
+    await hub.start(onNewComment, onNewReply)
+  } catch (e) {
+    console.warn('SignalR connection failed:', e)
+  }
+})
+
+onUnmounted(async () => {
+  await hub.stop()
 })
 </script>
 

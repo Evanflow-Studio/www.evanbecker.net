@@ -1,8 +1,8 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 
 namespace evanbecker_api.Extensions;
 
-public static class ClaimsPrincipleExtensions
+public static class ClaimsPrincipalExtensions
 {
     public static string? GetAuthId(this ClaimsPrincipal user)
     {

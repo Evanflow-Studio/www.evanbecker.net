@@ -20,16 +20,15 @@ const isLoading = ref(true)
 let loginWithRedirect: (() => void) | null = null
 let logout: (() => void) | null = null
 
-let syncInProgress = false
+// Module-level guard — survives across watch firings within the same page session
+let _syncInProgress = false
 async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
-  if (syncInProgress) return
-  syncInProgress = true
-  console.log('[Auth] syncUserToApi called, auth0User:', auth0User)
+  if (_syncInProgress) return
+  _syncInProgress = true
   try {
     const token = await getToken()
     const baseUrl = config.public.apiUrl?.replace(/\/$/, '') || ''
     const nameParts = (auth0User?.name || '').split(' ')
-    console.log('[Auth] POSTing to:', `${baseUrl}/api/v1/user`)
     const res = await fetch(`${baseUrl}/api/v1/user`, {
       method: 'POST',
       headers: {
@@ -43,18 +42,14 @@ async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
       }),
       mode: 'cors',
     })
-    console.log('[Auth] sync response status:', res.status)
     if (res.ok) {
       currentUser.value = await res.json()
-      if (res.status === 201) {
-        console.log('[Auth] new user created, showing profile setup modal')
-        needsProfileSetup.value = true
-      }
+      if (res.status === 201) needsProfileSetup.value = true
     }
-  } catch (e) {
-    console.warn('[Auth] Failed to sync user to API:', e)
+  } catch {
+    // sync failures are non-fatal; user can still browse
   } finally {
-    syncInProgress = false
+    _syncInProgress = false
   }
 }
 
@@ -79,21 +74,12 @@ if (import.meta.client) {
     watch(() => auth0.isLoading.value, async (loading: boolean) => {
       isLoading.value = loading
       isAuthenticated.value = auth0.isAuthenticated.value
-      console.log('[Auth] isLoading:', loading, 'isAuthenticated:', auth0.isAuthenticated.value, 'user:', auth0.user.value)
-      if (!loading && auth0.isAuthenticated.value && auth0.user.value) {
+if (!loading && auth0.isAuthenticated.value && auth0.user.value) {
         await syncUserToApi(auth0.user.value, auth0.getAccessTokenSilently)
       }
     })
 
-    // Also watch isAuthenticated in case it changes after initial load (e.g. login redirect)
-    watch(() => auth0.isAuthenticated.value, async (val: boolean) => {
-      isAuthenticated.value = val
-      if (val && !auth0.isLoading.value && auth0.user.value) {
-        await syncUserToApi(auth0.user.value, auth0.getAccessTokenSilently)
-      }
-    })
-
-    // Already settled on mount (no loading state change will fire)
+    // If Auth0 has already settled before this component mounted (e.g. navigating between pages)
     if (!auth0.isLoading.value && auth0.isAuthenticated.value && auth0.user.value) {
       syncUserToApi(auth0.user.value, auth0.getAccessTokenSilently)
     }
@@ -164,7 +150,7 @@ const navLinks = [
             <!-- Authenticated user menu -->
             <template v-if="auth0Available && isAuthenticated">
               <Menu as="div" class="relative">
-                <MenuButton class="flex items-center gap-2 rounded-full ring-2 ring-slate-200 transition hover:ring-[#2D95FC] dark:ring-slate-700 px-1">
+                <MenuButton class="flex items-center gap-2 rounded-full transition px-1">
                   <img
                     v-if="currentUser?.avatar"
                     :src="currentUser.avatar"

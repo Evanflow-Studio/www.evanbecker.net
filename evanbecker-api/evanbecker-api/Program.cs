@@ -1,9 +1,12 @@
 using evanbecker_api.Configuration;
 using evanbecker_api.Extensions;
+using evanbecker_api.Hubs;
 using evanbecker_api.Services;
 using evanbecker_domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,11 +28,6 @@ var auth0Settings = new Auth0Configuration();
 auth0Section.Bind(auth0Settings);
 builder.Services.Configure<Auth0Configuration>(auth0Section);
 
-var gitHubSection = builder.Configuration.GetSection("GitHub");
-var gitHubSettings = new GitHubConfiguration();
-gitHubSection.Bind(gitHubSettings);
-builder.Services.Configure<GitHubConfiguration>(gitHubSection);
-
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
@@ -42,6 +40,9 @@ builder.Services.AddHttpClient<IRecaptchaService, RecaptchaService>();
 builder.Services.Configure<SpotifyConfiguration>(builder.Configuration.GetSection("Spotify"));
 builder.Services.AddHttpClient<ISpotifyService, SpotifyService>();
 builder.Services.AddMemoryCache();
+
+builder.Services.AddSignalR();
+builder.Services.AddHealthChecks();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o =>
@@ -63,7 +64,7 @@ builder.Services.AddSwaggerGen(o =>
             AuthorizationCode = new OpenApiOAuthFlow
             {
                 AuthorizationUrl = new Uri($"https://{auth0Settings.Domain}/authorize"),
-                TokenUrl = new Uri($"https://{auth0Settings.Domain}/oauth/token"),
+                TokenUrl         = new Uri($"https://{auth0Settings.Domain}/oauth/token"),
                 Scopes = new Dictionary<string, string>
                 {
                     { "openid", "OpenID Connect" },
@@ -92,11 +93,16 @@ builder.Services.AddSwaggerGen(o =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("cors", builder =>
+    options.AddPolicy("cors", policy =>
     {
-        builder.AllowAnyHeader();
-        builder.AllowAnyMethod();
-        builder.AllowAnyOrigin();
+        policy.WithOrigins(
+                "https://www.evanbecker.net",
+                "https://evanbecker.net",
+                "https://test.evanbecker.net",
+                "http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -111,12 +117,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 var app = builder.Build();
-
-app.Use((context, next) =>
-{
-    context.Response.Headers["Access-Control-Allow-Origin"] = "*";
-    return next.Invoke();
-});
 
 app.UseSwagger();
 app.UseSwaggerUI(o =>
@@ -133,6 +133,16 @@ app.UseCors("cors");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<CommentHub>("/hubs/comments");
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy]   = StatusCodes.Status200OK,
+        [HealthStatus.Degraded]  = StatusCodes.Status200OK,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
+    }
+});
 
 await app.UseLocalDockerMigrationsAsync(environmentName);
 

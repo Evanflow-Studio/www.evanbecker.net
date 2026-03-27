@@ -30,7 +30,7 @@ public class UserService(ApplicationContext context) : IUserService
         var authId = claimsUser?.GetAuthId();
         if (authId == null) return null;
 
-        return await context.Users.SingleOrDefaultAsync(x => x.Auth0Id == authId);
+        return await context.Users.FirstOrDefaultAsync(x => x.Auth0Id == authId);
     }
 
     public async Task<(User? User, bool IsNew)> SyncUserAsync(ClaimsPrincipal claimsUser, SyncUserDto dto)
@@ -38,7 +38,7 @@ public class UserService(ApplicationContext context) : IUserService
         var authId = claimsUser?.GetAuthId();
         if (authId == null) return (null, false);
 
-        var user = await context.Users.SingleOrDefaultAsync(x => x.Auth0Id == authId);
+        var user = await context.Users.FirstOrDefaultAsync(x => x.Auth0Id == authId);
 
         if (user != null)
         {
@@ -71,7 +71,7 @@ public class UserService(ApplicationContext context) : IUserService
         var authId = claimsUser?.GetAuthId();
         if (authId == null) return null;
 
-        var user = await context.Users.SingleOrDefaultAsync(x => x.Auth0Id == authId);
+        var user = await context.Users.FirstOrDefaultAsync(x => x.Auth0Id == authId);
         if (user == null) return null;
 
         if (dto.FirstName != null) user.FirstName = dto.FirstName;

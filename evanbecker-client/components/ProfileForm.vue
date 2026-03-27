@@ -105,7 +105,7 @@ function submit() {
           v-model="firstName"
           type="text"
           required
-          placeholder="Evan"
+          placeholder="First name"
           class="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-[#0C65E5] focus:outline-none focus:ring-1 focus:ring-[#0C65E5]"
         />
       </div>
@@ -114,7 +114,7 @@ function submit() {
         <input
           v-model="lastName"
           type="text"
-          placeholder="Becker"
+          placeholder="Last name"
           class="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-[#0C65E5] focus:outline-none focus:ring-1 focus:ring-[#0C65E5]"
         />
       </div>

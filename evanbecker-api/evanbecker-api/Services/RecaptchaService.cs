@@ -31,8 +31,8 @@ public class RecaptchaService : IRecaptchaService
     {
         if (string.IsNullOrEmpty(_settings.SecretKey))
         {
-            _logger.LogWarning("reCAPTCHA secret key not configured, skipping verification.");
-            return true;
+            _logger.LogError("reCAPTCHA secret key not configured — failing closed.");
+            return false;
         }
 
         if (string.IsNullOrEmpty(token))
