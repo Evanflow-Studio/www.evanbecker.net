@@ -28,12 +28,25 @@ export function useSpotifyPlayer() {
   // --- OAuth flow ---
 
   async function connect() {
-    const redirectUrl = window.location.href.split('?')[0]
-    const data = await $fetch<{ url: string }>(
-      `${config.public.apiUrl}api/v1/spotify/auth-url`,
-      { query: { redirectUrl: encodeURIComponent(redirectUrl) } },
-    )
-    window.location.href = data.url
+    try {
+      error.value = null
+      const redirectUrl = window.location.href.split('?')[0]
+      console.log('[Spotify] Connecting, redirect:', redirectUrl)
+      console.log('[Spotify] API URL:', `${config.public.apiUrl}api/v1/spotify/auth-url`)
+      const data = await $fetch<{ url: string }>(
+        `${config.public.apiUrl}api/v1/spotify/auth-url`,
+        { query: { redirectUrl } },
+      )
+      console.log('[Spotify] Got auth URL:', data.url)
+      if (data?.url) {
+        window.location.href = data.url
+      } else {
+        error.value = 'No auth URL returned from API'
+      }
+    } catch (e: any) {
+      console.error('[Spotify] Connect failed:', e)
+      error.value = e.message || 'Failed to connect to Spotify'
+    }
   }
 
   async function handleCallback(code: string) {

@@ -79,6 +79,7 @@ function toggleAutoplayer() {
           <span class="mr-1.5">&#9835;</span>Connect Spotify
         </button>
         <span class="text-[10px] text-slate-500">Stream from your Spotify account</span>
+        <p v-if="spotify.error.value" class="text-[10px] text-red-400">{{ spotify.error.value }}</p>
       </div>
       <div v-else class="flex flex-col gap-1.5">
         <div class="flex items-center gap-2">
