@@ -65,19 +65,25 @@ onMounted(async () => {
   store.importFromUrl()
   document.addEventListener('fullscreenchange', onFullscreenChange)
 
-  // Handle Spotify OAuth callback
+  // Handle Spotify OAuth callback BEFORE starting the engine.
+  // The page just reloaded from Spotify's redirect — handle auth first.
   const urlParams = new URLSearchParams(window.location.search)
   const spotifyCode = urlParams.get('code')
   if (spotifyCode) {
-    await spotifyPlayer.handleCallback(spotifyCode)
-    // Clean the URL to remove ?code=...
+    // Clean the URL immediately to prevent re-processing on HMR/refresh
     const cleanUrl = window.location.pathname + (window.location.hash || '')
     window.history.replaceState(null, '', cleanUrl)
+    try {
+      await spotifyPlayer.handleCallback(spotifyCode)
+    } catch (e) {
+      console.warn('[Spotify] OAuth callback failed:', e)
+    }
   } else {
-    // Try to restore an existing Spotify session
+    // No OAuth redirect — try restoring an existing session
     spotifyPlayer.restoreSession()
   }
 
+  // Start the ray marcher engine after Spotify auth is settled
   await engine.start()
 })
 

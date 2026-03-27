@@ -5,6 +5,8 @@ import { useSpotifyPlayer } from '~/composables/raymarcher/audio/useSpotifyPlaye
 
 const store = useRayMarcherStore()
 const spotify = useSpotifyPlayer()
+const route = useRoute()
+const isOnSandboxPage = computed(() => route.path.includes('/sandbox/raymarcher'))
 
 const emit = defineEmits<{
   openPlayer: []
@@ -71,15 +73,23 @@ function toggleAutoplayer() {
   <div class="flex flex-col gap-2">
     <!-- Spotify connect section -->
     <div class="flex flex-col gap-2 rounded-lg border border-slate-700/50 bg-slate-900/30 p-2">
-      <div v-if="!spotify.isConnected.value" class="flex items-center gap-2">
+      <div v-if="!spotify.isConnected.value" class="flex flex-wrap items-center gap-2">
         <button
+          v-if="isOnSandboxPage"
           class="h-8 rounded-md border border-green-600/50 bg-green-600/15 px-3 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25"
-          @click="spotify.connect"
+          @click="spotify.connect()"
         >
           <span class="mr-1.5">&#9835;</span>Connect Spotify
         </button>
-        <span class="text-[10px] text-slate-500">Stream from your Spotify account</span>
-        <p v-if="spotify.error.value" class="text-[10px] text-red-400">{{ spotify.error.value }}</p>
+        <NuxtLink
+          v-else
+          to="/sandbox/raymarcher"
+          class="h-8 flex items-center rounded-md border border-green-600/50 bg-green-600/15 px-3 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25 no-underline"
+        >
+          <span class="mr-1.5">&#9835;</span>Open in Sandbox for Spotify
+        </NuxtLink>
+        <span class="text-[10px] text-slate-500">{{ isOnSandboxPage ? 'Stream from your Spotify account' : 'Spotify requires the full sandbox' }}</span>
+        <p v-if="spotify.error.value" class="text-[10px] text-red-400 w-full">{{ spotify.error.value }}</p>
       </div>
       <div v-else class="flex flex-col gap-1.5">
         <div class="flex items-center gap-2">

@@ -90,54 +90,55 @@ const navLinks = [
 
         <!-- Auth + Mobile -->
         <div class="flex items-center gap-x-4">
-          <!-- Authenticated user menu -->
-          <template v-if="auth0Available && !isLoading && isAuthenticated">
-            <Menu as="div" class="relative">
-              <MenuButton class="flex items-center gap-2 rounded-full ring-2 ring-slate-200 transition hover:ring-[#2D95FC] dark:ring-slate-700 px-1">
-                <img
-                  v-if="user?.picture"
-                  :src="user.picture"
-                  alt="Profile"
-                  class="h-8 w-8 rounded-full"
-                />
-                <div
-                  v-else
-                  class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0C65E5] text-xs font-bold text-white"
+          <ClientOnly>
+            <!-- Authenticated user menu -->
+            <template v-if="auth0Available && isAuthenticated">
+              <Menu as="div" class="relative">
+                <MenuButton class="flex items-center gap-2 rounded-full ring-2 ring-slate-200 transition hover:ring-[#2D95FC] dark:ring-slate-700 px-1">
+                  <img
+                    v-if="user?.picture"
+                    :src="user.picture"
+                    alt="Profile"
+                    class="h-8 w-8 rounded-full"
+                  />
+                  <div
+                    v-else
+                    class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0C65E5] text-xs font-bold text-white"
+                  >
+                    {{ (user?.name || user?.email || '?')[0].toUpperCase() }}
+                  </div>
+                </MenuButton>
+                <transition
+                  enter-active-class="transition duration-100 ease-out"
+                  enter-from-class="transform scale-95 opacity-0"
+                  enter-to-class="transform scale-100 opacity-100"
+                  leave-active-class="transition duration-75 ease-in"
+                  leave-from-class="transform scale-100 opacity-100"
+                  leave-to-class="transform scale-95 opacity-0"
                 >
-                  {{ (user?.name || user?.email || '?')[0].toUpperCase() }}
-                </div>
-              </MenuButton>
-              <transition
-                enter-active-class="transition duration-100 ease-out"
-                enter-from-class="transform scale-95 opacity-0"
-                enter-to-class="transform scale-100 opacity-100"
-                leave-active-class="transition duration-75 ease-in"
-                leave-from-class="transform scale-100 opacity-100"
-                leave-to-class="transform scale-95 opacity-0"
-              >
-                <MenuItems class="absolute right-0 z-10 mt-2 w-48 rounded-lg bg-white py-1 shadow-lg ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-                  <MenuItem v-slot="{ active }">
-                    <button
-                      @click="logout?.()"
-                      :class="[active ? 'bg-slate-100 dark:bg-slate-700' : '', 'block w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300']"
-                    >
-                      Sign out
-                    </button>
-                  </MenuItem>
-                </MenuItems>
-              </transition>
-            </Menu>
-          </template>
+                  <MenuItems class="absolute right-0 z-10 mt-2 w-48 rounded-lg bg-white py-1 shadow-lg ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+                    <MenuItem v-slot="{ active }">
+                      <button
+                        @click="logout?.()"
+                        :class="[active ? 'bg-slate-100 dark:bg-slate-700' : '', 'block w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300']"
+                      >
+                        Sign out
+                      </button>
+                    </MenuItem>
+                  </MenuItems>
+                </transition>
+              </Menu>
+            </template>
 
-          <!-- Sign In button — shown whenever not authenticated (regardless of loading state) -->
-          <template v-else-if="!isAuthenticated && auth0Available">
+            <!-- Sign In button -->
             <button
+              v-else-if="auth0Available && !isAuthenticated"
               @click="loginWithRedirect?.()"
               class="rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC]"
             >
               Sign In
             </button>
-          </template>
+          </ClientOnly>
 
           <!-- Color mode toggle -->
           <ColorModeToggle />
