@@ -4,6 +4,7 @@ import { useRayMarcherStore } from '~/stores/raymarcher'
 export function useSpotifyPlayer() {
   const config = useRuntimeConfig()
   const store = useRayMarcherStore()
+  const apiBase = config.public.apiUrl.replace(/\/$/, '')
 
   const isConnected = ref(false)
   const isPremium = ref(false)
@@ -32,9 +33,9 @@ export function useSpotifyPlayer() {
       error.value = null
       const redirectUrl = window.location.href.split('?')[0]
       console.log('[Spotify] Connecting, redirect:', redirectUrl)
-      console.log('[Spotify] API URL:', `${config.public.apiUrl}api/v1/spotify/auth-url`)
+      console.log('[Spotify] API URL:', `${apiBase}/api/v1/spotify/auth-url`)
       const data = await $fetch<{ url: string }>(
-        `${config.public.apiUrl}api/v1/spotify/auth-url`,
+        `${apiBase}/api/v1/spotify/auth-url`,
         { query: { redirectUrl } },
       )
       console.log('[Spotify] Got auth URL:', data.url)
@@ -57,7 +58,7 @@ export function useSpotifyPlayer() {
         expiresIn: number
         isPremium: boolean
         displayName: string
-      }>(`${config.public.apiUrl}api/v1/spotify/callback`, {
+      }>(`${apiBase}/api/v1/spotify/callback`, {
         method: 'POST',
         body: { code },
       })
@@ -122,7 +123,7 @@ export function useSpotifyPlayer() {
         accessToken: string
         refreshToken?: string
         expiresIn: number
-      }>(`${config.public.apiUrl}api/v1/spotify/refresh`, {
+      }>(`${apiBase}/api/v1/spotify/refresh`, {
         method: 'POST',
         body: { refreshToken },
       })
@@ -225,7 +226,7 @@ export function useSpotifyPlayer() {
     await ensureValidToken()
     try {
       const result = await $fetch<any>(
-        `${config.public.apiUrl}api/v1/spotify/now-playing`,
+        `${apiBase}/api/v1/spotify/now-playing`,
         { headers: { 'X-Spotify-Token': accessToken } },
       )
       if (result && result.item) {
@@ -259,10 +260,10 @@ export function useSpotifyPlayer() {
     store.audio.spotifyTrackId = trackId
     try {
       const [analysisData, featuresData] = await Promise.all([
-        $fetch(`${config.public.apiUrl}api/v1/spotify/analysis/${trackId}`, {
+        $fetch(`${apiBase}/api/v1/spotify/analysis/${trackId}`, {
           headers: { 'X-Spotify-Token': accessToken },
         }),
-        $fetch(`${config.public.apiUrl}api/v1/spotify/features/${trackId}`, {
+        $fetch(`${apiBase}/api/v1/spotify/features/${trackId}`, {
           headers: { 'X-Spotify-Token': accessToken },
         }),
       ])
