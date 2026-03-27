@@ -27,6 +27,14 @@ onMounted(async () => {
   onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
   // Auth0 is loaded as a client plugin — wait for it event-driven
+  // Safety: if Auth0 hasn't resolved in 5s, stop showing the spinner
+  const loadingTimeout = setTimeout(() => {
+    if (isLoading.value) {
+      isLoading.value = false
+      // If auth0 was available but stuck loading, still show the Sign In button
+    }
+  }, 5000)
+
   try {
     const { useAuth0 } = await import('@auth0/auth0-vue')
     const auth0 = useAuth0()
@@ -39,11 +47,15 @@ onMounted(async () => {
 
     // Watch for changes
     watch(() => auth0.isAuthenticated.value, (val) => { isAuthenticated.value = val })
-    watch(() => auth0.isLoading.value, (val) => { isLoading.value = val })
+    watch(() => auth0.isLoading.value, (val) => {
+      isLoading.value = val
+      if (!val) clearTimeout(loadingTimeout)
+    })
     watch(() => auth0.user.value, (val) => { user.value = val })
   } catch {
     auth0Available.value = false
     isLoading.value = false
+    clearTimeout(loadingTimeout)
   }
 })
 
