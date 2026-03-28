@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 /* ── career data ────────────────────────────────────────────────── */
 export interface TimelineEntry {
@@ -58,48 +58,52 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
 const hoveredSlug = ref<string | null>(null)
 const selectedSlug = ref<string | null>(props.modelValue ?? null)
-const animFrame = ref(0)
 let raf = 0
 let startTime = 0
+let cssWidth = 0   // CSS pixel dimensions (what we draw in)
+let cssHeight = 0
 let dpr = 1
-let width = 0
-let height = 0
 let nodePositions: { x: number; y: number; entry: TimelineEntry }[] = []
 
-/* ── coordinate mapping ─────────────────────────────────────────── */
-const yearMin = 2013
-const yearMax = 2026
+/* ── coordinate mapping — evenly spaced by index ────────────────── */
+const PAD_TOP = 50
+const PAD_BOT = 30
+const NODE_SPACING = 80  // minimum px between nodes
 
-function yearToY(year: number): number {
-  const padTop = 60
-  const padBot = 40
-  const usable = height - padTop - padBot
-  return padTop + ((year - yearMin) / (yearMax - yearMin)) * usable
+function indexToY(i: number): number {
+  const totalSpan = (entries.length - 1) * NODE_SPACING
+  const usable = cssHeight - PAD_TOP - PAD_BOT
+  // Center the nodes if they fit; otherwise stretch to fill
+  const actualSpan = Math.min(totalSpan, usable)
+  const step = actualSpan / Math.max(entries.length - 1, 1)
+  const offsetY = PAD_TOP + (usable - actualSpan) / 2
+  return offsetY + i * step
 }
 
-/* ── drawing ────────────────────────────────────────────────────── */
+/* ── drawing (all coordinates in CSS pixels) ────────────────────── */
 function draw(ctx: CanvasRenderingContext2D, t: number) {
-  ctx.clearRect(0, 0, width, height)
+  ctx.clearRect(0, 0, cssWidth, cssHeight)
 
-  const cx = width / 2
-  const lineX = cx
+  const lineX = cssWidth / 2
 
-  // Draw the main spine
-  const gradient = ctx.createLinearGradient(lineX, yearToY(yearMin), lineX, yearToY(yearMax))
+  // Spine
+  const firstY = indexToY(0)
+  const lastY = indexToY(entries.length - 1)
+  const gradient = ctx.createLinearGradient(lineX, firstY, lineX, lastY)
   gradient.addColorStop(0, 'rgba(100,116,139,0.15)')
   gradient.addColorStop(0.3, 'rgba(12,101,229,0.3)')
   gradient.addColorStop(1, 'rgba(12,101,229,0.5)')
   ctx.beginPath()
-  ctx.moveTo(lineX, yearToY(yearMin) - 20)
-  ctx.lineTo(lineX, yearToY(yearMax) + 20)
+  ctx.moveTo(lineX, firstY - 20)
+  ctx.lineTo(lineX, lastY + 20)
   ctx.strokeStyle = gradient
   ctx.lineWidth = 2
   ctx.stroke()
 
-  // Draw nodes
+  // Nodes
   nodePositions = []
-  entries.forEach((entry) => {
-    const y = yearToY(entry.year)
+  entries.forEach((entry, i) => {
+    const y = indexToY(i)
     nodePositions.push({ x: lineX, y, entry })
 
     const isHovered = hoveredSlug.value === entry.slug
@@ -108,27 +112,25 @@ function draw(ctx: CanvasRenderingContext2D, t: number) {
 
     // Glow
     if (isActive) {
-      const glowRadius = 28 + Math.sin(t * 2) * 4
-      const glow = ctx.createRadialGradient(lineX, y, 0, lineX, y, glowRadius)
+      const glowR = 28 + Math.sin(t * 2) * 4
+      const glow = ctx.createRadialGradient(lineX, y, 0, lineX, y, glowR)
       glow.addColorStop(0, entry.color + '60')
       glow.addColorStop(1, entry.color + '00')
       ctx.beginPath()
-      ctx.arc(lineX, y, glowRadius, 0, Math.PI * 2)
+      ctx.arc(lineX, y, glowR, 0, Math.PI * 2)
       ctx.fillStyle = glow
       ctx.fill()
     }
 
     // Outer ring
-    const outerR = isActive ? 14 : 10
     ctx.beginPath()
-    ctx.arc(lineX, y, outerR, 0, Math.PI * 2)
+    ctx.arc(lineX, y, isActive ? 14 : 10, 0, Math.PI * 2)
     ctx.fillStyle = isActive ? entry.color + '40' : entry.color + '20'
     ctx.fill()
 
     // Inner dot
-    const innerR = isActive ? 7 : 5
     ctx.beginPath()
-    ctx.arc(lineX, y, innerR, 0, Math.PI * 2)
+    ctx.arc(lineX, y, isActive ? 7 : 5, 0, Math.PI * 2)
     ctx.fillStyle = entry.color
     ctx.fill()
 
@@ -142,7 +144,7 @@ function draw(ctx: CanvasRenderingContext2D, t: number) {
       ctx.stroke()
     }
 
-    // Year label (left side)
+    // Year label — left of spine
     ctx.font = `${isActive ? 'bold ' : ''}12px Inter, system-ui, sans-serif`
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
@@ -150,7 +152,7 @@ function draw(ctx: CanvasRenderingContext2D, t: number) {
     const yearText = entry.endYear ? `${entry.year}–${entry.endYear}` : `${entry.year}`
     ctx.fillText(yearText, lineX - 24, y)
 
-    // Label (right side)
+    // Label — right of spine
     ctx.font = `${isActive ? '600 ' : '400 '}13px Inter, system-ui, sans-serif`
     ctx.textAlign = 'left'
     ctx.fillStyle = isActive ? '#f1f5f9' : '#cbd5e1'
@@ -162,11 +164,10 @@ function draw(ctx: CanvasRenderingContext2D, t: number) {
     ctx.fillText(entry.role, lineX + 24, y + 9)
   })
 
-  // Floating particles along spine
-  const particleCount = 12
-  for (let i = 0; i < particleCount; i++) {
+  // Floating particles
+  for (let i = 0; i < 12; i++) {
     const phase = (t * 0.3 + i * 0.83) % 1
-    const py = yearToY(yearMin) - 20 + phase * (yearToY(yearMax) - yearToY(yearMin) + 40)
+    const py = (firstY - 20) + phase * (lastY - firstY + 40)
     const px = lineX + Math.sin(t * 0.7 + i * 2.1) * 8
     const alpha = Math.sin(phase * Math.PI) * 0.4
     ctx.beginPath()
@@ -176,13 +177,13 @@ function draw(ctx: CanvasRenderingContext2D, t: number) {
   }
 }
 
-/* ── interaction ────────────────────────────────────────────────── */
+/* ── interaction (CSS-pixel coordinates) ────────────────────────── */
 function getEntryAtPosition(clientX: number, clientY: number): TimelineEntry | null {
   if (!canvasRef.value) return null
   const rect = canvasRef.value.getBoundingClientRect()
-  const mx = (clientX - rect.left) * dpr
-  const my = (clientY - rect.top) * dpr
-  const hitRadius = 30 * dpr
+  const mx = clientX - rect.left   // CSS pixels
+  const my = clientY - rect.top
+  const hitRadius = 30
 
   for (const node of nodePositions) {
     const dx = mx - node.x
@@ -197,9 +198,7 @@ function getEntryAtPosition(clientX: number, clientY: number): TimelineEntry | n
 function onPointerMove(e: PointerEvent) {
   const entry = getEntryAtPosition(e.clientX, e.clientY)
   hoveredSlug.value = entry?.slug ?? null
-  if (canvasRef.value) {
-    canvasRef.value.style.cursor = entry ? 'pointer' : 'default'
-  }
+  if (canvasRef.value) canvasRef.value.style.cursor = entry ? 'pointer' : 'default'
 }
 
 function onPointerDown(e: PointerEvent) {
@@ -220,21 +219,21 @@ function resize() {
   if (!canvasRef.value || !containerRef.value) return
   dpr = window.devicePixelRatio || 1
   const rect = containerRef.value.getBoundingClientRect()
-  width = rect.width * dpr
-  height = rect.height * dpr
-  canvasRef.value.width = width
-  canvasRef.value.height = height
-  canvasRef.value.style.width = rect.width + 'px'
-  canvasRef.value.style.height = rect.height + 'px'
+  cssWidth = rect.width
+  cssHeight = rect.height
+  // Set canvas buffer to physical pixels for crisp rendering
+  canvasRef.value.width = cssWidth * dpr
+  canvasRef.value.height = cssHeight * dpr
+  canvasRef.value.style.width = cssWidth + 'px'
+  canvasRef.value.style.height = cssHeight + 'px'
 }
 
-/* ── loop ───────────────────────────────────────────────────────── */
+/* ── render loop ────────────────────────────────────────────────── */
 function loop() {
   const ctx = canvasRef.value?.getContext('2d')
   if (!ctx) return
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0) // scale for retina but draw in CSS pixels
-  // Undo the dpr scaling for our coordinate system (we already factored it in via resize)
-  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  // Scale context so we draw in CSS pixels, canvas buffer handles DPR
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   const t = (performance.now() - startTime) / 1000
   draw(ctx, t)
   raf = requestAnimationFrame(loop)
@@ -257,12 +256,11 @@ watch(() => props.modelValue, (val) => {
   selectedSlug.value = val ?? null
 })
 
-/* ── expose entries for parent ──────────────────────────────────── */
 defineExpose({ entries })
 </script>
 
 <template>
-  <div ref="containerRef" class="relative h-full w-full min-h-[500px]">
+  <div ref="containerRef" class="relative h-full w-full min-h-[560px]">
     <canvas
       ref="canvasRef"
       class="block h-full w-full"
