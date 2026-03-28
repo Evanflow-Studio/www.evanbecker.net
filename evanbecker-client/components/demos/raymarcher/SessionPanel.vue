@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useSessionHub } from '~/composables/raymarcher/audio/useSessionHub'
+import { useTabAudioCapture } from '~/composables/raymarcher/audio/useTabAudioCapture'
 
 const session = useSessionHub()
+const tabCapture = useTabAudioCapture()
 const currentUser = useCurrentUser()
 
 const joinCode = ref('')
@@ -45,13 +47,38 @@ function handleSendChat() {
 }
 
 const myReadyState = computed(() => {
+  // Host is always ready
+  if (session.isHost.value) return true
   const user = currentUser.value as any
   if (!user?.id) return false
   const me = session.members.value.find(m => m.userId === user.id)
   return me?.isReady ?? false
 })
 
+// Auto-broadcast visualizer connection status to the session
+watch(() => tabCapture.isCapturing.value, (capturing) => {
+  if (session.isConnected.value) {
+    session.setVisualizerConnected(capturing)
+  }
+})
+
+// Host auto-readies on room creation (host is always ready + visualizer connected)
+watch(() => session.isHost.value, (isHost) => {
+  if (isHost) {
+    session.setReady(true)
+    session.setVisualizerConnected(true)
+  }
+})
+
+// Clients can only toggle ready between songs (nothing playing)
+const canToggleReady = computed(() => {
+  if (session.isHost.value) return false
+  const playback = session.syncedPlayback.value
+  return !playback?.isPlaying
+})
+
 function toggleReady() {
+  if (!canToggleReady.value) return
   session.setReady(!myReadyState.value)
 }
 
@@ -167,8 +194,16 @@ watch(() => session.chatMessages.value.length, async () => {
               {{ member.firstName }}{{ member.lastName ? ` ${member.lastName}` : '' }}
               <span v-if="member.isHost" class="ml-1">👑</span>
             </span>
-            <!-- Ready indicator -->
-            <span v-if="member.isReady" class="text-[10px] text-green-400" title="Ready">✓</span>
+            <!-- Ready indicator: gray=not ready, yellow=ready no viz, green=fully ready -->
+            <button
+              v-if="member.userId === (currentUser as any)?.id && !member.isHost && canToggleReady"
+              class="text-[10px] transition-colors"
+              :class="member.isReady && member.isVisualizerConnected ? 'text-green-400' : member.isReady ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-600 hover:text-slate-400'"
+              :title="member.isReady && member.isVisualizerConnected ? 'Fully ready' : member.isReady ? 'Ready — connect visualizer to go green' : 'Click to ready up'"
+              @click="toggleReady"
+            >{{ member.isReady ? '✓' : '○' }}</button>
+            <span v-else-if="member.isReady && member.isVisualizerConnected" class="text-[10px] text-green-400" title="Fully ready">✓</span>
+            <span v-else-if="member.isReady" class="text-[10px] text-yellow-400" title="Ready — waiting for visualizer">✓</span>
             <span v-else class="text-[10px] text-slate-600" title="Not ready">○</span>
             <button
               v-if="session.isHost.value && !member.isHost"

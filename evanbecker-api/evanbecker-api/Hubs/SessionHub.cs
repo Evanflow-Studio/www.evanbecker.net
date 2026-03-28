@@ -41,7 +41,7 @@ public class SessionHub(
 
         await Groups.AddToGroupAsync(Context.ConnectionId, $"session:{roomCode}");
 
-        var memberDto = new SessionMemberDto(user.Id, user.FirstName ?? "User", user.LastName, user.Avatar, false);
+        var memberDto = new SessionMemberDto(user.Id, user.FirstName ?? "User", user.LastName, user.Avatar, false, false, false);
         await Clients.OthersInGroup($"session:{roomCode}").SendAsync("MemberJoined", memberDto);
 
         logger.LogInformation("{User} joined session {Code}", user.FirstName, roomCode);
@@ -127,6 +127,17 @@ public class SessionHub(
             return;
 
         await Clients.Group($"session:{roomCode}").SendAsync("MemberReady", user.Id, ready);
+    }
+
+    public async Task SetVisualizerConnected(string roomCode, bool connected)
+    {
+        var user = await userService.GetUserAsync(Context.User!);
+        if (user is null) return;
+
+        if (!sessionManager.SetVisualizerConnected(roomCode, user.Id, connected))
+            return;
+
+        await Clients.Group($"session:{roomCode}").SendAsync("MemberVisualizerConnected", user.Id, connected);
     }
 
     public async Task UpdatePlayback(string roomCode, PlaybackStateDto state)

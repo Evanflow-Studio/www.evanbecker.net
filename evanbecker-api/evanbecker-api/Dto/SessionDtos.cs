@@ -6,7 +6,8 @@ public record SessionMemberDto(
     string? LastName,
     string? Avatar,
     bool IsHost,
-    bool IsReady);
+    bool IsReady,
+    bool IsVisualizerConnected);
 
 public record PlaybackStateDto(
     string? VideoId,

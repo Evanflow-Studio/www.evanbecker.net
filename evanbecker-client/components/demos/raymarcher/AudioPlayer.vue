@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, computed, nextTick } from 'vue'
 import { useAudioCapture } from '~/composables/raymarcher/useAudioCapture'
 import { useYouTubePlayer } from '~/composables/raymarcher/audio/useYouTubePlayer'
 import { useYouTubeSearch } from '~/composables/raymarcher/audio/useYouTubeSearch'
@@ -32,6 +32,8 @@ const showQueue = ref(false)
 
 // Session: non-hosts can't control playback
 const controlsDisabled = computed(() => session.isConnected.value && !session.isHost.value)
+// Host can only play when all members are fully ready (ready + visualizer)
+const hostWaitingForReady = computed(() => session.isConnected.value && session.isHost.value && !session.allMembersFullyReady.value)
 
 
 /**
@@ -46,26 +48,47 @@ function playTrack(track: YouTubeTrack) {
   store.audio.trackTitle = track.title
   store.audio.trackArtist = track.channel
   if (import.meta.dev) console.log('%c[Player] Playing track', 'color: #2D95FC; font-weight: bold', track.title)
+  // Host: immediately broadcast the new track to all clients
+  if (session.isHost.value) {
+    nextTick(() => session.broadcastPlaybackNow())
+  }
 }
 
 // Init YouTube player
 onMounted(() => {
   yt.init('yt-player-container')
   yt.setOnVideoEnd(() => {
+    if (controlsDisabled.value) return // non-host: host controls queue advancement
     const next = queue.playNext()
     if (next) playTrack(next)
   })
 
-  // Keep store in sync with YouTube player for session heartbeat
-  // (the session hub reads from the store, not from a callback)
+  // Provide real-time player state to the session hub for heartbeat + immediate broadcasts
+  session.setPlayerStateProvider(() => ({
+    currentTime: yt.currentTime.value,
+    duration: yt.duration.value,
+    isPlaying: yt.isPlaying.value,
+    videoId: yt.currentVideoId.value,
+  }))
+
+  // Host: broadcast immediately on play/pause state changes (don't wait for heartbeat)
+  watch(() => yt.isPlaying.value, () => {
+    if (session.isHost.value) session.broadcastPlaybackNow()
+  })
+
+  // Keep store in sync with YouTube player
   watch([yt.currentVideoId, yt.isPlaying], () => {
     store.audio.youtubeUrl = yt.currentVideoId.value
   })
 })
 
-// Session sync: play/pause + track load only (no seek)
+// Session sync: play/pause + track load + time sync with cooldown
 // Queues the sync if the player isn't ready yet and applies once it is
 let pendingSync: typeof session.syncedPlayback.value = null
+let lastSeekTime = 0        // timestamp of last seek — cooldown prevents re-seeking too fast
+let lastSyncedVideoId = ''  // track what we already loaded to avoid re-loading same video
+const SEEK_COOLDOWN_MS = 5000  // don't re-seek within 5 seconds of last seek
+const DRIFT_THRESHOLD = 2.0    // seconds of drift before we seek
 
 watch(() => session.syncedPlayback.value, (state) => {
   if (!state || session.isHost.value) return
@@ -87,15 +110,36 @@ watch(() => yt.isReady.value, (ready) => {
 })
 
 function applySyncState(state: NonNullable<typeof session.syncedPlayback.value>) {
-  // Load new video if different (host switched tracks or started playing)
-  if (state.videoId && state.videoId !== yt.currentVideoId.value) {
+  const now = Date.now()
+
+  // Load new video if different
+  if (state.videoId && state.videoId !== lastSyncedVideoId) {
+    lastSyncedVideoId = state.videoId
     yt.loadVideo(state.videoId)
-    if (import.meta.dev) console.log('%c[Session] Syncing to host video:', 'color: #2D95FC', state.videoId, state.title)
+    lastSeekTime = now // treat initial load as a seek (gives it time to buffer)
+    if (import.meta.dev) console.log('%c[Session] Loading host video:', 'color: #2D95FC', state.videoId, state.title)
+    return // let it buffer — next heartbeat will handle play/seek
   }
 
-  // Sync play/pause
-  if (state.isPlaying && !yt.isPlaying.value) yt.play()
-  else if (!state.isPlaying && yt.isPlaying.value) yt.pause()
+  // Sync play/pause (always — this is instant and non-disruptive)
+  if (state.isPlaying && !yt.isPlaying.value && !yt.isBuffering.value) {
+    yt.play()
+  } else if (!state.isPlaying && yt.isPlaying.value) {
+    yt.pause()
+  }
+
+  // Time-delta compensation — only seek if cooldown expired
+  if (state.isPlaying && state.currentTime > 0 && (now - lastSeekTime) > SEEK_COOLDOWN_MS) {
+    const networkDelta = state.sentAt ? (now - state.sentAt) / 1000 : 0
+    const hostTime = state.currentTime + networkDelta
+    const drift = Math.abs(yt.currentTime.value - hostTime)
+
+    if (drift > DRIFT_THRESHOLD) {
+      yt.seekTo(hostTime)
+      lastSeekTime = now
+      if (import.meta.dev) console.log(`%c[Session] Seek to sync (drift: ${drift.toFixed(1)}s, latency: ${(networkDelta * 1000).toFixed(0)}ms)`, 'color: #F59E0B')
+    }
+  }
 }
 
 // Session sync: when host broadcasts queue, non-hosts replace their queue
@@ -180,9 +224,14 @@ function formatTime(seconds: number): string {
 }
 
 function onSeek(e: Event) {
+  if (controlsDisabled.value) return // non-host can't seek
   const value = parseFloat((e.target as HTMLInputElement).value)
-  if (activeTab.value === 'youtube') yt.seekTo(value)
-  else audio.seek(value)
+  if (activeTab.value === 'youtube') {
+    yt.seekTo(value)
+    if (session.isHost.value) session.broadcastPlaybackNow()
+  } else {
+    audio.seek(value)
+  }
 }
 </script>
 
@@ -233,8 +282,8 @@ function onSeek(e: Event) {
 
         <!-- ==================== YOUTUBE TAB ==================== -->
         <template v-if="activeTab === 'youtube'">
-          <!-- Search -->
-          <div class="relative">
+          <!-- Search (host only in session) -->
+          <div v-if="!controlsDisabled" class="relative">
             <input
               v-model="searchQuery"
               type="text"
@@ -283,18 +332,32 @@ function onSeek(e: Event) {
               </div>
             </div>
 
+            <!-- Host: waiting for all members to ready up -->
+            <div v-if="hostWaitingForReady" class="flex items-center gap-1.5 rounded-md bg-yellow-500/10 px-2 py-1">
+              <div class="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />
+              <span class="text-[9px] text-yellow-400">Waiting for all members to ready up</span>
+            </div>
+
+            <!-- Session sync banner for non-hosts -->
+            <div v-else-if="controlsDisabled" class="flex items-center gap-1.5 rounded-md bg-[#2D95FC]/10 px-2 py-1">
+              <div class="h-1.5 w-1.5 rounded-full bg-[#2D95FC] animate-pulse" />
+              <span class="text-[9px] text-[#2D95FC]">Synced with {{ session.hostName.value }}</span>
+            </div>
+
             <!-- Controls -->
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2" :class="controlsDisabled ? 'opacity-50 pointer-events-none' : ''">
               <button
                 class="text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-                :disabled="!queue.hasPrevious.value"
+                :disabled="!queue.hasPrevious.value || controlsDisabled"
                 @click="() => { const t = queue.playPrevious(); if (t) playTrack(t) }"
               >
                 <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" /></svg>
               </button>
 
               <button
-                class="flex items-center justify-center h-7 w-7 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
+                class="flex items-center justify-center h-7 w-7 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors disabled:opacity-40"
+                :disabled="controlsDisabled || hostWaitingForReady"
+                :title="hostWaitingForReady ? 'Waiting for all members to be ready' : ''"
                 @click="yt.togglePlay()"
               >
                 <svg v-if="!yt.isPlaying.value" class="h-3.5 w-3.5 text-white ml-0.5" viewBox="0 0 20 20" fill="currentColor">
@@ -307,7 +370,7 @@ function onSeek(e: Event) {
 
               <button
                 class="text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-                :disabled="!queue.hasNext.value"
+                :disabled="!queue.hasNext.value || controlsDisabled"
                 @click="() => { const t = queue.playNext(); if (t) playTrack(t) }"
               >
                 <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M11.555 5.168A1 1 0 0010 6v2.798L4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4z" /></svg>
@@ -317,8 +380,8 @@ function onSeek(e: Event) {
                 {{ formatTime(yt.currentTime.value) }} / {{ formatTime(yt.duration.value) }}
               </span>
 
-              <!-- Shuffle & Repeat -->
-              <div class="flex items-center gap-1 ml-auto">
+              <!-- Shuffle & Repeat (host only) -->
+              <div v-if="!controlsDisabled" class="flex items-center gap-1 ml-auto">
                 <button
                   class="text-[10px] transition-colors"
                   :class="queue.isShuffled.value ? 'text-[#2D95FC]' : 'text-slate-500 hover:text-slate-300'"
@@ -334,14 +397,15 @@ function onSeek(e: Event) {
               </div>
             </div>
 
-            <!-- Seek bar -->
+            <!-- Seek bar (host only — non-hosts see read-only progress) -->
             <input
               type="range"
               :min="0"
               :max="yt.duration.value || 0"
               :value="yt.currentTime.value"
               step="0.5"
-              class="w-full h-1 accent-[#2D95FC] cursor-pointer"
+              class="w-full h-1 accent-[#2D95FC]"
+              :class="controlsDisabled ? 'pointer-events-none opacity-50' : 'cursor-pointer'"
               @input="onSeek"
             />
 
@@ -486,7 +550,11 @@ function onSeek(e: Event) {
 
       <!-- Minimized view -->
       <div v-else class="flex items-center gap-2 px-3 py-1.5">
-        <button class="text-slate-400 hover:text-white" @click="activeTab === 'youtube' ? yt.togglePlay() : (audio.isPlaying.value ? audio.pause() : audio.play())">
+        <button
+          class="text-slate-400 hover:text-white disabled:opacity-30"
+          :disabled="controlsDisabled"
+          @click="activeTab === 'youtube' ? yt.togglePlay() : (audio.isPlaying.value ? audio.pause() : audio.play())"
+        >
           {{ (activeTab === 'youtube' ? yt.isPlaying.value : audio.isPlaying.value) ? '⏸' : '▶' }}
         </button>
         <span class="text-[10px] text-slate-400 truncate flex-1">

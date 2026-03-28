@@ -14,6 +14,7 @@ public interface ISessionManager
     bool UpdateQueue(string code, Guid hostUserId, QueueStateDto queue);
     bool ValidateChatRate(string code, Guid userId);
     bool SetReady(string code, Guid userId, bool ready);
+    bool SetVisualizerConnected(string code, Guid userId, bool connected);
     List<string> CleanupExpiredRooms();
     SessionRoom? GetRoom(string code);
     SessionRoom? GetRoomByConnection(string connectionId);
@@ -33,11 +34,11 @@ public class SessionRoom
     public SessionStateDto ToDto()
     {
         var members = Members.Values
-            .Select(m => new SessionMemberDto(m.UserId, m.FirstName, m.LastName, m.Avatar, m.IsHost, m.IsReady))
+            .Select(m => new SessionMemberDto(m.UserId, m.FirstName, m.LastName, m.Avatar, m.IsHost, m.IsReady, m.IsVisualizerConnected))
             .ToList();
 
         var host = members.FirstOrDefault(m => m.IsHost)
-            ?? new SessionMemberDto(HostUserId, "Host", null, null, true, true);
+            ?? new SessionMemberDto(HostUserId, "Host", null, null, true, true, true);
 
         return new SessionStateDto(RoomCode, host, members, CurrentPlayback, CurrentQueue);
     }
@@ -52,6 +53,7 @@ public class SessionMember
     public string? Avatar { get; init; }
     public bool IsHost { get; init; }
     public bool IsReady { get; set; }
+    public bool IsVisualizerConnected { get; set; }
     public DateTime LastChatMessage { get; set; } = DateTime.MinValue;
 }
 
@@ -238,6 +240,18 @@ public class SessionManager : ISessionManager
             return false;
 
         member.IsReady = ready;
+        return true;
+    }
+
+    public bool SetVisualizerConnected(string code, Guid userId, bool connected)
+    {
+        if (!_rooms.TryGetValue(code.ToUpperInvariant(), out var room))
+            return false;
+
+        if (!room.Members.TryGetValue(userId, out var member))
+            return false;
+
+        member.IsVisualizerConnected = connected;
         return true;
     }
 

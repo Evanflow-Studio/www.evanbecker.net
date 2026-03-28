@@ -13,6 +13,7 @@ export interface SessionMember {
   avatar: string | null
   isHost: boolean
   isReady: boolean
+  isVisualizerConnected: boolean
 }
 
 export interface PlaybackState {
@@ -23,6 +24,8 @@ export interface PlaybackState {
   currentTime: number
   duration: number
   isPlaying: boolean
+  /** Unix ms when the host sent this state — used for time-delta sync */
+  sentAt: number
 }
 
 export interface QueueState {
@@ -113,6 +116,12 @@ export function useSessionHub() {
     connection.on('MemberReady', (userId: string, ready: boolean) => {
       members.value = members.value.map(m =>
         m.userId === userId ? { ...m, isReady: ready } : m
+      )
+    })
+
+    connection.on('MemberVisualizerConnected', (userId: string, connected: boolean) => {
+      members.value = members.value.map(m =>
+        m.userId === userId ? { ...m, isVisualizerConnected: connected } : m
       )
     })
 
@@ -230,6 +239,21 @@ export function useSessionHub() {
     }
   }
 
+  async function setVisualizerConnected(connected: boolean) {
+    if (!connection || !roomCode.value) return
+    try {
+      await connection.invoke('SetVisualizerConnected', roomCode.value, connected)
+    } catch (e: any) {
+      if (import.meta.dev) console.warn('[Session] SetVisualizerConnected failed:', e)
+    }
+  }
+
+  /** Whether all members (including host) are ready AND have visualizer connected */
+  const allMembersFullyReady = computed(() => {
+    if (!isConnected.value || members.value.length === 0) return false
+    return members.value.every(m => m.isReady && m.isVisualizerConnected)
+  })
+
   async function kickMember(userId: string) {
     if (!connection || !roomCode.value || !isHost.value) return
     try {
@@ -259,21 +283,41 @@ export function useSessionHub() {
   // Reads directly from the store — no provider function needed.
   // The store always has current playback state from the YouTube player.
 
+  // External setter so AudioPlayer can provide real-time YouTube player state
+  let getPlayerStateFn: (() => { currentTime: number; duration: number; isPlaying: boolean; videoId: string }) | null = null
+
+  function setPlayerStateProvider(fn: typeof getPlayerStateFn) {
+    getPlayerStateFn = fn
+  }
+
+  function buildPlaybackState(): PlaybackState {
+    const store = useRayMarcherStore()
+    const playerState = getPlayerStateFn?.() ?? { currentTime: 0, duration: 0, isPlaying: false, videoId: '' }
+    return {
+      videoId: playerState.videoId || store.audio.youtubeUrl || null,
+      title: store.audio.trackTitle || null,
+      channel: store.audio.trackArtist || null,
+      thumbnail: null,
+      currentTime: playerState.currentTime,
+      duration: playerState.duration,
+      isPlaying: playerState.isPlaying,
+      sentAt: Date.now(),
+    }
+  }
+
+  /** Immediately broadcast current state — call on play/pause/seek/track change */
+  function broadcastPlaybackNow() {
+    if (!isHost.value || !connection) return
+    broadcastPlayback(buildPlaybackState())
+  }
+
+  /** Slow background poll (10s) — only catches major desync, events handle everything else */
   function startHeartbeat() {
     stopHeartbeat()
-    const store = useRayMarcherStore()
     heartbeatInterval = setInterval(() => {
       if (!isHost.value || !connection) return
-      broadcastPlayback({
-        videoId: store.audio.youtubeUrl || null,
-        title: store.audio.trackTitle || null,
-        channel: store.audio.trackArtist || null,
-        thumbnail: null,
-        currentTime: 0, // not used — no seek sync
-        duration: 0,
-        isPlaying: store.audio.isCapturing,
-      })
-    }, 2500)
+      broadcastPlayback(buildPlaybackState())
+    }, 10000)
   }
 
   function stopHeartbeat() {
@@ -342,6 +386,9 @@ export function useSessionHub() {
     syncedPlayback,
     syncedQueue,
 
+    // Computed
+    allMembersFullyReady,
+
     // Actions
     createRoom,
     joinRoom,
@@ -349,8 +396,11 @@ export function useSessionHub() {
     sendChat,
     kickMember,
     setReady,
+    setVisualizerConnected,
     broadcastPlayback,
+    broadcastPlaybackNow,
     broadcastQueue,
+    setPlayerStateProvider,
     disconnect,
   }
 }
