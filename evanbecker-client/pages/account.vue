@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ ssr: false })
 useHead({ title: 'Account - Evan Becker' })
 
 const config = useRuntimeConfig()

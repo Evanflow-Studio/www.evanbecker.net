@@ -3,7 +3,15 @@ import { useAuth0 } from '@auth0/auth0-vue'
 export function useApi() {
   const config = useRuntimeConfig()
   const baseUrl = config.public.apiUrl?.replace(/\/$/, '') || ''
-  const { getAccessTokenSilently } = useAuth0()
+
+  // Auth0 is a client-only plugin — useAuth0() must not be called during SSR.
+  // import.meta.client is statically false in the server bundle so this block
+  // is entirely eliminated there; on the client it runs in component setup context.
+  let getTokenFn: (() => Promise<string>) | null = null
+  if (import.meta.client) {
+    const { getAccessTokenSilently } = useAuth0()
+    getTokenFn = getAccessTokenSilently
+  }
 
   async function fetchWithAuth(path: string, options: RequestInit = {}) {
     let headers: Record<string, string> = {
@@ -12,9 +20,11 @@ export function useApi() {
     }
 
     try {
-      const token = await getAccessTokenSilently()
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
+      if (getTokenFn) {
+        const token = await getTokenFn()
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
       }
     } catch (e) {
       console.warn('useApi: could not get access token:', e)
