@@ -161,5 +161,13 @@ export function usePlaybackQueue() {
     moveItem,
     toggleShuffle,
     cycleRepeat,
+    /** Replace the entire queue (used for session sync from host) */
+    replaceQueue(tracks: YouTubeTrack[], newCurrentIndex: number) {
+      queue.value = [...tracks]
+      currentIndex.value = newCurrentIndex
+      shuffleOrder.value = []
+      shufflePosition.value = 0
+      isShuffled.value = false
+    },
   }
 }

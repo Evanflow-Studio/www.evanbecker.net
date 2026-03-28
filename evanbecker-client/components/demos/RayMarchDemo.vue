@@ -13,8 +13,9 @@ const isFullscreen = ref(false)
 const shareTooltip = ref('')
 let shareTimeout: ReturnType<typeof setTimeout> | null = null
 
-// Audio player
+// Audio player + session
 const showAudioPlayer = ref(false)
+const showSessionPanel = ref(false)
 
 function onShare() {
   store.exportToUrl()
@@ -135,6 +136,14 @@ onUnmounted(() => {
         >
           ♫
         </button>
+        <button
+          class="rounded-md bg-black/60 px-2 py-1 text-xs transition-colors"
+          :class="showSessionPanel ? 'text-[#2D95FC]' : 'text-slate-300 hover:text-white'"
+          title="Jam Session"
+          @click="showSessionPanel = !showSessionPanel"
+        >
+          👥
+        </button>
         <button class="rounded-md bg-black/60 px-2 py-1 text-xs text-slate-300 hover:text-white transition-colors" @click="toggleFullscreen">
           {{ isFullscreen ? '✕' : '⛶' }}
         </button>
@@ -166,6 +175,9 @@ onUnmounted(() => {
 
       <!-- Audio player (floating, teleported to body) -->
       <AudioPlayer v-if="showAudioPlayer" @close="showAudioPlayer = false" />
+
+      <!-- Session panel (floating, teleported to body) -->
+      <SessionPanel v-if="showSessionPanel" @close="showSessionPanel = false" />
     </div>
   </div>
 </template>

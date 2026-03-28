@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useAudioCapture } from '~/composables/raymarcher/useAudioCapture'
 import { useYouTubePlayer } from '~/composables/raymarcher/audio/useYouTubePlayer'
 import { useYouTubeSearch } from '~/composables/raymarcher/audio/useYouTubeSearch'
 import { usePlaybackQueue } from '~/composables/raymarcher/audio/usePlaybackQueue'
 import { useTabAudioCapture } from '~/composables/raymarcher/audio/useTabAudioCapture'
 import { useTrackMetadata } from '~/composables/raymarcher/audio/useTrackMetadata'
+import { useSessionHub } from '~/composables/raymarcher/audio/useSessionHub'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import type { YouTubeTrack } from '~/composables/raymarcher/audio/useYouTubePlayer'
 
@@ -20,6 +21,7 @@ const tabCapture = useTabAudioCapture()
 const ytSearch = useYouTubeSearch()
 const queue = usePlaybackQueue()
 const trackMeta = useTrackMetadata()
+const session = useSessionHub()
 
 const activeTab = ref<'file' | 'youtube'>('youtube')
 const urlInput = ref('')
@@ -27,6 +29,9 @@ const searchQuery = ref('')
 const isDragOver = ref(false)
 const minimized = ref(false)
 const showQueue = ref(false)
+
+// Session: non-hosts can't control playback
+const controlsDisabled = computed(() => session.isConnected.value && !session.isHost.value)
 
 
 /**
@@ -46,7 +51,63 @@ onMounted(() => {
     const next = queue.playNext()
     if (next) playTrack(next)
   })
+
+  // Provide playback state to session hub for host heartbeat
+  session.setPlaybackStateProvider(() => ({
+    videoId: yt.currentVideoId.value,
+    title: queue.currentTrack.value?.title ?? null,
+    channel: queue.currentTrack.value?.channel ?? null,
+    thumbnail: queue.currentTrack.value?.thumbnail ?? null,
+    currentTime: yt.currentTime.value,
+    duration: yt.duration.value,
+    isPlaying: yt.isPlaying.value,
+  }))
 })
+
+// Session sync: when host broadcasts playback state, non-hosts follow
+watch(() => session.syncedPlayback.value, (state) => {
+  if (!state || session.isHost.value) return
+
+  // Load new video if different
+  if (state.videoId && state.videoId !== yt.currentVideoId.value) {
+    yt.loadVideo(state.videoId)
+  }
+
+  // Sync play/pause
+  if (state.isPlaying && !yt.isPlaying.value) yt.play()
+  else if (!state.isPlaying && yt.isPlaying.value) yt.pause()
+
+  // Seek if drift > 1.5 seconds
+  if (state.isPlaying && Math.abs(yt.currentTime.value - state.currentTime) > 1.5) {
+    yt.seekTo(state.currentTime)
+  }
+}, { deep: true })
+
+// Session sync: when host broadcasts queue, non-hosts replace their queue
+watch(() => session.syncedQueue.value, (state) => {
+  if (!state || session.isHost.value) return
+  const tracks: YouTubeTrack[] = state.tracks.map(t => ({
+    videoId: t.videoId,
+    title: t.title,
+    channel: t.channel,
+    thumbnail: t.thumbnail,
+  }))
+  queue.replaceQueue(tracks, state.currentIndex)
+}, { deep: true })
+
+// Host: broadcast queue changes
+watch(() => [queue.queue.value, queue.currentIndex.value] as const, () => {
+  if (!session.isHost.value) return
+  session.broadcastQueue({
+    tracks: queue.queue.value.map(t => ({
+      videoId: t.videoId,
+      title: t.title,
+      channel: t.channel,
+      thumbnail: t.thumbnail,
+    })),
+    currentIndex: queue.currentIndex.value,
+  })
+}, { deep: true })
 
 
 // YouTube search
