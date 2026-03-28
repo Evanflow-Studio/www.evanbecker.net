@@ -46,6 +46,28 @@ const resume = [
 // This handles the case where images fail before Vue's @error listener is attached.
 const logoLoaded = ref<Record<string, boolean>>({})
 
+const config = useRuntimeConfig()
+const newsletterEmail = ref('')
+const newsletterSubmitting = ref(false)
+const newsletterDone = ref(false)
+const newsletterError = ref('')
+
+async function submitNewsletter() {
+  newsletterSubmitting.value = true
+  newsletterError.value = ''
+  try {
+    await $fetch(`${config.public.apiUrl}api/v1/newsletter`, {
+      method: 'POST',
+      body: { emailAddress: newsletterEmail.value },
+    })
+    newsletterDone.value = true
+  } catch {
+    newsletterError.value = 'Something went wrong. Please try again.'
+  } finally {
+    newsletterSubmitting.value = false
+  }
+}
+
 const socialLinks = [
   { href: 'https://www.linkedin.com/in/evanbeckerdotnet/', label: 'Follow on LinkedIn', icon: 'linkedin' },
   { href: 'https://gitlab.com/evanbecker', label: 'Follow on GitLab', icon: 'gitlab' },
@@ -158,20 +180,27 @@ const socialLinks = [
           <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
             Get notified when I publish something new, and unsubscribe at any time.
           </p>
-          <form action="/thank-you-subscribing" class="mt-4 flex gap-3">
+          <div v-if="newsletterDone" class="mt-4 text-sm font-medium text-[#0C65E5] dark:text-[#2D95FC]">
+            You're subscribed! Thanks for signing up.
+          </div>
+          <form v-else @submit.prevent="submitNewsletter" class="mt-4 flex gap-3">
             <input
+              v-model="newsletterEmail"
               type="email"
               placeholder="Email address"
               required
-              class="min-w-0 flex-auto rounded-lg border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#2D95FC] focus:ring-1 focus:ring-[#2D95FC] dark:border-slate-600 dark:bg-[#1E293B] dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-[#2D95FC]"
+              :disabled="newsletterSubmitting"
+              class="min-w-0 flex-auto rounded-lg border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#2D95FC] focus:ring-1 focus:ring-[#2D95FC] disabled:opacity-50 dark:border-slate-600 dark:bg-[#1E293B] dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-[#2D95FC]"
             />
             <button
               type="submit"
-              class="rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC]"
+              :disabled="newsletterSubmitting"
+              class="rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC] disabled:opacity-60"
             >
-              Join
+              {{ newsletterSubmitting ? '...' : 'Join' }}
             </button>
           </form>
+          <p v-if="newsletterError" class="mt-2 text-xs text-red-400">{{ newsletterError }}</p>
         </div>
 
         <!-- Resume -->
