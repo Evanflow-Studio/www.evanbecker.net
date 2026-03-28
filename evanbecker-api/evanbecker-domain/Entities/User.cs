@@ -32,13 +32,4 @@ public class User
 
     [MaxLength(255)]
     public string? LastName { get; set; }
-
-    // Spotify integration
-    public string? SpotifyAccessToken { get; set; }
-    public string? SpotifyRefreshToken { get; set; }
-    public DateTime? SpotifyTokenExpiry { get; set; }
-    public bool SpotifyPremium { get; set; }
-
-    [MaxLength(255)]
-    public string? SpotifyDisplayName { get; set; }
 }

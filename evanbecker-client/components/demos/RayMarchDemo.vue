@@ -2,10 +2,9 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRayMarcherStore, QUALITY_PRESETS } from '~/stores/raymarcher'
 import { useRayMarchEngine } from '~/composables/raymarcher/useRayMarchEngine'
-import { useSpotifyPlayer } from '~/composables/raymarcher/audio/useSpotifyPlayer'
+import { useVisualizationEngine } from '~/composables/raymarcher/audio/useVisualizationEngine'
 
 const store = useRayMarcherStore()
-const spotifyPlayer = useSpotifyPlayer()
 
 // Canvas
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -29,7 +28,11 @@ const engine = useRayMarchEngine(canvasRef)
 
 // Watchers
 watch(() => store.render.quality, (q) => store.applyQualityFX(q))
-watch(() => store.scene.index, (s) => store.applySceneDefaults(s))
+// Only apply scene defaults when NOT driven by the visualization engine
+// (the engine manages camera/params itself — defaults would fight it)
+watch(() => store.scene.index, (s) => {
+  if (!store.audio.isCapturing) store.applySceneDefaults(s)
+})
 
 // Fullscreen
 function toggleFullscreen() {
@@ -65,12 +68,13 @@ onMounted(async () => {
   store.importFromUrl()
   document.addEventListener('fullscreenchange', onFullscreenChange)
 
-  // Restore Spotify session from API (tokens now stored server-side)
-  spotifyPlayer.restoreSession()
-
   console.log('[RayMarchDemo] Starting engine...')
   await engine.start()
   console.log('[RayMarchDemo] Engine started.')
+
+  // Give the visualization engine access to GL for clip detection
+  const vizEngine = useVisualizationEngine()
+  vizEngine.setGLContext(engine.gl() as WebGL2RenderingContext | null, canvasRef.value)
 })
 
 onUnmounted(() => {
@@ -123,6 +127,14 @@ onUnmounted(() => {
             {{ shareTooltip }}
           </div>
         </div>
+        <button
+          class="rounded-md bg-black/60 px-2 py-1 text-xs transition-colors"
+          :class="showAudioPlayer ? 'text-[#2D95FC]' : 'text-slate-300 hover:text-white'"
+          title="Music Player"
+          @click="showAudioPlayer = !showAudioPlayer"
+        >
+          ♫
+        </button>
         <button class="rounded-md bg-black/60 px-2 py-1 text-xs text-slate-300 hover:text-white transition-colors" @click="toggleFullscreen">
           {{ isFullscreen ? '✕' : '⛶' }}
         </button>
@@ -150,7 +162,6 @@ onUnmounted(() => {
       <RayMarchControls
         @screenshot="engine.captureScreenshot"
         @fullscreen="toggleFullscreen"
-        @open-player="showAudioPlayer = true"
       />
 
       <!-- Audio player (floating, teleported to body) -->

@@ -21,7 +21,7 @@ export function useEssentiaClassifier() {
   let essentia: any = null
   let audioContext: AudioContext | null = null
   let scriptNode: ScriptProcessorNode | null = null
-  let sourceNode: MediaElementAudioSourceNode | null = null
+  let sourceNode: AudioNode | null = null
 
   // Sample buffer: accumulate raw PCM for periodic analysis
   const SAMPLE_RATE = 44100
@@ -148,7 +148,7 @@ export function useEssentiaClassifier() {
     }
   }
 
-  async function start(ctx: AudioContext, source: MediaElementAudioSourceNode) {
+  async function start(ctx: AudioContext, source: AudioNode) {
     audioContext = ctx
     sourceNode = source
 

@@ -1,27 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
-import { useSpotifyPlayer } from '~/composables/raymarcher/audio/useSpotifyPlayer'
 
 const store = useRayMarcherStore()
-const spotify = useSpotifyPlayer()
 
-const emit = defineEmits<{
-  openPlayer: []
-}>()
-
-// Auth0 state
-const isAuthenticated = ref(false)
-if (import.meta.client) {
-  try {
-    const { useAuth0 } = await import('@auth0/auth0-vue')
-    const auth0 = useAuth0()
-    isAuthenticated.value = auth0.isAuthenticated.value
-    watch(() => auth0.isAuthenticated.value, (val: boolean) => { isAuthenticated.value = val })
-  } catch {
-    // Auth0 not available
-  }
-}
+const energyLabel = computed(() => {
+  const e = store.audio.moodEnergy
+  if (e < 0.3) return 'calm'
+  if (e < 0.55) return 'building'
+  if (e < 0.8) return 'intense'
+  return 'breakdown'
+})
 
 const bands = computed(() => [
   { label: 'Bass', value: store.audio.bass, color: '#FF6B6B' },
@@ -68,92 +57,13 @@ const MOOD_PRESETS = [
   { name: 'Infinite Descent', energy: 0.4, valence: 0.2 },
 ]
 
-function toggleAutoplayer() {
-  store.audio.autoplayerEnabled = !store.audio.autoplayerEnabled
-}
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
-    <!-- Spotify connect section -->
-    <div class="flex flex-col gap-2 rounded-lg border border-slate-700/50 bg-slate-900/30 p-2">
-      <div v-if="!spotify.isConnected.value" class="flex flex-wrap items-center gap-2">
-        <!-- Not logged in -->
-        <template v-if="!isAuthenticated">
-          <span class="text-[10px] text-slate-500">Sign in to connect Spotify</span>
-        </template>
-        <!-- Logged in but Spotify not connected -->
-        <template v-else>
-          <NuxtLink
-            to="/account"
-            class="h-8 flex items-center rounded-md border border-green-600/50 bg-green-600/15 px-3 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25 no-underline"
-          >
-            <span class="mr-1.5">&#9835;</span>Connect in Account Settings
-          </NuxtLink>
-          <span class="text-[10px] text-slate-500">Link your Spotify account to stream music</span>
-        </template>
-        <p v-if="spotify.error.value" class="text-[10px] text-red-400 w-full">{{ spotify.error.value }}</p>
-      </div>
-      <div v-else class="flex flex-col gap-1.5">
-        <div class="flex items-center gap-2">
-          <div class="h-1.5 w-1.5 rounded-full bg-green-400" />
-          <span class="text-[11px] text-slate-300">{{ spotify.displayName.value }}</span>
-          <span
-            v-if="spotify.isPremium.value"
-            class="rounded-full border border-yellow-500/40 bg-yellow-500/15 px-1.5 py-0.5 text-[9px] font-medium text-yellow-400"
-          >PREMIUM</span>
-          <span
-            v-else
-            class="rounded-full border border-slate-600 bg-slate-800/50 px-1.5 py-0.5 text-[9px] font-medium text-slate-400"
-          >FREE</span>
-          <button
-            class="ml-auto text-[10px] text-slate-500 hover:text-red-400 transition-colors"
-            @click="spotify.disconnect"
-          >Disconnect</button>
-        </div>
-        <!-- Current track -->
-        <div v-if="spotify.currentTrack.value" class="flex items-center gap-2 rounded-md bg-slate-800/50 p-1.5">
-          <img
-            v-if="spotify.currentTrack.value.albumArt"
-            :src="spotify.currentTrack.value.albumArt"
-            class="h-8 w-8 rounded-sm"
-            alt=""
-          />
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-[11px] text-slate-200">{{ spotify.currentTrack.value.name }}</p>
-            <p class="truncate text-[10px] text-slate-500">{{ spotify.currentTrack.value.artist }}</p>
-          </div>
-          <div class="flex items-center gap-1">
-            <div class="h-1.5 w-1.5 rounded-full" :class="spotify.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
-            <span class="text-[9px]" :class="spotify.isPlaying.value ? 'text-green-400' : 'text-slate-500'">
-              {{ spotify.isPlaying.value ? 'Playing' : 'Paused' }}
-            </span>
-          </div>
-        </div>
-        <!-- Analysis status -->
-        <div v-if="spotify.currentTrack.value && spotify.analysis.value" class="flex items-center gap-2">
-          <span class="text-[9px] text-slate-600">Analysis loaded</span>
-          <div class="h-1 flex-1 rounded-full bg-slate-800">
-            <div
-              class="h-full rounded-full bg-green-500/40 transition-all duration-300"
-              :style="{ width: '100%' }"
-            />
-          </div>
-        </div>
-        <p v-if="spotify.error.value" class="text-[10px] text-red-400">{{ spotify.error.value }}</p>
-      </div>
-    </div>
-
     <div class="flex flex-wrap items-center gap-3">
-      <button
-        class="h-8 rounded-md border px-3 text-xs font-medium transition-colors"
-        :class="store.audio.isCapturing
-          ? 'border-green-500/50 bg-green-500/10 text-green-400'
-          : 'border-slate-600 bg-slate-800 text-slate-300 hover:text-white'"
-        @click="emit('openPlayer')"
-      >
-        {{ store.audio.isCapturing ? '&#9835; Audio Active' : '&#9835; Open Audio Player' }}
-      </button>
+      <span v-if="store.audio.isCapturing" class="text-xs font-medium text-green-400">♫ Audio Active</span>
+      <span v-else class="text-xs text-slate-500">No audio — open the music player (♫) in the top-right</span>
 
       <!-- Mini FFT bars -->
       <div v-if="store.audio.isCapturing" class="flex items-end gap-1 h-6">
@@ -177,30 +87,20 @@ function toggleAutoplayer() {
       </span>
     </div>
 
-    <!-- Autoplayer toggle row -->
+    <!-- Live analysis badges -->
     <div class="flex flex-wrap items-center gap-2">
-      <button
-        class="h-7 rounded-md border px-2.5 text-[11px] font-medium transition-colors"
-        :class="store.audio.autoplayerEnabled
-          ? 'border-[#2D95FC]/50 bg-[#2D95FC]/15 text-[#2D95FC]'
-          : 'border-slate-600 bg-slate-800 text-slate-400 hover:text-slate-200'"
-        @click="toggleAutoplayer"
-      >
-        {{ store.audio.autoplayerEnabled ? 'Autoplayer ON' : 'Autoplayer' }}
-      </button>
-
-      <!-- Energy state badge -->
+      <!-- Energy state badge (derived from moodEnergy) -->
       <span
-        v-if="store.audio.autoplayerEnabled && store.audio.isCapturing"
+        v-if="store.audio.isCapturing"
         class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize"
-        :class="ENERGY_COLORS[store.audio.autoplayerEnergy] || ENERGY_COLORS.calm"
+        :class="ENERGY_COLORS[energyLabel] || ENERGY_COLORS.calm"
       >
-        {{ store.audio.autoplayerEnergy }}
+        {{ energyLabel }}
       </span>
 
       <!-- Mood category badge (Essentia) -->
       <span
-        v-if="store.audio.autoplayerEnabled && store.audio.isCapturing && store.audio.moodCategory"
+        v-if="store.audio.isCapturing && store.audio.moodCategory"
         class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium"
         :class="MOOD_COLORS[store.audio.moodCategory] || ''"
       >
@@ -209,24 +109,17 @@ function toggleAutoplayer() {
 
       <!-- BPM badge -->
       <span
-        v-if="store.audio.autoplayerEnabled && store.audio.isCapturing && store.audio.bpm > 0"
+        v-if="store.audio.isCapturing && store.audio.bpm > 0"
         class="inline-flex items-center rounded-full border border-slate-600 bg-slate-800/50 px-2 py-0.5 text-[10px] font-medium text-slate-300"
       >
         {{ store.audio.bpm }} BPM
       </span>
 
-      <!-- Beat counter -->
-      <span
-        v-if="store.audio.autoplayerEnabled && store.audio.isCapturing && store.audio.autoplayerBeats > 0"
-        class="text-[10px] text-slate-500"
-      >
-        {{ store.audio.autoplayerBeats }} beats
-      </span>
     </div>
 
     <!-- Mood space dot plot -->
     <div
-      v-if="store.audio.autoplayerEnabled && store.audio.isCapturing"
+      v-if="store.audio.isCapturing"
       class="relative mt-1 h-[72px] w-full rounded-md border border-slate-700/50 bg-slate-900/50"
       title="Mood space: X=Energy, Y=Valence"
     >

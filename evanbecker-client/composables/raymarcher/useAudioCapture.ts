@@ -1,6 +1,5 @@
-import { ref, onUnmounted, watch } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
-import { useAudioReactiveMode } from './useAudioReactiveMode'
 import { useMeydaAnalyzer } from './useMeydaAnalyzer'
 import { useEssentiaClassifier } from './useEssentiaClassifier'
 
@@ -16,7 +15,6 @@ const MID_END = 0.4
  */
 export function useAudioCapture() {
   const store = useRayMarcherStore()
-  const reactiveMode = useAudioReactiveMode()
   const meydaAnalyzer = useMeydaAnalyzer()
   const essentiaClassifier = useEssentiaClassifier()
 
@@ -58,26 +56,12 @@ export function useAudioCapture() {
     meydaAnalyzer.start(audioCtx, sourceNode)
   }
 
-  /**
-   * Lazily initialize Essentia when the autoplayer is first enabled.
-   * This avoids loading the WASM module until it's actually needed.
-   */
   async function initEssentiaIfNeeded() {
     if (essentiaInitialized || !audioCtx || !sourceNode) return
     essentiaInitialized = true
     await essentiaClassifier.start(audioCtx, sourceNode)
     store.audio.essentiaReady = essentiaClassifier.isReady.value
   }
-
-  // Watch for autoplayer toggle to lazy-init Essentia
-  watch(
-    () => store.audio.autoplayerEnabled,
-    async (enabled) => {
-      if (enabled && isPlaying.value) {
-        await initEssentiaIfNeeded()
-      }
-    },
-  )
 
   function analyse() {
     if (!analyser || !dataArray) return
@@ -114,16 +98,6 @@ export function useAudioCapture() {
       store.audio.bpm = essentiaClassifier.bpm.value
       store.audio.moodCategory = essentiaClassifier.mood.value
       store.audio.essentiaReady = true
-    }
-
-    // Drive autoplayer when enabled
-    if (store.audio.autoplayerEnabled && reactiveMode.isActive.value) {
-      const now = performance.now()
-      const dt = lastAnalyseTime > 0 ? (now - lastAnalyseTime) / 1000 : 1 / 60
-      lastAnalyseTime = now
-      reactiveMode.update(dt)
-    } else {
-      lastAnalyseTime = 0
     }
 
     animFrameId = requestAnimationFrame(analyse)
@@ -198,11 +172,6 @@ export function useAudioCapture() {
     store.audio.isCapturing = true
     animFrameId = requestAnimationFrame(analyse)
     requestAnimationFrame(updateTime)
-
-    // Lazy-init Essentia if autoplayer is already enabled
-    if (store.audio.autoplayerEnabled) {
-      initEssentiaIfNeeded()
-    }
   }
 
   function pause() {
@@ -275,7 +244,6 @@ export function useAudioCapture() {
     seek,
     stop,
     cleanup,
-    reactiveMode,
     meydaAnalyzer,
     essentiaClassifier,
   }

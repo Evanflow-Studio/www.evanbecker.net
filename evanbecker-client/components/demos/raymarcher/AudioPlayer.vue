@@ -1,40 +1,81 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useAudioCapture } from '~/composables/raymarcher/useAudioCapture'
-import { useSpotifyPlayer } from '~/composables/raymarcher/audio/useSpotifyPlayer'
+import { useYouTubePlayer } from '~/composables/raymarcher/audio/useYouTubePlayer'
+import { useYouTubeSearch } from '~/composables/raymarcher/audio/useYouTubeSearch'
+import { usePlaybackQueue } from '~/composables/raymarcher/audio/usePlaybackQueue'
+import { useTabAudioCapture } from '~/composables/raymarcher/audio/useTabAudioCapture'
+import { useTrackMetadata } from '~/composables/raymarcher/audio/useTrackMetadata'
 import { useRayMarcherStore } from '~/stores/raymarcher'
+import type { YouTubeTrack } from '~/composables/raymarcher/audio/useYouTubePlayer'
+
+const emit = defineEmits<{
+  close: []
+}>()
 
 const store = useRayMarcherStore()
 const audio = useAudioCapture()
-const spotify = useSpotifyPlayer()
+const yt = useYouTubePlayer()
+const tabCapture = useTabAudioCapture()
+const ytSearch = useYouTubeSearch()
+const queue = usePlaybackQueue()
+const trackMeta = useTrackMetadata()
+
+const activeTab = ref<'file' | 'youtube'>('youtube')
 const urlInput = ref('')
+const searchQuery = ref('')
 const isDragOver = ref(false)
 const minimized = ref(false)
-const activeTab = ref<'file' | 'spotify'>('file')
+const showQueue = ref(false)
 
-// Start/stop reactive mode when the store flag toggles
-watch(() => store.audio.autoplayerEnabled, (enabled) => {
-  if (enabled && audio.isPlaying.value) {
-    audio.reactiveMode.start()
-  } else {
-    audio.reactiveMode.stop()
-  }
+
+/**
+ * Central function — every track change goes through here.
+ * Loads video + resolves metadata in one place.
+ */
+function playTrack(track: YouTubeTrack) {
+  yt.loadVideo(track.videoId)
+  trackMeta.resolve(track.title, track.channel)
+  console.log('%c[Player] Playing track', 'color: #2D95FC; font-weight: bold', track.title)
+}
+
+// Init YouTube player
+onMounted(() => {
+  yt.init('yt-player-container')
+  yt.setOnVideoEnd(() => {
+    const next = queue.playNext()
+    if (next) playTrack(next)
+  })
 })
 
-// Also start reactive mode when playback starts if autoplayer is already enabled
-watch(() => audio.isPlaying.value, (playing) => {
-  if (playing && store.audio.autoplayerEnabled) {
-    audio.reactiveMode.start()
-  } else if (!playing) {
-    audio.reactiveMode.stop()
-  }
-})
 
+// YouTube search
+watch(searchQuery, (q) => ytSearch.searchDebounced(q))
+
+function addToQueueAndPlay(result: { videoId: string, title: string, channelTitle: string, thumbnailUrl: string }) {
+  const track: YouTubeTrack = {
+    videoId: result.videoId,
+    title: result.title,
+    channel: result.channelTitle,
+    thumbnail: result.thumbnailUrl,
+  }
+  queue.addToQueue(track)
+  // Always play the newly added track
+  playTrack(track)
+  searchQuery.value = ''
+  ytSearch.clear()
+}
+
+function playQueueItem(index: number) {
+  const track = queue.playAt(index)
+  if (track) playTrack(track)
+}
+
+// File tab functions
 function onLoadUrl() {
   const url = urlInput.value.trim()
   if (!url) return
   audio.loadUrl(url)
-  // Auto-play after a short delay for the source to connect
   setTimeout(() => audio.play(), 300)
 }
 
@@ -55,11 +96,6 @@ function onDrop(e: DragEvent) {
   }
 }
 
-function onDragOver(e: DragEvent) {
-  e.preventDefault()
-  isDragOver.value = true
-}
-
 function formatTime(seconds: number): string {
   if (!seconds || isNaN(seconds)) return '0:00'
   const m = Math.floor(seconds / 60)
@@ -69,18 +105,18 @@ function formatTime(seconds: number): string {
 
 function onSeek(e: Event) {
   const value = parseFloat((e.target as HTMLInputElement).value)
-  audio.seek(value)
-}
-
-function togglePlay() {
-  audio.isPlaying.value ? audio.pause() : audio.play()
+  if (activeTab.value === 'youtube') yt.seekTo(value)
+  else audio.seek(value)
 }
 </script>
 
 <template>
   <Teleport to="body">
+    <!-- Hidden YouTube IFrame container -->
+    <div id="yt-player-container" class="hidden" />
+
     <div
-      class="fixed bottom-4 right-4 z-50 w-72 rounded-xl bg-black/85 backdrop-blur-md border border-slate-700/50 shadow-2xl overflow-hidden"
+      class="fixed bottom-4 right-4 z-50 w-80 rounded-xl bg-black/85 backdrop-blur-md border border-slate-700/50 shadow-2xl overflow-hidden"
     >
       <!-- Title bar -->
       <div class="flex items-center justify-between px-3 py-2 bg-slate-800/50">
@@ -88,7 +124,9 @@ function togglePlay() {
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[#2D95FC] shrink-0" viewBox="0 0 20 20" fill="currentColor">
             <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
           </svg>
-          <span class="text-xs text-slate-300 truncate">{{ audio.fileName.value || 'Audio Player' }}</span>
+          <span class="text-xs text-slate-300 truncate">
+            {{ activeTab === 'youtube' ? (queue.currentTrack.value?.title || 'YouTube Player') : (audio.fileName.value || 'Audio Player') }}
+          </span>
         </div>
         <div class="flex items-center gap-1">
           <button class="text-slate-500 hover:text-slate-300 text-xs px-1" @click="minimized = !minimized">
@@ -99,28 +137,214 @@ function togglePlay() {
       </div>
 
       <div v-if="!minimized" class="px-3 pb-3 pt-2 space-y-2">
-        <!-- Tab toggle: File | Spotify -->
-        <div class="flex rounded-md border border-slate-700 bg-slate-800/50 p-0.5">
+        <!-- Tab switcher -->
+        <div class="flex gap-1 rounded-lg bg-slate-800/50 p-0.5">
           <button
-            class="flex-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors"
-            :class="activeTab === 'file' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'"
+            class="flex-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors"
+            :class="activeTab === 'youtube' ? 'bg-[#0C65E5] text-white' : 'text-slate-400 hover:text-slate-200'"
+            @click="activeTab = 'youtube'"
+          >
+            YouTube
+          </button>
+          <button
+            class="flex-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors"
+            :class="activeTab === 'file' ? 'bg-[#0C65E5] text-white' : 'text-slate-400 hover:text-slate-200'"
             @click="activeTab = 'file'"
-          >File</button>
-          <button
-            class="flex-1 rounded-sm px-2 py-1 text-[11px] font-medium transition-colors"
-            :class="activeTab === 'spotify' ? 'bg-green-600/30 text-green-400' : 'text-slate-400 hover:text-slate-200'"
-            @click="activeTab = 'spotify'"
-          >Spotify</button>
+          >
+            File
+          </button>
         </div>
 
-        <!-- FILE TAB -->
-        <template v-if="activeTab === 'file'">
-          <!-- Drop zone / file picker -->
+        <!-- ==================== YOUTUBE TAB ==================== -->
+        <template v-if="activeTab === 'youtube'">
+          <!-- Search -->
+          <div class="relative">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search YouTube..."
+              class="w-full rounded-md bg-slate-800 border border-slate-600 px-2 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-[#2D95FC] focus:outline-none"
+            />
+            <svg v-if="ytSearch.isSearching.value" class="absolute right-2 top-1.5 h-3.5 w-3.5 animate-spin text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="20" />
+            </svg>
+          </div>
+
+          <!-- Search results -->
+          <div v-if="ytSearch.results.value.length" class="max-h-40 overflow-y-auto space-y-1 scrollbar-thin">
+            <button
+              v-for="result in ytSearch.results.value"
+              :key="result.videoId"
+              class="flex items-center gap-2 w-full rounded-md p-1.5 text-left hover:bg-slate-700/50 transition-colors"
+              @click="addToQueueAndPlay(result)"
+            >
+              <img :src="result.thumbnailUrl" :alt="result.title" class="h-8 w-12 rounded object-cover shrink-0" />
+              <div class="min-w-0">
+                <p class="text-[10px] text-slate-200 truncate leading-tight">{{ result.title }}</p>
+                <p class="text-[9px] text-slate-500 truncate">{{ result.channelTitle }}</p>
+              </div>
+            </button>
+          </div>
+
+          <!-- Error -->
+          <p v-if="ytSearch.searchError.value" class="text-[10px] text-red-400">{{ ytSearch.searchError.value }}</p>
+          <p v-if="yt.error.value" class="text-[10px] text-red-400">{{ yt.error.value }}</p>
+
+          <!-- Now Playing + Transport -->
+          <div v-if="queue.currentTrack.value" class="space-y-1.5">
+            <div class="flex items-center gap-2">
+              <img :src="queue.currentTrack.value.thumbnail" class="h-9 w-12 rounded object-cover shrink-0" />
+              <div class="min-w-0 flex-1">
+                <p class="text-[10px] text-slate-200 truncate leading-tight">{{ queue.currentTrack.value.title }}</p>
+                <p class="text-[9px] text-slate-500 truncate">{{ queue.currentTrack.value.channel }}</p>
+                <div v-if="store.audio.trackGenres.length" class="flex flex-wrap gap-0.5 mt-0.5">
+                  <span
+                    v-for="genre in store.audio.trackGenres.slice(0, 3)"
+                    :key="genre"
+                    class="rounded-full bg-[#2D95FC]/15 px-1.5 py-0 text-[8px] text-[#2D95FC]"
+                  >{{ genre }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-2">
+              <button
+                class="text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                :disabled="!queue.hasPrevious.value"
+                @click="() => { const t = queue.playPrevious(); if (t) playTrack(t) }"
+              >
+                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" /></svg>
+              </button>
+
+              <button
+                class="flex items-center justify-center h-7 w-7 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
+                @click="yt.togglePlay()"
+              >
+                <svg v-if="!yt.isPlaying.value" class="h-3.5 w-3.5 text-white ml-0.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                <svg v-else class="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+
+              <button
+                class="text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                :disabled="!queue.hasNext.value"
+                @click="() => { const t = queue.playNext(); if (t) playTrack(t) }"
+              >
+                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M11.555 5.168A1 1 0 0010 6v2.798L4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4z" /></svg>
+              </button>
+
+              <span class="text-[10px] text-slate-500 font-mono ml-1">
+                {{ formatTime(yt.currentTime.value) }} / {{ formatTime(yt.duration.value) }}
+              </span>
+
+              <!-- Shuffle & Repeat -->
+              <div class="flex items-center gap-1 ml-auto">
+                <button
+                  class="text-[10px] transition-colors"
+                  :class="queue.isShuffled.value ? 'text-[#2D95FC]' : 'text-slate-500 hover:text-slate-300'"
+                  @click="queue.toggleShuffle()"
+                  title="Shuffle"
+                >⇄</button>
+                <button
+                  class="text-[10px] transition-colors"
+                  :class="queue.repeatMode.value !== 'none' ? 'text-[#2D95FC]' : 'text-slate-500 hover:text-slate-300'"
+                  @click="queue.cycleRepeat()"
+                  :title="'Repeat: ' + queue.repeatMode.value"
+                >{{ queue.repeatMode.value === 'one' ? '🔂' : '🔁' }}</button>
+              </div>
+            </div>
+
+            <!-- Seek bar -->
+            <input
+              type="range"
+              :min="0"
+              :max="yt.duration.value || 0"
+              :value="yt.currentTime.value"
+              step="0.5"
+              class="w-full h-1 accent-[#2D95FC] cursor-pointer"
+              @input="onSeek"
+            />
+
+            <!-- Volume -->
+            <div class="flex items-center gap-2">
+              <span class="text-[9px] text-slate-500">🔊</span>
+              <input
+                type="range"
+                :min="0"
+                :max="100"
+                :value="yt.volume.value"
+                class="flex-1 h-1 accent-[#2D95FC] cursor-pointer"
+                @input="(e: Event) => yt.setVolume(parseInt((e.target as HTMLInputElement).value))"
+              />
+            </div>
+          </div>
+
+          <!-- Tab Audio Capture (Visualizer) -->
+          <div v-if="queue.currentTrack.value" class="rounded-lg border border-slate-700/50 p-2">
+            <div v-if="!tabCapture.isCapturing.value" class="space-y-1">
+              <button
+                class="w-full rounded-md bg-emerald-600 px-2 py-1.5 text-[10px] font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-40"
+                :disabled="!tabCapture.isSupported.value"
+                @click="tabCapture.startCapture()"
+              >
+                ✦ Enable Visualizer
+              </button>
+              <p class="text-[9px] text-slate-500 text-center">Captures tab audio for real-time analysis</p>
+            </div>
+            <div v-else class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <div class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span class="text-[10px] text-emerald-400">Analyzing audio</span>
+              </div>
+              <button
+                class="text-[10px] text-slate-500 hover:text-red-400 transition-colors"
+                @click="tabCapture.stopCapture()"
+              >Stop</button>
+            </div>
+            <p v-if="tabCapture.error.value" class="text-[9px] text-red-400 mt-1">{{ tabCapture.error.value }}</p>
+          </div>
+
+          <!-- Queue toggle -->
+          <div v-if="queue.queue.value.length > 0">
+            <button
+              class="text-[10px] text-slate-400 hover:text-slate-200 transition-colors"
+              @click="showQueue = !showQueue"
+            >
+              Queue ({{ queue.queue.value.length }}) {{ showQueue ? '▲' : '▼' }}
+            </button>
+
+            <div v-if="showQueue" class="mt-1 max-h-32 overflow-y-auto space-y-0.5 scrollbar-thin">
+              <div
+                v-for="(track, i) in queue.queue.value"
+                :key="i"
+                class="flex items-center gap-2 rounded px-1.5 py-1 text-left transition-colors cursor-pointer"
+                :class="i === queue.currentIndex.value ? 'bg-[#0C65E5]/20' : 'hover:bg-slate-700/30'"
+                @click="playQueueItem(i)"
+              >
+                <span class="text-[9px] text-slate-500 w-3 text-right shrink-0">{{ i + 1 }}</span>
+                <p class="text-[10px] truncate flex-1" :class="i === queue.currentIndex.value ? 'text-[#2D95FC]' : 'text-slate-300'">
+                  {{ track.title }}
+                </p>
+                <button
+                  class="text-slate-600 hover:text-red-400 text-[10px] shrink-0"
+                  @click.stop="queue.removeFromQueue(i)"
+                >✕</button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- ==================== FILE TAB ==================== -->
+        <template v-else-if="activeTab === 'file'">
           <div
             class="relative rounded-lg border border-dashed transition-colors text-center py-3 cursor-pointer"
             :class="isDragOver ? 'border-[#2D95FC] bg-[#2D95FC]/10' : 'border-slate-600 hover:border-slate-400'"
             @drop.prevent="onDrop"
-            @dragover="onDragOver"
+            @dragover.prevent="isDragOver = true"
             @dragleave="isDragOver = false"
             @click="($refs.fileInput as HTMLInputElement)?.click()"
           >
@@ -130,7 +354,6 @@ function togglePlay() {
             </p>
           </div>
 
-          <!-- URL input -->
           <div class="flex gap-1">
             <input
               v-model="urlInput"
@@ -147,30 +370,24 @@ function togglePlay() {
             </button>
           </div>
 
-          <!-- Error -->
           <p v-if="audio.error.value" class="text-[10px] text-red-400">{{ audio.error.value }}</p>
 
-          <!-- Player controls (shown when file loaded) -->
           <div v-if="audio.fileName.value" class="space-y-1.5">
-            <!-- Play/Pause + time -->
             <div class="flex items-center gap-2">
               <button
                 class="flex items-center justify-center h-7 w-7 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors"
-                @click="togglePlay"
+                @click="audio.isPlaying.value ? audio.pause() : audio.play()"
               >
-                <svg v-if="!audio.isPlaying.value" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white ml-0.5" viewBox="0 0 20 20" fill="currentColor">
+                <svg v-if="!audio.isPlaying.value" class="h-3.5 w-3.5 text-white ml-0.5" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                 </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                <svg v-else class="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                 </svg>
               </button>
-
               <span class="text-[10px] text-slate-500 font-mono w-16">
                 {{ formatTime(audio.currentTime.value) }} / {{ formatTime(audio.duration.value) }}
               </span>
-
-              <!-- Status dot -->
               <div class="flex items-center gap-1 ml-auto">
                 <div class="h-1.5 w-1.5 rounded-full" :class="audio.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
                 <span class="text-[10px]" :class="audio.isPlaying.value ? 'text-green-400' : 'text-slate-500'">
@@ -178,8 +395,6 @@ function togglePlay() {
                 </span>
               </div>
             </div>
-
-            <!-- Seek bar -->
             <input
               type="range"
               :min="0"
@@ -191,71 +406,17 @@ function togglePlay() {
             />
           </div>
         </template>
-
-        <!-- SPOTIFY TAB -->
-        <template v-if="activeTab === 'spotify'">
-          <div v-if="!spotify.isConnected.value" class="text-center py-4">
-            <button
-              class="rounded-md border border-green-600/50 bg-green-600/15 px-4 py-2 text-xs font-medium text-green-400 transition-colors hover:bg-green-600/25"
-              @click="spotify.connect"
-            >
-              Connect Spotify
-            </button>
-            <p class="mt-2 text-[10px] text-slate-500">Link your Spotify to drive the visualizer</p>
-          </div>
-          <div v-else class="space-y-2">
-            <!-- Track info -->
-            <div v-if="spotify.currentTrack.value" class="flex items-center gap-2">
-              <img
-                v-if="spotify.currentTrack.value.albumArt"
-                :src="spotify.currentTrack.value.albumArt"
-                class="h-10 w-10 rounded-sm"
-                alt=""
-              />
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-[11px] text-slate-200">{{ spotify.currentTrack.value.name }}</p>
-                <p class="truncate text-[10px] text-slate-500">{{ spotify.currentTrack.value.artist }}</p>
-              </div>
-            </div>
-            <div v-else class="text-center py-2">
-              <p class="text-[11px] text-slate-500">Play something on Spotify...</p>
-            </div>
-            <!-- Status -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5">
-                <div class="h-1.5 w-1.5 rounded-full" :class="spotify.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
-                <span class="text-[10px]" :class="spotify.isPlaying.value ? 'text-green-400' : 'text-slate-500'">
-                  {{ spotify.isPlaying.value ? 'Streaming' : 'Paused' }}
-                </span>
-                <span
-                  v-if="spotify.isPremium.value"
-                  class="text-[9px] text-yellow-400/60"
-                >SDK</span>
-                <span v-else class="text-[9px] text-slate-600">Poll</span>
-              </div>
-              <button
-                class="text-[10px] text-slate-500 hover:text-red-400 transition-colors"
-                @click="spotify.disconnect"
-              >Disconnect</button>
-            </div>
-            <p v-if="spotify.error.value" class="text-[10px] text-red-400">{{ spotify.error.value }}</p>
-          </div>
-        </template>
       </div>
 
-      <!-- Minimized: just play/pause + name + status -->
-      <div v-else-if="audio.fileName.value || spotify.currentTrack.value" class="flex items-center gap-2 px-3 py-1.5">
-        <template v-if="activeTab === 'file' && audio.fileName.value">
-          <button class="text-slate-400 hover:text-white" @click="togglePlay">
-            {{ audio.isPlaying.value ? '&#9208;' : '&#9654;' }}
-          </button>
-          <span class="text-[10px] text-slate-400 truncate flex-1">{{ audio.fileName.value }}</span>
-          <div class="h-1.5 w-1.5 rounded-full" :class="audio.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
-        </template>
-        <template v-else-if="activeTab === 'spotify' && spotify.currentTrack.value">
-          <div class="h-1.5 w-1.5 rounded-full" :class="spotify.isPlaying.value ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
-          <span class="text-[10px] text-slate-400 truncate flex-1">{{ spotify.currentTrack.value.name }}</span>
-        </template>
+      <!-- Minimized view -->
+      <div v-else class="flex items-center gap-2 px-3 py-1.5">
+        <button class="text-slate-400 hover:text-white" @click="activeTab === 'youtube' ? yt.togglePlay() : (audio.isPlaying.value ? audio.pause() : audio.play())">
+          {{ (activeTab === 'youtube' ? yt.isPlaying.value : audio.isPlaying.value) ? '⏸' : '▶' }}
+        </button>
+        <span class="text-[10px] text-slate-400 truncate flex-1">
+          {{ activeTab === 'youtube' ? (queue.currentTrack.value?.title || 'No track') : (audio.fileName.value || 'No file') }}
+        </span>
+        <div class="h-1.5 w-1.5 rounded-full" :class="(activeTab === 'youtube' ? yt.isPlaying.value : audio.isPlaying.value) ? 'bg-green-400 animate-pulse' : 'bg-slate-600'" />
       </div>
     </div>
   </Teleport>

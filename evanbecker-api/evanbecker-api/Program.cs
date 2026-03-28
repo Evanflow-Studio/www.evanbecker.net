@@ -37,8 +37,9 @@ builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.Configure<RecaptchaSettings>(builder.Configuration.GetSection("Recaptcha"));
 builder.Services.AddHttpClient<IRecaptchaService, RecaptchaService>();
 
-builder.Services.Configure<SpotifyConfiguration>(builder.Configuration.GetSection("Spotify"));
-builder.Services.AddHttpClient<ISpotifyService, SpotifyService>();
+builder.Services.Configure<YouTubeConfiguration>(builder.Configuration.GetSection("YouTube"));
+builder.Services.AddHttpClient<IYouTubeService, YouTubeService>();
+
 builder.Services.AddMemoryCache();
 
 builder.Services.AddSignalR();

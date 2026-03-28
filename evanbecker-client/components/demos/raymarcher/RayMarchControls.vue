@@ -3,15 +3,14 @@ import { ref, computed } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
 import { QUALITY_NAMES, GEO_PRESET_NAMES, ANIMATION_NAMES } from '~/utils/shaders/constants'
-
 const store = useRayMarcherStore()
 const presetNames = LATTICE_PRESETS.map(p => p.name)
 
 const emit = defineEmits<{
   screenshot: []
   fullscreen: []
-  openPlayer: []
 }>()
+
 
 const showAdvanced = ref(false)
 const activeTags = ref(new Set(['scene', 'color', 'fx', 'audio', 'tools']))
@@ -123,7 +122,7 @@ const presetDisplayName = computed(() => {
       <div v-if="activeTags.has('color') && activeTags.has('fx')" class="border-t border-slate-700/30" />
       <FxTab v-if="activeTags.has('fx')" />
       <div v-if="activeTags.has('fx') && activeTags.has('audio')" class="border-t border-slate-700/30" />
-      <AudioTab v-if="activeTags.has('audio')" @open-player="emit('openPlayer')" />
+      <AudioTab v-if="activeTags.has('audio')" />
       <div v-if="activeTags.has('audio') && activeTags.has('tools')" class="border-t border-slate-700/30" />
       <ToolsTab v-if="activeTags.has('tools')" @screenshot="emit('screenshot')" @fullscreen="emit('fullscreen')" />
     </div>

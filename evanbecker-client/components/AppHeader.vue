@@ -66,7 +66,7 @@ if (import.meta.client) {
     isLoading.value = auth0.isLoading.value
     loginWithRedirect = () => auth0.loginWithRedirect()
     logout = () => {
-      currentUser.value = null
+      currentUser.value = null // triggers localStorage clear via watch
       auth0.logout({ logoutParams: { returnTo: window.location.origin } })
     }
 

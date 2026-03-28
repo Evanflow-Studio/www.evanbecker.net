@@ -78,7 +78,7 @@ export function useMeydaAnalyzer() {
     }
   }
 
-  async function start(audioContext: AudioContext, sourceNode: MediaElementAudioSourceNode) {
+  async function start(audioContext: AudioContext, sourceNode: AudioNode) {
     if (isActive.value || !audioContext || !sourceNode) return
 
     try {

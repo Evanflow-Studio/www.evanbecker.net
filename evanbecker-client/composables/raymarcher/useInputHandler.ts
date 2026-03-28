@@ -130,7 +130,13 @@ export function createKeyHandlers(
 ) {
   const store = useRayMarcherStore()
 
+  function isTypingInInput(): boolean {
+    const tag = document.activeElement?.tagName
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+  }
+
   function onKeyDown(e: KeyboardEvent) {
+    if (isTypingInInput()) return
     const key = e.key.toLowerCase()
     if (MOVEMENT_KEYS.has(key)) {
       e.preventDefault()
@@ -142,6 +148,7 @@ export function createKeyHandlers(
   }
 
   function onKeyUp(e: KeyboardEvent) {
+    if (isTypingInInput()) return
     input.keysDown.delete(e.key.toLowerCase())
   }
 

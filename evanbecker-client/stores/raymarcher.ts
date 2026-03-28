@@ -63,9 +63,6 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       amplitude: 0,
       isCapturing: false,
       youtubeUrl: '',
-      autoplayerEnabled: false,
-      autoplayerEnergy: 'calm' as const,
-      autoplayerBeats: 0,
       brightness: 0,
       percussiveness: 0,
       moodEnergy: 0,
@@ -73,10 +70,10 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       bpm: 0,
       moodCategory: null,
       essentiaReady: false,
-      spotifyConnected: false,
-      spotifyPremium: false,
-      spotifyTrackId: '',
       isOnBeat: false,
+      trackTitle: '',
+      trackArtist: '',
+      trackGenres: [],
     } as AudioState,
 
     // Custom palette (IQ cosine)
@@ -188,12 +185,9 @@ export const useRayMarcherStore = defineStore('raymarcher', {
     importFromUrl(): boolean {
       if (typeof window === 'undefined') return false
 
-      // Skip if this is a Spotify OAuth callback (has ?code= param)
-      const search = window.location.search
-      if (search && search.includes('code=')) return false
-
       // Support both hash (#s=2) and query params (?s=2)
       const hash = window.location.hash
+      const search = window.location.search
       const source = (hash && hash.length >= 2) ? hash.slice(1) : (search && search.length >= 2) ? search.slice(1) : null
       if (!source) return false
 

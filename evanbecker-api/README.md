@@ -14,9 +14,9 @@ REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles commen
 ```
 evanbecker-api/
 ├── evanbecker-api/              # API project
-│   ├── Controllers/             # REST endpoints (Comment, Contact, Newsletter, User)
+│   ├── Controllers/             # REST endpoints (Comment, Contact, Newsletter, User, YouTube)
 │   ├── Configuration/           # Secrets provider, Auth0/GitHub config models
-│   ├── Services/                # Business logic (Comments, Users, Email, Recaptcha)
+│   ├── Services/                # Business logic (Comments, Users, Email, Recaptcha, YouTube)
 │   ├── Dto/                     # Data transfer objects
 │   ├── Extensions/              # WebApplicationExtensions (auto-migrations)
 │   └── Program.cs               # App startup & DI
@@ -40,12 +40,10 @@ All under `/api/v1/`:
 | `contact` | POST | No | Submit contact form (with reCAPTCHA) |
 | `newsletter` | POST | No | Subscribe to newsletter |
 | `user` | GET | Required | Get authenticated user info |
-| `spotify/auth-url` | GET | No | Get Spotify OAuth URL |
-| `spotify/callback` | POST | No | Exchange Spotify auth code for tokens |
-| `spotify/refresh` | POST | No | Refresh Spotify access token |
-| `spotify/now-playing` | GET | Spotify token | Get currently playing track |
-| `spotify/analysis/{trackId}` | GET | Spotify token | Get audio analysis (cached 24h) |
-| `spotify/features/{trackId}` | GET | Spotify token | Get audio features (cached 24h) |
+| `user` | POST | Required | Sync/upsert user from Auth0 |
+| `user` | PATCH | Required | Update profile (name, avatar) |
+| `youtube/search?q={query}` | GET | No | Search YouTube catalog (proxied) |
+| `youtube/video/{videoId}` | GET | No | Get video metadata (cached 24h) |
 
 Swagger docs available at `/swagger` on any running instance.
 
@@ -110,9 +108,8 @@ dotnet user-secrets set "Auth0:ClientId" "YOUR_CLIENT_ID"
 dotnet user-secrets set "Auth0:ClientSecret" "YOUR_CLIENT_SECRET"
 dotnet user-secrets set "Auth0:Url" "https://dev-m3uiopcp.us.auth0.com"
 
-# Optional — Spotify (ray marcher audio integration)
-dotnet user-secrets set "Spotify:ClientId" "YOUR_SPOTIFY_CLIENT_ID"
-dotnet user-secrets set "Spotify:ClientSecret" "YOUR_SPOTIFY_CLIENT_SECRET"
+# Optional — YouTube (ray marcher music search)
+dotnet user-secrets set "YouTube:ApiKey" "YOUR_YOUTUBE_DATA_API_KEY"
 
 # Optional — reCAPTCHA (contact form)
 dotnet user-secrets set "Recaptcha:SecretKey" "YOUR_RECAPTCHA_SECRET"
@@ -140,9 +137,7 @@ All secrets managed via Infisical in production. For local dev, use `dotnet user
 | `EMAIL_FROM_ADDRESS` | `Email:FromAddress` | No | Defaults to `noreply@evanbecker.net` |
 | `EMAIL_TO_ADDRESS` | `Email:ToAddress` | No | Contact form emails won't send |
 | `RECAPTCHA_SECRET_KEY` | `Recaptcha:SecretKey` | No | Contact form submits without verification |
-| `SPOTIFY_CLIENT_ID` | `Spotify:ClientId` | No | Spotify integration disabled (ray marcher still works with file upload) |
-| `SPOTIFY_CLIENT_SECRET` | `Spotify:ClientSecret` | No | Spotify integration disabled |
-| `SPOTIFY_REDIRECT_URI` | `Spotify:RedirectUri` | No | Defaults to `http://localhost:3000/sandbox/raymarcher` |
+| `YOUTUBE_API_KEY` | `YouTube:ApiKey` | No | YouTube search disabled (file upload still works) |
 
 **Minimum to run locally:** `DB_CONNECTION_STRING` + Auth0 secrets. Everything else degrades gracefully.
 
