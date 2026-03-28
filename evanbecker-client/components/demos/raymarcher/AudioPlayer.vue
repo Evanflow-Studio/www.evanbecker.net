@@ -41,7 +41,11 @@ const controlsDisabled = computed(() => session.isConnected.value && !session.is
 function playTrack(track: YouTubeTrack) {
   yt.loadVideo(track.videoId)
   trackMeta.resolve(track.title, track.channel)
-  console.log('%c[Player] Playing track', 'color: #2D95FC; font-weight: bold', track.title)
+  // Keep store in sync for session heartbeat
+  store.audio.youtubeUrl = track.videoId
+  store.audio.trackTitle = track.title
+  store.audio.trackArtist = track.channel
+  if (import.meta.dev) console.log('%c[Player] Playing track', 'color: #2D95FC; font-weight: bold', track.title)
 }
 
 // Init YouTube player
@@ -52,39 +56,47 @@ onMounted(() => {
     if (next) playTrack(next)
   })
 
-  // Provide playback state to session hub for host heartbeat
-  session.setPlaybackStateProvider(() => ({
-    videoId: yt.currentVideoId.value,
-    title: queue.currentTrack.value?.title ?? null,
-    channel: queue.currentTrack.value?.channel ?? null,
-    thumbnail: queue.currentTrack.value?.thumbnail ?? null,
-    currentTime: yt.currentTime.value,
-    duration: yt.duration.value,
-    isPlaying: yt.isPlaying.value,
-  }))
+  // Keep store in sync with YouTube player for session heartbeat
+  // (the session hub reads from the store, not from a callback)
+  watch([yt.currentVideoId, yt.isPlaying], () => {
+    store.audio.youtubeUrl = yt.currentVideoId.value
+  })
 })
 
-// Session sync: simplified — play/pause/next only (no seek scrubbing)
-// Only syncs when the member has marked themselves as ready
+// Session sync: play/pause + track load only (no seek)
+// Queues the sync if the player isn't ready yet and applies once it is
+let pendingSync: typeof session.syncedPlayback.value = null
+
 watch(() => session.syncedPlayback.value, (state) => {
-  if (!state || session.isHost.value || !yt.isReady.value) return
+  if (!state || session.isHost.value) return
 
-  // Wait for member to be ready before syncing
-  const me = session.members.value.find(m =>
-    !m.isHost && m.userId === (useCurrentUser().value as any)?.id
-  )
-  if (me && !me.isReady) return
+  if (!yt.isReady.value) {
+    pendingSync = state
+    return
+  }
 
-  // Load new video if different (host switched tracks)
+  applySyncState(state)
+}, { deep: true })
+
+// Apply queued sync once player becomes ready
+watch(() => yt.isReady.value, (ready) => {
+  if (ready && pendingSync && !session.isHost.value) {
+    applySyncState(pendingSync)
+    pendingSync = null
+  }
+})
+
+function applySyncState(state: NonNullable<typeof session.syncedPlayback.value>) {
+  // Load new video if different (host switched tracks or started playing)
   if (state.videoId && state.videoId !== yt.currentVideoId.value) {
     yt.loadVideo(state.videoId)
-    if (import.meta.dev) console.log('%c[Session] Loading host video:', 'color: #2D95FC', state.videoId)
+    if (import.meta.dev) console.log('%c[Session] Syncing to host video:', 'color: #2D95FC', state.videoId, state.title)
   }
 
   // Sync play/pause
   if (state.isPlaying && !yt.isPlaying.value) yt.play()
   else if (!state.isPlaying && yt.isPlaying.value) yt.pause()
-}, { deep: true })
+}
 
 // Session sync: when host broadcasts queue, non-hosts replace their queue
 watch(() => session.syncedQueue.value, (state) => {

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRayMarcherStore, QUALITY_PRESETS } from '~/stores/raymarcher'
 import { useRayMarchEngine } from '~/composables/raymarcher/useRayMarchEngine'
 import { useVisualizationEngine } from '~/composables/raymarcher/audio/useVisualizationEngine'
+import { useSessionHub } from '~/composables/raymarcher/audio/useSessionHub'
 
 const store = useRayMarcherStore()
 
@@ -16,6 +17,12 @@ let shareTimeout: ReturnType<typeof setTimeout> | null = null
 // Audio player + session
 const showAudioPlayer = ref(false)
 const showSessionPanel = ref(false)
+const session = useSessionHub()
+
+// Auto-open audio player when joining a session (client needs it for sync)
+watch(() => session.isConnected.value, (connected) => {
+  if (connected) showAudioPlayer.value = true
+})
 
 function onShare() {
   store.exportToUrl()

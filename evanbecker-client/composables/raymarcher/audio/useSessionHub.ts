@@ -1,6 +1,7 @@
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, computed } from 'vue'
 import { HubConnectionBuilder, HubConnection, LogLevel } from '@microsoft/signalr'
 import { useAuth0 } from '@auth0/auth0-vue'
+import { useRayMarcherStore } from '~/stores/raymarcher'
 import type { YouTubeTrack } from './useYouTubePlayer'
 
 // ── Types ────────────────────────────────────────────────────
@@ -255,19 +256,23 @@ export function useSessionHub() {
   }
 
   // ── Heartbeat ──────────────────────────────────────────
-
-  let getPlaybackStateFn: (() => PlaybackState) | null = null
-
-  function setPlaybackStateProvider(fn: () => PlaybackState) {
-    getPlaybackStateFn = fn
-  }
+  // Reads directly from the store — no provider function needed.
+  // The store always has current playback state from the YouTube player.
 
   function startHeartbeat() {
     stopHeartbeat()
+    const store = useRayMarcherStore()
     heartbeatInterval = setInterval(() => {
-      if (getPlaybackStateFn && isHost.value) {
-        broadcastPlayback(getPlaybackStateFn())
-      }
+      if (!isHost.value || !connection) return
+      broadcastPlayback({
+        videoId: store.audio.youtubeUrl || null,
+        title: store.audio.trackTitle || null,
+        channel: store.audio.trackArtist || null,
+        thumbnail: null,
+        currentTime: 0, // not used — no seek sync
+        duration: 0,
+        isPlaying: store.audio.isCapturing,
+      })
     }, 2500)
   }
 
@@ -347,6 +352,5 @@ export function useSessionHub() {
     broadcastPlayback,
     broadcastQueue,
     disconnect,
-    setPlaybackStateProvider,
   }
 }

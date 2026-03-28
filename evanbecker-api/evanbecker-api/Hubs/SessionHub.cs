@@ -137,7 +137,11 @@ public class SessionHub(
         if (!sessionManager.UpdatePlayback(roomCode, user.Id, state))
             return;
 
-        // Broadcast to everyone except the host (they already have the correct state)
+        var room = sessionManager.GetRoom(roomCode);
+        var memberCount = room?.Members.Count ?? 0;
+        logger.LogDebug("Session {Code}: PlaybackSync → {Members} members. VideoId={VideoId}, Playing={IsPlaying}",
+            roomCode, memberCount, state.VideoId ?? "null", state.IsPlaying);
+
         await Clients.OthersInGroup($"session:{roomCode}").SendAsync("PlaybackSync", state);
     }
 
@@ -149,6 +153,8 @@ public class SessionHub(
         if (!sessionManager.UpdateQueue(roomCode, user.Id, queue))
             return;
 
+        logger.LogDebug("Session {Code}: QueueSync → {TrackCount} tracks, index={Index}",
+            roomCode, queue.Tracks.Count, queue.CurrentIndex);
         await Clients.OthersInGroup($"session:{roomCode}").SendAsync("QueueSync", queue);
     }
 
@@ -157,8 +163,9 @@ public class SessionHub(
         var room = sessionManager.GetRoomByConnection(Context.ConnectionId);
         if (room is not null)
         {
-            // Find which user this connection belongs to
             var member = room.Members.Values.FirstOrDefault(m => m.ConnectionId == Context.ConnectionId);
+            logger.LogInformation("Session {Code}: {User} disconnected (wasHost={IsHost})",
+                room.RoomCode, member?.FirstName ?? "unknown", member?.IsHost ?? false);
             if (member is not null)
             {
                 var (roomDestroyed, wasHost) = sessionManager.LeaveRoom(room.RoomCode, member.UserId);
