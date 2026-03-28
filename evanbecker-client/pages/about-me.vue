@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import nvisiaLogo from '~/assets/images/logos/nvisia_logo.jpg'
+import mitutoyoLogo from '~/assets/images/logos/mitutoyorda_logo.jpg'
+import stack41Logo from '~/assets/images/logos/Stack41.png'
+import uwmLogo from '~/assets/images/logos/uwm_logo.jpg'
+
 useHead({ title: 'About Me - Evan Becker' })
 
 const resume = [
   {
     company: 'nvisia',
     title: 'Senior Technical Architect',
-    logo: '/images/logos/nvisia_logo.jpg',
+    logo: nvisiaLogo,
     abbr: 'NV',
     start: '2019',
     end: 'Present',
@@ -14,7 +19,7 @@ const resume = [
   {
     company: 'Mitutoyo-RDA',
     title: 'Software Engineer',
-    logo: '/images/logos/mitutoyorda_logo.jpg',
+    logo: mitutoyoLogo,
     abbr: 'MI',
     start: '2018',
     end: '2019',
@@ -22,7 +27,7 @@ const resume = [
   {
     company: 'Stack41 / Caravela IoT',
     title: 'Software Engineer',
-    logo: '/images/logos/Stack41.png',
+    logo: stack41Logo,
     abbr: 'S4',
     start: '2018',
     end: '2018',
@@ -30,7 +35,7 @@ const resume = [
   {
     company: 'UW-Milwaukee',
     title: 'Software Engineer (Undergraduate Research)',
-    logo: '/images/logos/uwm_logo.jpg',
+    logo: uwmLogo,
     abbr: 'UW',
     start: '2016',
     end: '2018',
