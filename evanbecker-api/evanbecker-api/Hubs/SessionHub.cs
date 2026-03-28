@@ -118,6 +118,17 @@ public class SessionHub(
         await Clients.Group($"session:{roomCode}").SendAsync("ChatMessage", chatDto);
     }
 
+    public async Task SetReady(string roomCode, bool ready)
+    {
+        var user = await userService.GetUserAsync(Context.User!);
+        if (user is null) return;
+
+        if (!sessionManager.SetReady(roomCode, user.Id, ready))
+            return;
+
+        await Clients.Group($"session:{roomCode}").SendAsync("MemberReady", user.Id, ready);
+    }
+
     public async Task UpdatePlayback(string roomCode, PlaybackStateDto state)
     {
         var user = await userService.GetUserAsync(Context.User!);

@@ -44,6 +44,17 @@ function handleSendChat() {
   chatInput.value = ''
 }
 
+const myReadyState = computed(() => {
+  const user = currentUser.value as any
+  if (!user?.id) return false
+  const me = session.members.value.find(m => m.userId === user.id)
+  return me?.isReady ?? false
+})
+
+function toggleReady() {
+  session.setReady(!myReadyState.value)
+}
+
 function copyCode() {
   navigator.clipboard.writeText(session.roomCode.value)
   copied.value = true
@@ -156,6 +167,9 @@ watch(() => session.chatMessages.value.length, async () => {
               {{ member.firstName }}{{ member.lastName ? ` ${member.lastName}` : '' }}
               <span v-if="member.isHost" class="ml-1">👑</span>
             </span>
+            <!-- Ready indicator -->
+            <span v-if="member.isReady" class="text-[10px] text-green-400" title="Ready">✓</span>
+            <span v-else class="text-[10px] text-slate-600" title="Not ready">○</span>
             <button
               v-if="session.isHost.value && !member.isHost"
               class="text-[9px] text-slate-600 transition hover:text-red-400"
@@ -165,6 +179,18 @@ watch(() => session.chatMessages.value.length, async () => {
               ✕
             </button>
           </div>
+
+          <!-- Ready up button (non-hosts) -->
+          <button
+            v-if="!session.isHost.value"
+            class="mt-2 w-full rounded-md px-2 py-1 text-[10px] font-medium transition"
+            :class="myReadyState
+              ? 'bg-green-500/15 text-green-400 border border-green-500/40'
+              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+            @click="toggleReady"
+          >
+            {{ myReadyState ? '✓ Ready' : 'Ready Up' }}
+          </button>
         </div>
 
         <!-- Chat -->

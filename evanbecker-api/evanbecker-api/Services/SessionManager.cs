@@ -13,6 +13,7 @@ public interface ISessionManager
     bool UpdatePlayback(string code, Guid hostUserId, PlaybackStateDto state);
     bool UpdateQueue(string code, Guid hostUserId, QueueStateDto queue);
     bool ValidateChatRate(string code, Guid userId);
+    bool SetReady(string code, Guid userId, bool ready);
     List<string> CleanupExpiredRooms();
     SessionRoom? GetRoom(string code);
     SessionRoom? GetRoomByConnection(string connectionId);
@@ -32,11 +33,11 @@ public class SessionRoom
     public SessionStateDto ToDto()
     {
         var members = Members.Values
-            .Select(m => new SessionMemberDto(m.UserId, m.FirstName, m.LastName, m.Avatar, m.IsHost))
+            .Select(m => new SessionMemberDto(m.UserId, m.FirstName, m.LastName, m.Avatar, m.IsHost, m.IsReady))
             .ToList();
 
         var host = members.FirstOrDefault(m => m.IsHost)
-            ?? new SessionMemberDto(HostUserId, "Host", null, null, true);
+            ?? new SessionMemberDto(HostUserId, "Host", null, null, true, true);
 
         return new SessionStateDto(RoomCode, host, members, CurrentPlayback, CurrentQueue);
     }
@@ -50,6 +51,7 @@ public class SessionMember
     public string? LastName { get; init; }
     public string? Avatar { get; init; }
     public bool IsHost { get; init; }
+    public bool IsReady { get; set; }
     public DateTime LastChatMessage { get; set; } = DateTime.MinValue;
 }
 
@@ -224,6 +226,18 @@ public class SessionManager : ISessionManager
 
         member.LastChatMessage = now;
         room.LastActivity = now;
+        return true;
+    }
+
+    public bool SetReady(string code, Guid userId, bool ready)
+    {
+        if (!_rooms.TryGetValue(code.ToUpperInvariant(), out var room))
+            return false;
+
+        if (!room.Members.TryGetValue(userId, out var member))
+            return false;
+
+        member.IsReady = ready;
         return true;
     }
 

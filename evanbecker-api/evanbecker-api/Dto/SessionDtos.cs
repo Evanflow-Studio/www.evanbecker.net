@@ -5,7 +5,8 @@ public record SessionMemberDto(
     string FirstName,
     string? LastName,
     string? Avatar,
-    bool IsHost);
+    bool IsHost,
+    bool IsReady);
 
 public record PlaybackStateDto(
     string? VideoId,

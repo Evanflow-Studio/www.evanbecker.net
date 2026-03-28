@@ -64,23 +64,26 @@ onMounted(() => {
   }))
 })
 
-// Session sync: when host broadcasts playback state, non-hosts follow
+// Session sync: simplified — play/pause/next only (no seek scrubbing)
+// Only syncs when the member has marked themselves as ready
 watch(() => session.syncedPlayback.value, (state) => {
-  if (!state || session.isHost.value) return
+  if (!state || session.isHost.value || !yt.isReady.value) return
 
-  // Load new video if different
+  // Wait for member to be ready before syncing
+  const me = session.members.value.find(m =>
+    !m.isHost && m.userId === (useCurrentUser().value as any)?.id
+  )
+  if (me && !me.isReady) return
+
+  // Load new video if different (host switched tracks)
   if (state.videoId && state.videoId !== yt.currentVideoId.value) {
     yt.loadVideo(state.videoId)
+    if (import.meta.dev) console.log('%c[Session] Loading host video:', 'color: #2D95FC', state.videoId)
   }
 
   // Sync play/pause
   if (state.isPlaying && !yt.isPlaying.value) yt.play()
   else if (!state.isPlaying && yt.isPlaying.value) yt.pause()
-
-  // Seek if drift > 1.5 seconds
-  if (state.isPlaying && Math.abs(yt.currentTime.value - state.currentTime) > 1.5) {
-    yt.seekTo(state.currentTime)
-  }
 }, { deep: true })
 
 // Session sync: when host broadcasts queue, non-hosts replace their queue

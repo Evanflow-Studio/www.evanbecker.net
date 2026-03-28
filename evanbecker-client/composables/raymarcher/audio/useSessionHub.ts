@@ -11,6 +11,7 @@ export interface SessionMember {
   lastName: string | null
   avatar: string | null
   isHost: boolean
+  isReady: boolean
 }
 
 export interface PlaybackState {
@@ -106,6 +107,12 @@ export function useSessionHub() {
 
     connection.on('MemberLeft', (userId: string) => {
       members.value = members.value.filter(m => m.userId !== userId)
+    })
+
+    connection.on('MemberReady', (userId: string, ready: boolean) => {
+      members.value = members.value.map(m =>
+        m.userId === userId ? { ...m, isReady: ready } : m
+      )
     })
 
     connection.on('HostDisconnected', () => {
@@ -210,6 +217,15 @@ export function useSessionHub() {
       await connection.invoke('SendChat', roomCode.value, message.trim())
     } catch (e: any) {
       if (import.meta.dev) console.warn('[Session] Chat send failed:', e)
+    }
+  }
+
+  async function setReady(ready: boolean) {
+    if (!connection || !roomCode.value) return
+    try {
+      await connection.invoke('SetReady', roomCode.value, ready)
+    } catch (e: any) {
+      if (import.meta.dev) console.warn('[Session] SetReady failed:', e)
     }
   }
 
@@ -327,6 +343,7 @@ export function useSessionHub() {
     leaveRoom,
     sendChat,
     kickMember,
+    setReady,
     broadcastPlayback,
     broadcastQueue,
     disconnect,
