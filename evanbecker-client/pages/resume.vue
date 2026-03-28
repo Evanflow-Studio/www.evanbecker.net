@@ -133,7 +133,7 @@ function printResume() {
             <li>Mentor technical leads through nvisia's internal architect development track and run monthly architectural katas open to all engineers, fostering architectural thinking across the organization</li>
             <li>Host nvisia-sponsored architectural roundtables bringing together architects from other companies to share industry trends, discuss emerging patterns, and compare approaches to common problems</li>
             <li>Contribute to client proposals, RFP responses, and serve as "voice of the customer" for marketing; received and later served on the JEDI Award board</li>
-            <li class="resume-tech">C#, .NET, Azure (Copilot Studio, AI Foundry, AI Search, Service Bus, CosmosDB, DevOps), PostgreSQL, SQL Server, Oracle, Entity Framework, Dapper, Angular, React, Vue, Kafka, SignalR, Docker, Terraform, MCP</li>
+            <li class="resume-tech">C#, .NET, Azure (Copilot Studio, AI Foundry, AI Search, Service Bus, CosmosDB, DevOps), SQL, Oracle, Entity Framework, Dapper, Angular, React, Vue, Kafka, SignalR, Docker, Terraform, MCP</li>
           </ul>
         </div>
 
