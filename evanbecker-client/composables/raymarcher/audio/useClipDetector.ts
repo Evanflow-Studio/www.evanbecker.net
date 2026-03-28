@@ -5,10 +5,10 @@
  * When clipping is detected, returns a nudge direction to push the camera out.
  */
 
-const CHECK_INTERVAL = 0.5 // seconds between checks
-const SAMPLE_SIZE = 4      // 4x4 pixel patch at center
-const VARIANCE_THRESHOLD = 0.008 // below this = probably inside geometry
-const CONSECUTIVE_FRAMES = 3     // must detect clipping N times before acting
+const CHECK_INTERVAL = 0.25 // seconds between checks (faster response)
+const SAMPLE_SIZE = 6       // 6x6 pixel patch at center (wider sample)
+const VARIANCE_THRESHOLD = 0.012 // below this = probably inside geometry or staring at wall
+const CONSECUTIVE_FRAMES = 2     // 2 consecutive = act (0.5s total delay)
 
 export interface ClipDetectorState {
   timeSinceCheck: number

@@ -58,6 +58,19 @@ interface StoreSnapshot {
   }
 }
 
+// Safe camera positions per scene — guaranteed to be outside geometry
+// Each entry: { pos: [x, y, z], yaw, pitch }
+const SAFE_CAMERAS = [
+  // 0: Lattice — orbit outside the lattice structure
+  { pos: [0, 0.5, -3], yaw: 0, pitch: 0 },
+  // 1: Mandelbulb — pulled back to see the full fractal
+  { pos: [0, 0, -4], yaw: 0, pitch: 0 },
+  // 2: CSG — above and back, looking down slightly
+  { pos: [0, 1.5, -3.5], yaw: 0, pitch: -0.15 },
+  // 3: Fractal Descent — doesn't matter much, it's a flythrough
+  { pos: [0, 0, -2], yaw: 0, pitch: 0 },
+]
+
 export function useVisualizationEngine() {
   const store = useRayMarcherStore()
 
@@ -99,6 +112,28 @@ export function useVisualizationEngine() {
     smoothed.treble = smoothStep(smoothed.treble, store.audio.treble, rate * 1.5)
     smoothed.amplitude = smoothStep(smoothed.amplitude, store.audio.amplitude, rate * 2)
     smoothed.genreSeed = (currentSeed.value + sessionJitter * 0.05) % 1
+  }
+
+  // ── Camera safety ───────────────────────────────────────────
+
+  /** Move camera to a safe position for the given scene with some randomization */
+  function teleportToSafePosition(sceneIdx: number) {
+    const safe = SAFE_CAMERAS[sceneIdx] ?? SAFE_CAMERAS[0]
+    // Add jitter so it's not the exact same spot every time
+    const jx = (Math.sin(cameraTime * 1.7 + sessionJitter * 10) * 0.5)
+    const jy = (Math.sin(cameraTime * 2.3 + sessionJitter * 7) * 0.3)
+    const jz = (Math.sin(cameraTime * 1.1 + sessionJitter * 13) * 0.5)
+
+    store.camera.posX = safe.pos[0] + jx
+    store.camera.posY = safe.pos[1] + jy
+    store.camera.posZ = safe.pos[2] + jz
+    store.camera.yaw = safe.yaw + (sessionJitter - 0.5) * 0.4
+    store.camera.pitch = safe.pitch
+
+    // Reset clip detector so we don't immediately re-trigger
+    clipState.consecutiveClips = 0
+    clipState.isClipping = false
+    clipState.timeSinceCheck = 0
   }
 
   // ── Scene weight management ────────────────────────────────
@@ -153,6 +188,8 @@ export function useVisualizationEngine() {
         currentSceneIdx = maxIdx
         store.scene.index = maxIdx
         sceneLockTimer = 0
+        // Teleport camera to a safe position for the new scene
+        teleportToSafePosition(maxIdx)
         if (import.meta.dev) {
           console.log('%c[VizEngine] Scene →', 'color: #2D95FC; font-weight: bold',
             ['Lattice', 'Mandelbulb', 'CSG', 'Fractal Descent'][maxIdx],
@@ -176,15 +213,8 @@ export function useVisualizationEngine() {
       canvasRef?.width ?? 0, canvasRef?.height ?? 0,
     )
     if (isClipping) {
-      // Teleport camera to a safe orbit position outside geometry
-      const safeAngle = cameraTime * 0.5 + sessionJitter * Math.PI * 2
-      const safeR = orbitR * 1.5
-      store.camera.posX = Math.sin(safeAngle) * safeR
-      store.camera.posY = Math.sin(safeAngle * 0.7) * safeR * 0.3
-      store.camera.posZ = Math.cos(safeAngle) * safeR
-      store.camera.yaw += 0.3 // rotate away from where we got stuck
-      clipState.consecutiveClips = 0
-      clipState.isClipping = false
+      // Teleport to a safe position for the current scene
+      teleportToSafePosition(currentSceneIdx)
       if (import.meta.dev) console.log('%c[VizEngine] Clip escape!', 'color: #F59E0B; font-weight: bold')
       return
     }
