@@ -135,4 +135,71 @@ export const LATTICE_PRESETS: LatticePreset[] = [
     lightAngleX: 0.4,
     lightAngleY: 0.85,
   },
+  // --- AI music player presets (fractal/bending geometry) ---
+  {
+    name: 'Neural Weave',
+    palette: 12,      // Custom (driven by viz engine)
+    geoPreset: 10,    // Woven Cage
+    animation: 10,    // Breathe
+    cellSpacing: 0.18,
+    wallThickness: 0.4,
+    animOffset: 0.5,
+    lightAngleX: 0.45,
+    lightAngleY: 0.7,
+  },
+  {
+    name: 'Fractal Machine',
+    palette: 12,      // Custom
+    geoPreset: 11,    // Fractal Scaffold
+    animation: 9,     // Fold
+    cellSpacing: 0.12,
+    wallThickness: 0.35,
+    animOffset: 0.3,
+    lightAngleX: 0.5,
+    lightAngleY: 0.65,
+  },
+  {
+    name: 'Möbius Flow',
+    palette: 12,      // Custom
+    geoPreset: 12,    // Möbius Lattice
+    animation: 2,     // Twist
+    cellSpacing: 0.15,
+    wallThickness: 0.45,
+    animOffset: 0.0,
+    lightAngleX: 0.55,
+    lightAngleY: 0.75,
+  },
+  {
+    name: 'Glitch Hive',
+    palette: 12,      // Custom
+    geoPreset: 5,     // Gyroid
+    animation: 11,    // Glitch
+    cellSpacing: 0.8,
+    wallThickness: 0.5,
+    animOffset: 0.6,
+    lightAngleX: 0.4,
+    lightAngleY: 0.8,
+  },
+  {
+    name: 'Recursive Dream',
+    palette: 12,      // Custom
+    geoPreset: 11,    // Fractal Scaffold
+    animation: 8,     // Morph
+    cellSpacing: 0.1,
+    wallThickness: 0.3,
+    animOffset: 0.2,
+    lightAngleX: 0.5,
+    lightAngleY: 0.7,
+  },
+  {
+    name: 'Cage Pulse',
+    palette: 12,      // Custom
+    geoPreset: 10,    // Woven Cage
+    animation: 3,     // Pulse
+    cellSpacing: 0.2,
+    wallThickness: 0.55,
+    animOffset: 1.0,
+    lightAngleX: 0.5,
+    lightAngleY: 0.65,
+  },
 ]

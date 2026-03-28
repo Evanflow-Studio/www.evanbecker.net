@@ -36,8 +36,39 @@ vec3 applyAnimation(vec3 rp, float time, int anim) {
     tw.xz = mat2(c, -s, s, c) * tw.xz;
     tw *= 1.0 + 0.2 * sin(length(tw) * 0.5);
     rp = mix(rp, tw, t);
+  } else if (anim == 9) { // Fold — space-folding symmetry reveals hidden geometry
+    rp = abs(rp);
+    rp -= vec3(0.5 + 0.3 * sin(time * 0.3));
+    rp = abs(rp);
+    float fa = time * 0.2;
+    float fc = cos(fa), fs = sin(fa);
+    rp.xy = mat2(fc, -fs, fs, fc) * rp.xy;
+    rp = abs(rp);
+  } else if (anim == 10) { // Breathe — volumetric expansion with per-axis phase offset
+    float bx = sin(time * 0.6) * 0.15;
+    float by = sin(time * 0.6 + 2.094) * 0.15; // 2pi/3 offset
+    float bz = sin(time * 0.6 + 4.189) * 0.15; // 4pi/3 offset
+    rp *= vec3(1.0 + bx, 1.0 + by, 1.0 + bz);
+    // Gentle twist layered on top
+    float ba = rp.y * 0.15 * sin(time * 0.25);
+    float bc = cos(ba), bs = sin(ba);
+    rp.xz = mat2(bc, -bs, bs, bc) * rp.xz;
+  } else if (anim == 11) { // Glitch — periodic sharp displacement (beat-drop)
+    float glitchPhase = fract(time * 0.4);
+    float glitchOn = step(0.85, glitchPhase); // active 15% of the cycle
+    float glitchStr = glitchOn * 1.5;
+    vec3 glitchDir = vec3(
+      fract(sin(floor(time * 2.0) * 12.9898) * 43758.5453) - 0.5,
+      fract(sin(floor(time * 2.0) * 78.233) * 43758.5453) - 0.5,
+      fract(sin(floor(time * 2.0) * 45.164) * 43758.5453) - 0.5
+    );
+    rp += glitchDir * glitchStr;
+    // Snap rotation during glitch
+    if (glitchOn > 0.5) {
+      rp.xz = mat2(0.0, -1.0, 1.0, 0.0) * rp.xz; // 90 degree snap
+    }
   }
-  // anim == 0 (None), 5 (Orbit), 9 (Custom) — no transform
+  // anim == 0 (None), 5 (Orbit) — no transform
   return rp;
 }
 
@@ -95,6 +126,44 @@ float evalGeometry(vec3 q, vec3 worldP, vec3 cellId, float wallThickness, float 
     float size = 0.9;
     return max(abs(sdOctahedron(q, size)) - mix(0.02, 0.3, wallThickness), sdSphere(q, size * 0.75 + 0.05 * sin(time * 0.6)));
   }
+  if (preset == 10) {
+    // Woven Cage — interlocking sine surfaces creating organic weave
+    float freq = 3.14159 * 2.0;
+    float t1 = mix(0.03, 0.18, wallThickness);
+    float s1 = abs(sin(q.x * freq) * cos(q.z * freq)) - t1;
+    float s2 = abs(sin(q.y * freq) * cos(q.x * freq)) - t1;
+    float s3 = abs(sin(q.z * freq) * cos(q.y * freq)) - t1;
+    float weave = min(s1, min(s2, s3));
+    // Clip to cell bounds
+    return max(weave, sdBox(q, vec3(1.0)));
+  }
+  if (preset == 11) {
+    // Fractal Scaffold — nested boxes at 3 scales (mini Menger)
+    float t1 = mix(0.03, 0.12, wallThickness);
+    float d1 = sdFrameBox(q, vec3(0.95), t1);
+    float d2 = sdFrameBox(q * 2.0, vec3(0.95), t1 * 1.5) / 2.0;
+    float d3 = sdFrameBox(q * 4.0 + vec3(sin(time * 0.3) * 0.1), vec3(0.95), t1 * 2.0) / 4.0;
+    return min(d1, min(d2, d3));
+  }
+  if (preset == 12) {
+    // Möbius Lattice — twisted torus that loops through itself
+    float tubeR = mix(0.05, 0.2, wallThickness);
+    // Twist the torus by rotating the cross-section based on angle
+    float angle = atan(q.z, q.x);
+    float moebTwist = angle * 0.5 + time * 0.3;
+    float mc = cos(moebTwist), ms = sin(moebTwist);
+    vec3 mq = q;
+    mq.yz = mat2(mc, -ms, ms, mc) * mq.yz;
+    float t1 = sdTorus(mq, vec2(0.7, tubeR));
+    // Second interlocking twisted torus at 90 degrees
+    vec3 mq2 = q.yxz;
+    float angle2 = atan(mq2.z, mq2.x);
+    float mt2 = angle2 * 0.5 + time * 0.3 + 1.5708;
+    float mc2 = cos(mt2), ms2 = sin(mt2);
+    mq2.yz = mat2(mc2, -ms2, ms2, mc2) * mq2.yz;
+    float t2 = sdTorus(mq2, vec2(0.7, tubeR));
+    return min(t1, t2);
+  }
   // Default: Hollow Cube (preset 0)
   float box = sdRoundBox(q, vec3(1.0), 0.05);
   float subR = mix(1.5, 0.4, wallThickness) + 0.15 * sin(time * 0.5);
@@ -110,7 +179,10 @@ float getWarpSeverity(int anim) {
   if (anim == 6) return 0.6;       // Ripple
   if (anim == 7) return 0.6;       // Shatter
   if (anim == 8) return 0.5;       // Morph
-  return 1.0;                       // None, Kaleidoscope, Orbit, Custom
+  if (anim == 9) return 0.55;      // Fold
+  if (anim == 10) return 0.8;      // Breathe
+  if (anim == 11) return 0.5;      // Glitch
+  return 1.0;                       // None, Kaleidoscope, Orbit
 }
 
 // --- Main lattice scene entry point ---

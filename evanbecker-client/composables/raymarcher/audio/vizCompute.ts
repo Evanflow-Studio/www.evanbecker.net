@@ -79,31 +79,37 @@ export function computeScene(f: AudioFeatures): number {
 
 export function computeGeoPreset(f: AudioFeatures): number {
   const weights = [
-    0.2,
-    0.1 + f.percussiveness * 0.3,
-    0.1 + (1 - f.percussiveness) * 0.3,
-    0.05 + f.energy * 0.15,
-    0.1 + f.valence * 0.2,
-    0.15 + (1 - f.energy) * 0.2,
-    0.1 + f.percussiveness * 0.2,
-    0.1 + f.brightness * 0.15,
-    0.1 + f.energy * 0.1,
-    0.1 + f.percussiveness * 0.15,
+    0.2,                                    // 0: Hollow Cube
+    0.1 + f.percussiveness * 0.3,           // 1: Cross Beams
+    0.1 + (1 - f.percussiveness) * 0.3,     // 2: Nested Spheres
+    0.05 + f.energy * 0.15,                 // 3: Frame Only
+    0.1 + f.valence * 0.2,                  // 4: Torus Lattice
+    0.15 + (1 - f.energy) * 0.2,            // 5: Gyroid
+    0.1 + f.percussiveness * 0.2,           // 6: Menger Cross
+    0.1 + f.brightness * 0.15,              // 7: Chain Links
+    0.1 + f.energy * 0.1,                   // 8: Spiral Column
+    0.1 + f.percussiveness * 0.15,          // 9: Diamond Lattice
+    0.08 + f.brightness * 0.2 + f.valence * 0.1, // 10: Woven Cage — organic, tonal
+    0.08 + f.energy * 0.15 + f.percussiveness * 0.15, // 11: Fractal Scaffold — energetic, complex
+    0.08 + (1 - f.energy) * 0.15 + f.valence * 0.15,  // 12: Möbius Lattice — flowing, ambient
   ]
   return weightedPick(weights, f.genreSeed * 7.3 % 1)
 }
 
 export function computeAnimation(f: AudioFeatures): number {
   const weights = [
-    0.05 + (1 - f.energy) * 0.2,
-    0.15 + (1 - f.energy) * 0.2,
-    0.1 + f.percussiveness * 0.15,
-    0.1 + f.energy * 0.2,
-    0.05 + f.energy * 0.25,
-    0.05,
-    0.1 + f.energy * 0.15,
-    0.05 + f.percussiveness * 0.2,
-    0.1 + f.valence * 0.15,
+    0.05 + (1 - f.energy) * 0.2,           // 0: None
+    0.15 + (1 - f.energy) * 0.2,           // 1: Wave
+    0.1 + f.percussiveness * 0.15,          // 2: Twist
+    0.1 + f.energy * 0.2,                   // 3: Pulse
+    0.05 + f.energy * 0.25,                 // 4: Kaleidoscope
+    0.05,                                    // 5: Orbit
+    0.1 + f.energy * 0.15,                  // 6: Ripple
+    0.05 + f.percussiveness * 0.2,          // 7: Shatter
+    0.1 + f.valence * 0.15,                 // 8: Morph
+    0.08 + f.brightness * 0.15 + f.percussiveness * 0.1, // 9: Fold — bright, percussive reveals
+    0.1 + (1 - f.energy) * 0.15 + f.valence * 0.1,      // 10: Breathe — calm, tonal
+    0.06 + f.energy * 0.2 + f.percussiveness * 0.15,     // 11: Glitch — high energy beat drops
   ]
   return weightedPick(weights, f.genreSeed * 3.7 % 1)
 }

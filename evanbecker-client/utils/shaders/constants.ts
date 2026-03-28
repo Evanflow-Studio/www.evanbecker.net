@@ -2,8 +2,8 @@
 export const SCENE_NAMES = ['Infinite Lattice', 'Mandelbulb', 'CSG Operations', 'Fractal Descent'] as const
 export const PALETTE_NAMES = ['Aether', 'Cosmic', 'Inferno', 'Ocean', 'Electric', 'Prismatic', 'Neon', 'Sunset', 'Ice', 'Vapor', 'Forest', 'Mono', 'Custom'] as const
 export const QUALITY_NAMES = ['Performance', 'Balanced', 'High', 'Ultra'] as const
-export const GEO_PRESET_NAMES = ['Hollow Cube', 'Cross Beams', 'Nested Spheres', 'Frame Only', 'Torus Lattice', 'Gyroid', 'Menger Cross', 'Chain Links', 'Spiral Column', 'Diamond Lattice'] as const
-export const ANIMATION_NAMES = ['None', 'Wave', 'Twist', 'Pulse', 'Kaleidoscope', 'Orbit', 'Ripple', 'Shatter', 'Morph'] as const
+export const GEO_PRESET_NAMES = ['Hollow Cube', 'Cross Beams', 'Nested Spheres', 'Frame Only', 'Torus Lattice', 'Gyroid', 'Menger Cross', 'Chain Links', 'Spiral Column', 'Diamond Lattice', 'Woven Cage', 'Fractal Scaffold', 'Möbius Lattice'] as const
+export const ANIMATION_NAMES = ['None', 'Wave', 'Twist', 'Pulse', 'Kaleidoscope', 'Orbit', 'Ripple', 'Shatter', 'Morph', 'Fold', 'Breathe', 'Glitch'] as const
 
 // Animation type enum — replaces magic numbers
 export const ANIMATION = {
@@ -16,6 +16,9 @@ export const ANIMATION = {
   Ripple: 6,
   Shatter: 7,
   Morph: 8,
+  Fold: 9,
+  Breathe: 10,
+  Glitch: 11,
 } as const
 
 // Camera defaults
