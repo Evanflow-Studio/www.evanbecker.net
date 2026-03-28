@@ -15,6 +15,7 @@ public class EmailSettings
 public interface IEmailService
 {
     Task SendContactNotificationAsync(ContactMessage message);
+    Task SendNewsletterSubscriptionNotificationAsync(string subscriberEmail);
 }
 
 public class EmailService(
@@ -67,6 +68,45 @@ public class EmailService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to send contact notification email via SMTP2Go");
+        }
+    }
+
+    public async Task SendNewsletterSubscriptionNotificationAsync(string subscriberEmail)
+    {
+        if (string.IsNullOrEmpty(_settings.ApiKey) || string.IsNullOrEmpty(_settings.ToAddress))
+        {
+            logger.LogWarning("SMTP2Go not configured, skipping newsletter notification.");
+            return;
+        }
+
+        var body = new
+        {
+            api_key = _settings.ApiKey,
+            to = new[] { _settings.ToAddress },
+            sender = $"{_settings.FromName} <{_settings.FromAddress}>",
+            subject = "New Newsletter Subscriber",
+            html_body = $"""
+                <h2>New Newsletter Subscriber</h2>
+                <p><strong>{System.Net.WebUtility.HtmlEncode(subscriberEmail)}</strong> just subscribed to your newsletter.</p>
+                <hr />
+                <p style="color:#888;font-size:12px;">Sent from evanbecker.net at {DateTime.UtcNow:u}</p>
+                """,
+        };
+
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync(Smtp2GoEndpoint, body);
+            if (response.IsSuccessStatusCode)
+                logger.LogInformation("Newsletter notification sent for {Email}", subscriberEmail);
+            else
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                logger.LogWarning("SMTP2Go returned {Status}: {Body}", response.StatusCode, responseBody);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to send newsletter notification email via SMTP2Go");
         }
     }
 }
