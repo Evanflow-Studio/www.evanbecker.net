@@ -68,7 +68,7 @@ let nodePositions: { x: number; y: number; entry: TimelineEntry }[] = []
 /* ── coordinate mapping — evenly spaced by index ────────────────── */
 const PAD_TOP = 50
 const PAD_BOT = 30
-const NODE_SPACING = 80  // minimum px between nodes
+const NODE_SPACING = 72  // px between nodes
 
 function indexToY(i: number): number {
   const totalSpan = (entries.length - 1) * NODE_SPACING
@@ -156,12 +156,14 @@ function draw(ctx: CanvasRenderingContext2D, t: number) {
     ctx.font = `${isActive ? '600 ' : '400 '}13px Inter, system-ui, sans-serif`
     ctx.textAlign = 'left'
     ctx.fillStyle = isActive ? '#f1f5f9' : '#cbd5e1'
-    ctx.fillText(entry.label, lineX + 24, y - 7)
+    ctx.fillText(entry.label, lineX + 24, isActive ? y - 7 : y)
 
-    // Role subtitle
-    ctx.font = '11px Inter, system-ui, sans-serif'
-    ctx.fillStyle = isActive ? '#94a3b8' : '#64748b'
-    ctx.fillText(entry.role, lineX + 24, y + 9)
+    // Role subtitle — only when hovered/selected
+    if (isActive) {
+      ctx.font = '11px Inter, system-ui, sans-serif'
+      ctx.fillStyle = '#94a3b8'
+      ctx.fillText(entry.role, lineX + 24, y + 9)
+    }
   })
 
   // Floating particles
