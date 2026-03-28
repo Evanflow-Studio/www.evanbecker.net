@@ -189,22 +189,6 @@ function printResume() {
           </ul>
         </div>
 
-        <!-- CV-only: PRO-CAST -->
-        <div v-if="mode === 'cv'" class="resume-entry">
-          <div class="resume-entry-header">
-            <div>
-              <h3 class="resume-company">CAD Designer &amp; Web Developer &mdash; PRO-CAST, INC</h3>
-              <p class="resume-location">Brookfield, WI</p>
-            </div>
-            <span class="resume-dates">2014 &mdash; 2016</span>
-          </div>
-          <ul class="resume-bullets">
-            <li>Created CAD models for approximately 150 cast products across the company's full product catalog</li>
-            <li>Designed and built 2 e-commerce websites including product photography, editing, and content management</li>
-            <li>Handled marketing and data analysis for online sales channels</li>
-            <li class="resume-tech">SolidWorks, WordPress, Bootstrap, Adobe Suite, HTML/CSS</li>
-          </ul>
-        </div>
       </section>
 
       <!-- ==================== SKILLS ==================== -->
@@ -301,6 +285,25 @@ function printResume() {
 
         <div class="resume-entry">
           <div class="resume-entry-header">
+            <div>
+              <h3 class="resume-company">CAD Designer &amp; Web Developer &mdash; PRO-CAST, INC</h3>
+              <p class="resume-location">Brookfield, WI</p>
+            </div>
+            <span class="resume-dates">2014 &mdash; 2016</span>
+          </div>
+          <ul class="resume-bullets">
+            <li>Created CAD models for approximately 150 cast products across the company's full product catalog</li>
+            <li>Designed and built 2 e-commerce websites including product photography, editing, and content management</li>
+            <li>Handled marketing and data analysis for online sales channels</li>
+            <li class="resume-tech">Autodesk, WordPress, Bootstrap, Adobe Suite, HTML/CSS</li>
+          </ul>
+        </div>
+
+        <!-- High School -->
+        <p class="mt-6 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">High School</p>
+
+        <div class="resume-entry">
+          <div class="resume-entry-header">
             <h3 class="resume-company">Limelight Amplification</h3>
             <span class="resume-dates">2013 &mdash; 2014</span>
           </div>
@@ -315,7 +318,7 @@ function printResume() {
             <span class="resume-dates">2014</span>
           </div>
           <p class="mt-1 text-sm text-slate-600 dark:text-slate-400 print:text-slate-600">
-            First published mobile application &mdash; a Flappy Birds clone built in high school.
+            First published mobile application &mdash; a Flappy Birds clone.
           </p>
         </div>
 
