@@ -178,7 +178,9 @@ export const useRayMarcherStore = defineStore('raymarcher', {
 
     detectMobile() {
       if (typeof window === 'undefined') return
-      this.isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768
+      // Use pointer/hover capability — reliable on actual touch devices,
+      // unlike innerWidth which fires on any narrow desktop window.
+      this.isMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches
       if (this.isMobile) this.render.quality = 0
     },
 

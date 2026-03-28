@@ -89,7 +89,7 @@ onUnmounted(() => {
       <canvas
         ref="canvasRef"
         class="w-full h-full cursor-grab touch-none"
-        :class="[isFullscreen ? 'h-screen' : 'rounded-2xl', store.isMobile ? 'max-h-[300px]' : '']"
+        :class="[isFullscreen ? 'h-screen' : 'rounded-2xl', store.isMobile && !isFullscreen ? 'max-h-[300px]' : '']"
         @mousedown="engine.onMouseDown"
         @wheel.prevent="engine.onWheel"
         @touchstart.prevent="engine.onTouchStart"
