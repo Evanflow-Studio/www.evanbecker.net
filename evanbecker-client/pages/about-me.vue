@@ -42,9 +42,8 @@ const resume = [
   },
 ]
 
-// Default to showing initials; flip to false only when image loads successfully.
-// This handles the case where images fail before Vue's @error listener is attached.
-const logoLoaded = ref<Record<string, boolean>>({})
+// Only falls back to initials if the image actually fails to load.
+const logoLoaded = ref<Record<string, boolean | undefined>>({})
 
 const config = useRuntimeConfig()
 const newsletterEmail = ref('')
@@ -220,12 +219,13 @@ const socialLinks = [
             <li v-for="role in resume" :key="role.company" class="flex gap-4">
               <div class="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
                 <img
+                  v-if="logoLoaded[role.company] !== false"
                   :src="role.logo"
                   :alt="role.company"
-                  :class="['h-8 w-8 rounded-full bg-white p-0.5', logoLoaded[role.company] ? '' : 'hidden']"
-                  @load="logoLoaded[role.company] = true"
+                  class="h-8 w-8 rounded-full bg-white p-0.5"
+                  @error="logoLoaded[role.company] = false"
                 />
-                <span v-if="!logoLoaded[role.company]" class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ role.abbr }}</span>
+                <span v-else class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ role.abbr }}</span>
               </div>
               <dl class="flex flex-auto flex-wrap gap-x-2">
                 <dd class="w-full text-sm font-medium text-slate-800 dark:text-slate-100">{{ role.company }}</dd>
