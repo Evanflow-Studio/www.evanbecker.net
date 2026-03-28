@@ -1,16 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { TimelineEntry } from '~/components/CareerTimeline.vue'
+import { ref } from 'vue'
 
 useHead({ title: 'About Me - Evan Becker' })
-
-/* ── timeline state ─────────────────────────────────────────────── */
-const selectedSlug = ref<string | null>(null)
-const selectedEntry = ref<TimelineEntry | null>(null)
-
-function onTimelineSelect(entry: TimelineEntry | null) {
-  selectedEntry.value = entry
-}
 
 /* ── newsletter ─────────────────────────────────────────────────── */
 const config = useRuntimeConfig()
@@ -85,57 +76,24 @@ const socialLinks = [
     </div>
 
     <!-- ────────── MAIN: two columns ────────────────────────────── -->
-    <div class="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-[340px_1fr] lg:gap-16">
+    <div class="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-16">
 
       <!-- LEFT: Timeline visualization -->
-      <div class="order-2 lg:order-1">
+      <div class="order-2 lg:order-1 lg:col-span-1">
         <h2 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Career Timeline
         </h2>
         <div class="sticky top-24">
-          <ClientOnly>
-            <CareerTimeline
-              v-model="selectedSlug"
-              @select="onTimelineSelect"
-              class="h-[520px]"
-            />
-          </ClientOnly>
-
-          <!-- Detail panel for selected entry -->
-          <Transition
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="opacity-0 translate-y-2"
-            enter-to-class="opacity-100 translate-y-0"
-            leave-active-class="transition duration-150 ease-in"
-            leave-from-class="opacity-100 translate-y-0"
-            leave-to-class="opacity-0 translate-y-2"
-          >
-            <div
-              v-if="selectedEntry"
-              class="mt-4 rounded-xl border border-slate-700/50 bg-slate-800/60 p-4 backdrop-blur-sm"
-            >
-              <div class="flex items-baseline justify-between gap-2">
-                <h3 class="text-sm font-semibold text-slate-100">{{ selectedEntry.label }}</h3>
-                <span class="text-xs text-slate-500">{{ selectedEntry.year }}{{ selectedEntry.endYear ? `–${selectedEntry.endYear}` : '' }}</span>
-              </div>
-              <p class="mt-2 text-sm leading-relaxed text-slate-400">
-                {{ selectedEntry.description }}
-              </p>
-            </div>
-          </Transition>
-
-          <p v-if="!selectedEntry" class="mt-4 text-center text-xs text-slate-600 dark:text-slate-500">
-            Click a node to explore
-          </p>
+          <CareerTimeline />
         </div>
       </div>
 
       <!-- RIGHT: Narrative bio -->
-      <div class="order-1 lg:order-2">
+      <div class="order-1 lg:order-2 lg:col-span-2">
         <div class="space-y-8 text-base leading-relaxed text-slate-700 dark:text-slate-300">
 
           <!-- The hook: what I do now -->
-          <div>
+          <div data-section-id="nvisia">
             <h2 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Now</h2>
             <p>
               I work as a Senior Technical Architect at
@@ -160,7 +118,7 @@ const socialLinks = [
           </div>
 
           <!-- The origin: why precision matters to me -->
-          <div>
+          <div data-section-id="mitutoyo">
             <h2 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">How I got here</h2>
             <p>
               The -ilities aren't something I picked up from a book. They came from working in domains
@@ -193,7 +151,7 @@ const socialLinks = [
           </div>
 
           <!-- What I believe -->
-          <div>
+          <div data-section-id="uwm">
             <h2 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">What I believe</h2>
             <p>
               Good architecture is the cheapest long-term investment a team can make. The people who
