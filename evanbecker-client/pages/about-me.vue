@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 useHead({ title: 'About Me - Evan Becker' })
 
 const resume = [
@@ -6,6 +7,7 @@ const resume = [
     company: 'nvisia',
     title: 'Senior Technical Architect',
     logo: '/images/logos/nvisia_logo.jpg',
+    abbr: 'NV',
     start: '2019',
     end: 'Present',
   },
@@ -13,6 +15,7 @@ const resume = [
     company: 'Mitutoyo-RDA',
     title: 'Software Engineer',
     logo: '/images/logos/mitutoyorda_logo.jpg',
+    abbr: 'MI',
     start: '2018',
     end: '2019',
   },
@@ -20,6 +23,7 @@ const resume = [
     company: 'Stack41 / Caravela IoT',
     title: 'Software Engineer',
     logo: '/images/logos/Stack41.png',
+    abbr: 'S4',
     start: '2018',
     end: '2018',
   },
@@ -27,10 +31,15 @@ const resume = [
     company: 'UW-Milwaukee',
     title: 'Software Engineer (Undergraduate Research)',
     logo: '/images/logos/uwm_logo.jpg',
+    abbr: 'UW',
     start: '2016',
     end: '2018',
   },
 ]
+
+// Default to showing initials; flip to false only when image loads successfully.
+// This handles the case where images fail before Vue's @error listener is attached.
+const logoLoaded = ref<Record<string, boolean>>({})
 
 const socialLinks = [
   { href: 'https://www.linkedin.com/in/evanbeckerdotnet/', label: 'Follow on LinkedIn', icon: 'linkedin' },
@@ -171,7 +180,13 @@ const socialLinks = [
           <ol class="mt-6 space-y-4">
             <li v-for="role in resume" :key="role.company" class="flex gap-4">
               <div class="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <img :src="role.logo" :alt="role.company" class="h-8 w-8 rounded-full bg-white p-0.5" />
+                <img
+                  :src="role.logo"
+                  :alt="role.company"
+                  :class="['h-8 w-8 rounded-full bg-white p-0.5', logoLoaded[role.company] ? '' : 'hidden']"
+                  @load="logoLoaded[role.company] = true"
+                />
+                <span v-if="!logoLoaded[role.company]" class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ role.abbr }}</span>
               </div>
               <dl class="flex flex-auto flex-wrap gap-x-2">
                 <dd class="w-full text-sm font-medium text-slate-800 dark:text-slate-100">{{ role.company }}</dd>
