@@ -124,14 +124,16 @@ function printResume() {
           <ul class="resume-bullets">
             <li>Design and implement enterprise application architectures for clients including Alliant Energy, Milwaukee Tool, Generac, Silgan, and Hydrite Chemical</li>
             <li>Lead architecture for NERC CIP compliance monitoring platform at Alliant Energy, recognized as the organization's highest-priority project of the year</li>
-            <li>Contributed to Milwaukee Tool's VIPER platform integrating product design lifecycles, and the Connect reseller portal for order placement and warranty management</li>
-            <li>Designed and developed Generac's PowerPlay platform, a progressive web application guiding users through generator selection, estimating, and proposal signing</li>
+            <li>Contributed to Milwaukee Tool's VIPER platform, an internal product management tool guiding emerging designs through engineering and business milestones across mechanical and electrical teams</li>
+            <li>Contributed to Milwaukee Tool's Connect reseller portal, helping architect Oracle integrations to support warranty claims processing, order management, shipping, and email services</li>
+            <li>Helped shape Generac's PowerPlay platform, a progressive web application guiding users through generator selection, estimating, and proposal signing</li>
             <li>Architected Silgan's customer support platform for product issue resolution</li>
-            <li>Researched and designed an AI architecture at Hydrite Chemical enabling natural language queries against Infor M3 ERP data, integrating Snowflake, Azure Copilot Studio, and MCP servers across 5 datasets including inventory, procurement, and quality results</li>
+            <li>Researched and designed an AI architecture at Hydrite Chemical enabling natural language queries against Infor M3 ERP data, integrating Snowflake, Azure Copilot Studio, and MCP servers</li>
             <li>Consult on clean architecture, data strategy, security, and coding principles informed by Uncle Bob, Fowler, Richards, and Ford</li>
             <li>Mentor technical leads through nvisia's internal architect development track and run monthly architectural katas open to all engineers, fostering architectural thinking across the organization</li>
-            <li>Organize and host nvisia-sponsored architectural roundtables bringing together architects from other companies to share industry trends, discuss emerging patterns, and compare approaches to common problems</li>
+            <li>Host nvisia-sponsored architectural roundtables bringing together architects from other companies to share industry trends, discuss emerging patterns, and compare approaches to common problems</li>
             <li>Contribute to client proposals, RFP responses, and serve as "voice of the customer" for marketing; received and later served on the JEDI Award board</li>
+            <li class="resume-tech">C#, .NET, Azure (Copilot Studio, AI Foundry, AI Search, Service Bus, CosmosDB, DevOps), PostgreSQL, SQL Server, Oracle, Entity Framework, Dapper, Angular, React, Vue, Kafka, SignalR, Docker, Terraform, MCP</li>
           </ul>
         </div>
 
@@ -149,7 +151,7 @@ function printResume() {
             <li>Built the 3D scene framework including engine, renderer, model importing, and view development using HOOPS Visualize</li>
             <li>Implemented algorithmic path generation and collision detection for metrology inspection workflows in aerospace manufacturing</li>
             <li>Served as DevOps engineer during staff absences, including a global leadership role for build and release infrastructure</li>
-            <li class="resume-tech">C#, .NET Framework/Core/Standard, C++, HOOPS, WPF, Prism, Unity, Docker, TFS, MSBuild, PowerShell</li>
+            <li class="resume-tech">C#, .NET Framework/Core/Standard, C++, HOOPS, WPF, Prism, Unity Container, Docker, TFS, MSBuild, PowerShell</li>
           </ul>
         </div>
 
@@ -166,7 +168,7 @@ function printResume() {
             <li>Built web dashboard for DCaaS clients to access and control VMs, including direct SSH access through VNC</li>
             <li>Worked on virtualization, cloud routing, data analysis, machine learning, and data center infrastructure</li>
             <li>Circuit design and prototyping for IoT sensor networks</li>
-            <li class="resume-tech">Python, Docker, JavaScript, PHP, NGINX, Proxmox, noVNC, PostgreSQL, Unix/BSD, Git</li>
+            <li class="resume-tech">Python, Docker, JavaScript, PHP, NGINX, Proxmox, noVNC, PostgreSQL, Unix/BSD</li>
           </ul>
         </div>
 

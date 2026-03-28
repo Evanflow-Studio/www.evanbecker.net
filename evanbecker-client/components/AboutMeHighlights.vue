@@ -65,15 +65,15 @@ function switchTab(tab: typeof tabs[0]) {
         of the year, reflecting its importance to the organization's security and compliance efforts.
       </p>
       <p v-else-if="selectedTab.name === 'Milwaukee Tool'">
-        I contributed to the VIPER project, an internal platform integrating product design lifecycles across teams.
-        The tool has been described as a "mini Azure DevOps" for mechanical and electrical engineers, connecting
-        engineering work with business and financial milestones. Later, I supported ongoing VIPER and
-        <a href="https://www.stiletto.com/" class="link-underline">Stiletto</a>
-        initiatives before transitioning to the Connect project, which serves as the primary portal for Milwaukee Tool
-        resellers, enabling order placement, warranty management, and other business processes.
+        I contributed to VIPER, an internal product management tool guiding emerging designs through engineering
+        and business milestones across mechanical and electrical teams — often described as a "mini Azure DevOps"
+        for their engineers. Later, I contributed to the Connect reseller portal, helping architect Oracle
+        integrations to support warranty claims processing, order management, shipping, and email services,
+        including some work with
+        <a href="https://www.stiletto.com/" class="link-underline">Stiletto</a>.
       </p>
       <p v-else-if="selectedTab.name === 'Generac'">
-        I helped design and develop the
+        I contributed to the
         <a href="https://www.youtube.com/watch?v=8_9UBvhhBKE" class="link-underline">PowerPlay</a>
         platform, a progressive web application guiding users through generator selection, estimating, planning,
         and signing proposals.
