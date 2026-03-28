@@ -61,8 +61,13 @@ async function submitNewsletter() {
       body: { emailAddress: newsletterEmail.value },
     })
     newsletterDone.value = true
-  } catch {
-    newsletterError.value = 'Something went wrong. Please try again.'
+  } catch (err: any) {
+    if (err?.response?.status === 409) {
+      newsletterDone.value = true
+      newsletterError.value = 'already'
+    } else {
+      newsletterError.value = 'Something went wrong. Please try again.'
+    }
   } finally {
     newsletterSubmitting.value = false
   }
@@ -181,7 +186,7 @@ const socialLinks = [
             Get notified when I publish something new, and unsubscribe at any time.
           </p>
           <div v-if="newsletterDone" class="mt-4 text-sm font-medium text-[#0C65E5] dark:text-[#2D95FC]">
-            You're subscribed! Thanks for signing up.
+            {{ newsletterError === 'already' ? 'You\'re already subscribed!' : 'You\'re subscribed! Thanks for signing up.' }}
           </div>
           <form v-else @submit.prevent="submitNewsletter" class="mt-4 flex gap-3">
             <input
@@ -200,7 +205,7 @@ const socialLinks = [
               {{ newsletterSubmitting ? '...' : 'Join' }}
             </button>
           </form>
-          <p v-if="newsletterError" class="mt-2 text-xs text-red-400">{{ newsletterError }}</p>
+          <p v-if="newsletterError && newsletterError !== 'already'" class="mt-2 text-xs text-red-400">{{ newsletterError }}</p>
         </div>
 
         <!-- Resume -->
