@@ -25,9 +25,9 @@ export function useYouTubeSearch() {
     searchError.value = ''
 
     try {
-      const apiUrl = config.public.apiUrl
+      const apiUrl = (config.public.apiUrl as string).replace(/\/$/, '')
       const data = await $fetch<YouTubeSearchResult[]>(
-        `${apiUrl}api/v1/youtube/search`,
+        `${apiUrl}/api/v1/youtube/search`,
         { params: { q: query, maxResults } }
       )
       results.value = data

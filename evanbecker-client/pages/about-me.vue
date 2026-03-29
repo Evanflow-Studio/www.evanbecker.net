@@ -55,7 +55,8 @@ async function submitNewsletter() {
   newsletterSubmitting.value = true
   newsletterError.value = ''
   try {
-    await $fetch(`${config.public.apiUrl}api/v1/newsletter`, {
+    const apiUrl = (config.public.apiUrl as string).replace(/\/$/, '')
+    await $fetch(`${apiUrl}/api/v1/newsletter`, {
       method: 'POST',
       body: { emailAddress: newsletterEmail.value },
     })
