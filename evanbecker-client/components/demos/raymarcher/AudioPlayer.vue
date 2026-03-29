@@ -67,35 +67,47 @@ onMounted(() => {
     if (next) playTrack(next, true) // auto-advance plays automatically
   })
 
+  // Track the last intentional play state — YouTube's isPlaying flickers
+  // during buffering, but we should never broadcast those transient pauses.
+  let intentionallyPlaying = false
+  watch(() => yt.isPlaying.value, (playing) => {
+    // Only update if the player is NOT buffering — buffering causes
+    // PLAYING → PAUSED flickers that aren't user-initiated
+    if (!yt.isBuffering.value) intentionallyPlaying = playing
+  })
+
   // Provide real-time player state to the session hub for heartbeat + immediate broadcasts
   session.setPlayerStateProvider(() => ({
     currentTime: yt.currentTime.value,
     duration: yt.duration.value,
-    isPlaying: yt.isPlaying.value,
+    // Use intentional state to prevent broadcasting transient buffer pauses
+    isPlaying: yt.isBuffering.value ? intentionallyPlaying : yt.isPlaying.value,
     videoId: yt.currentVideoId.value,
   }))
 
-  // Host: broadcast on play/pause — debounced to ignore momentary flickers
-  // (YouTube player briefly sets isPlaying=false during buffer stalls)
+  // Host: broadcast on play/pause — only when NOT buffering.
+  // YouTube's PLAYING→BUFFERING→PAUSED→BUFFERING→PLAYING cycle during
+  // network stalls causes isPlaying to flicker. We only broadcast when
+  // the state settles AND the player is not buffering.
   let playStateTimer: ReturnType<typeof setTimeout> | null = null
   watch(() => yt.isPlaying.value, (playing) => {
     if (!session.isHost.value) return
+    if (yt.isBuffering.value) return // never broadcast during buffering
     if (playStateTimer) clearTimeout(playStateTimer)
     playStateTimer = setTimeout(() => {
-      // Only broadcast if the state is still the same after 300ms
-      if (yt.isPlaying.value === playing) {
+      // Only broadcast if still the same and NOT buffering
+      if (yt.isPlaying.value === playing && !yt.isBuffering.value) {
         session.broadcastPlaybackNow()
       }
-    }, 300)
+    }, 500) // 500ms — longer debounce to survive buffer stall round-trips
   })
 
   // Host: detect seeks — if currentTime jumps by more than 2s, broadcast immediately
-  let lastBroadcastTime = 0
+  // Skip during buffering — buffer stalls can cause time jumps that aren't user seeks
   watch(() => yt.currentTime.value, (now, prev) => {
-    if (!session.isHost.value || prev == null) return
+    if (!session.isHost.value || prev == null || yt.isBuffering.value) return
     if (Math.abs(now - prev) > 2) {
       session.broadcastPlaybackNow()
-      lastBroadcastTime = Date.now()
     }
   })
 

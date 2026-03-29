@@ -324,6 +324,8 @@ export function useSessionHub() {
     stopHeartbeat()
     heartbeatInterval = setInterval(() => {
       if (!isHost.value || !connection) return
+      // The state provider already filters out buffering-caused pauses
+      // via the intentionallyPlaying flag, so this is safe to always send
       broadcastPlayback(buildPlaybackState())
     }, 10000)
   }
