@@ -75,9 +75,18 @@ onMounted(() => {
     videoId: yt.currentVideoId.value,
   }))
 
-  // Host: broadcast immediately on play/pause/seek (don't wait for heartbeat)
-  watch(() => yt.isPlaying.value, () => {
-    if (session.isHost.value) session.broadcastPlaybackNow()
+  // Host: broadcast on play/pause — debounced to ignore momentary flickers
+  // (YouTube player briefly sets isPlaying=false during buffer stalls)
+  let playStateTimer: ReturnType<typeof setTimeout> | null = null
+  watch(() => yt.isPlaying.value, (playing) => {
+    if (!session.isHost.value) return
+    if (playStateTimer) clearTimeout(playStateTimer)
+    playStateTimer = setTimeout(() => {
+      // Only broadcast if the state is still the same after 300ms
+      if (yt.isPlaying.value === playing) {
+        session.broadcastPlaybackNow()
+      }
+    }, 300)
   })
 
   // Host: detect seeks — if currentTime jumps by more than 2s, broadcast immediately
