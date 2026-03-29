@@ -92,6 +92,8 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       shaderCompiling: false,
       contextCreated: false,
       errors: [] as string[],
+      /** Callback set by useRayMarchEngine — triggers GL resource recreation */
+      requestRecompile: null as (() => void) | null,
     },
 
     // Mobile

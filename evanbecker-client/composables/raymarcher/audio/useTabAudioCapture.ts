@@ -177,6 +177,12 @@ export function useTabAudioCapture() {
     meydaAnalyzer.stop()
     essentiaClassifier.stop()
 
+    // Stopping tab capture can invalidate WebGL framebuffers (GPU context switch).
+    // Schedule a recompile after the capture resources are released.
+    setTimeout(() => {
+      store.gl.requestRecompile?.()
+    }, 500)
+
     if (sourceNode) {
       try { sourceNode.disconnect() } catch { /* ignore */ }
       sourceNode = null

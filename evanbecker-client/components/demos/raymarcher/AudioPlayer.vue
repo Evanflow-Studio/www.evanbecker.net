@@ -40,12 +40,12 @@ const hostWaitingForReady = computed(() => session.isConnected.value && session.
  * Central function — every track change goes through here.
  * Loads video + resolves metadata in one place.
  */
-function playTrack(track: YouTubeTrack) {
-  // In a session, cue without auto-play if not all members are ready
-  if (session.isConnected.value && session.isHost.value && !session.allMembersFullyReady.value) {
-    yt.cueVideo(track.videoId)
-  } else {
+function playTrack(track: YouTubeTrack, autoPlay = false) {
+  // Always cue by default — user presses play when ready
+  if (autoPlay) {
     yt.loadVideo(track.videoId)
+  } else {
+    yt.cueVideo(track.videoId)
   }
   trackMeta.resolve(track.title, track.channel)
   store.audio.youtubeUrl = track.videoId
@@ -64,7 +64,7 @@ onMounted(() => {
   yt.setOnVideoEnd(() => {
     if (controlsDisabled.value) return // non-host: host controls queue advancement
     const next = queue.playNext()
-    if (next) playTrack(next)
+    if (next) playTrack(next, true) // auto-advance plays automatically
   })
 
   // Provide real-time player state to the session hub for heartbeat + immediate broadcasts
@@ -207,7 +207,7 @@ function addToQueueAndPlay(result: { videoId: string, title: string, channelTitl
 
 function playQueueItem(index: number) {
   const track = queue.playAt(index)
-  if (track) playTrack(track)
+  if (track) playTrack(track, true)
 }
 
 // File tab functions
@@ -368,7 +368,7 @@ function onSeek(e: Event) {
               <button
                 class="text-slate-400 hover:text-white transition-colors disabled:opacity-30"
                 :disabled="!queue.hasPrevious.value || controlsDisabled"
-                @click="() => { const t = queue.playPrevious(); if (t) playTrack(t) }"
+                @click="() => { const t = queue.playPrevious(); if (t) playTrack(t, true) }"
               >
                 <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" /></svg>
               </button>
@@ -390,7 +390,7 @@ function onSeek(e: Event) {
               <button
                 class="text-slate-400 hover:text-white transition-colors disabled:opacity-30"
                 :disabled="!queue.hasNext.value || controlsDisabled"
-                @click="() => { const t = queue.playNext(); if (t) playTrack(t) }"
+                @click="() => { const t = queue.playNext(); if (t) playTrack(t, true) }"
               >
                 <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M11.555 5.168A1 1 0 0010 6v2.798L4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4z" /></svg>
               </button>

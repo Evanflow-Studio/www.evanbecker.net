@@ -173,6 +173,9 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     resetFrameTiming(frame)
     frame.animFrameId = requestAnimationFrame(render)
 
+    // Register recompile callback so other composables can trigger GL recovery
+    store.gl.requestRecompile = requestRecompile
+
     window.addEventListener('mousemove', mouse.onMouseMove)
     window.addEventListener('mouseup', mouse.onMouseUp)
     window.addEventListener('keydown', keys.onKeyDown)
@@ -211,6 +214,21 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     if (canvasRef.value) doScreenshot(canvasRef.value, res)
   }
 
+  /** Force GL resource recreation — call after events that may invalidate the context (e.g., stopping tab capture) */
+  function requestRecompile() {
+    const canvas = canvasRef.value
+    if (!canvas) return
+    console.log('[RayMarcher] Recompile requested — recreating GL resources.')
+    store.gl.shaderCompiling = true
+    Object.assign(res, createGLResources())
+    compileShaders(canvas, res).then(() => {
+      store.gl.shaderCompiling = false
+      stableFrameCount = 0
+      blackFrameCount = 0
+      resetFrameTiming(frame)
+    })
+  }
+
   return {
     // Handlers for template bindings
     onMouseDown: mouse.onMouseDown,
@@ -224,6 +242,7 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     applyMovement: (dir: [number, number, number], speed: number) => applyMov(store, dir, speed),
     // Actions
     captureScreenshot,
+    requestRecompile,
     start,
     stop,
     // GL access for tests
