@@ -75,9 +75,19 @@ onMounted(() => {
     videoId: yt.currentVideoId.value,
   }))
 
-  // Host: broadcast immediately on play/pause state changes (don't wait for heartbeat)
+  // Host: broadcast immediately on play/pause/seek (don't wait for heartbeat)
   watch(() => yt.isPlaying.value, () => {
     if (session.isHost.value) session.broadcastPlaybackNow()
+  })
+
+  // Host: detect seeks — if currentTime jumps by more than 2s, broadcast immediately
+  let lastBroadcastTime = 0
+  watch(() => yt.currentTime.value, (now, prev) => {
+    if (!session.isHost.value || prev == null) return
+    if (Math.abs(now - prev) > 2) {
+      session.broadcastPlaybackNow()
+      lastBroadcastTime = Date.now()
+    }
   })
 
   // Keep store in sync with YouTube player
