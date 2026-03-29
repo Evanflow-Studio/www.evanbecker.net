@@ -100,7 +100,7 @@ export function ensureFBO(res: GLResources, width: number, height: number) {
 }
 
 export function renderPass(res: GLResources, canvasWidth: number, canvasHeight: number) {
-  const { gl, program, postProgram, fbo, fboTexture, postCache } = res
+  const { gl, program, postProgram, postCache } = res
   if (!gl || !program) return
 
   const store = useRayMarcherStore()
@@ -108,13 +108,14 @@ export function renderPass(res: GLResources, canvasWidth: number, canvasHeight: 
 
   if (hasPostFX) {
     ensureFBO(res, canvasWidth, canvasHeight)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+    // Read fbo/fboTexture AFTER ensureFBO — it may have just recreated them
+    gl.bindFramebuffer(gl.FRAMEBUFFER, res.fbo)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
     gl.useProgram(postProgram!)
     gl.activeTexture(gl.TEXTURE0)
-    gl.bindTexture(gl.TEXTURE_2D, fboTexture)
+    gl.bindTexture(gl.TEXTURE_2D, res.fboTexture)
     gl.uniform1i(postCache['u_sceneTexture'], 0)
     gl.uniform2f(postCache['u_resolution'], canvasWidth, canvasHeight)
     gl.uniform1f(postCache['u_bloomStrength'], store.render.bloomStrength)

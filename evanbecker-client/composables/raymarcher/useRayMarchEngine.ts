@@ -77,6 +77,8 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
 
   let stableFrameCount = 0
   let contextLostAt = 0 // timestamp when context was lost — for watchdog
+  let blackCheckCount = 0
+  let lastRecompileTime = 0 // prevent recompile loops
 
   function render() {
     frame.animFrameId = requestAnimationFrame(render)
@@ -132,27 +134,31 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     renderPass(res, canvas.width, canvas.height)
     updateFrameStats(frame, now)
 
-    // Black screen watchdog — every ~120 frames, check if output is all black
-    if (stableFrameCount > 60 && stableFrameCount % 120 === 0) {
+    // Black screen watchdog — check center pixel every ~2s (120 frames)
+    // Only act if >10s since last recompile (prevents loops)
+    if (stableFrameCount > 120 && stableFrameCount % 120 === 0) {
       const pixel = new Uint8Array(4)
       gl.readPixels(Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
       if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0) {
-        blackFrameCount++
-        if (blackFrameCount >= 3) { // ~6 seconds of black
+        blackCheckCount++
+        // 3 consecutive black checks (~6s) AND at least 10s since last recompile
+        if (blackCheckCount >= 3 && (now - lastRecompileTime) > 10000) {
           console.warn('[RayMarcher] Black screen detected — recompiling shaders.')
-          blackFrameCount = 0
+          blackCheckCount = 0
+          lastRecompileTime = now
           store.gl.shaderCompiling = true
+          Object.assign(res, createGLResources())
           compileShaders(canvas, res).then(() => {
             store.gl.shaderCompiling = false
+            stableFrameCount = 0
             resetFrameTiming(frame)
           })
         }
       } else {
-        blackFrameCount = 0
+        blackCheckCount = 0
       }
     }
   }
-  let blackFrameCount = 0
 
   // === Lifecycle ===
 
@@ -218,13 +224,17 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
   function requestRecompile() {
     const canvas = canvasRef.value
     if (!canvas) return
+    // Prevent recompile spam — at least 5s between recompiles
+    const now = performance.now()
+    if (now - lastRecompileTime < 5000) return
+    lastRecompileTime = now
+    blackCheckCount = 0
     console.log('[RayMarcher] Recompile requested — recreating GL resources.')
     store.gl.shaderCompiling = true
     Object.assign(res, createGLResources())
     compileShaders(canvas, res).then(() => {
       store.gl.shaderCompiling = false
       stableFrameCount = 0
-      blackFrameCount = 0
       resetFrameTiming(frame)
     })
   }
