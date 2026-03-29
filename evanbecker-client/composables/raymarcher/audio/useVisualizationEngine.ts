@@ -157,8 +157,8 @@ export function useVisualizationEngine() {
       0.35 + f.energy * 0.15 + f.mid * 0.1 + osc0 * 0.25,
       // Mandelbulb: complex organic forms — favored by brightness
       0.22 + f.brightness * 0.2 + f.percussiveness * 0.08 + osc1 * 0.25,
-      // CSG: geometric, percussive — sharp beats
-      0.22 + f.percussiveness * 0.2 + f.energy * 0.1 + osc2 * 0.25,
+      // CSG: disabled — camera always faces wrong direction
+      0,
       // Fractal Descent: passive fly-through — brief spectacle only
       0.12 + (1 - f.energy) * 0.08 + f.valence * 0.05 + osc3 * 0.15,
     ]
