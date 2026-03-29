@@ -319,23 +319,11 @@ export function useSessionHub() {
     broadcastPlayback(buildPlaybackState())
   }
 
-  /** Slow background poll (10s) — only catches major desync, events handle everything else */
-  function startHeartbeat() {
-    stopHeartbeat()
-    heartbeatInterval = setInterval(() => {
-      if (!isHost.value || !connection) return
-      // The state provider already filters out buffering-caused pauses
-      // via the intentionallyPlaying flag, so this is safe to always send
-      broadcastPlayback(buildPlaybackState())
-    }, 10000)
-  }
-
-  function stopHeartbeat() {
-    if (heartbeatInterval) {
-      clearInterval(heartbeatInterval)
-      heartbeatInterval = null
-    }
-  }
+  // No heartbeat — sync is purely event-driven (play/pause/seek/track change).
+  // Heartbeat caused phantom pauses because any transient state that leaked
+  // into buildPlaybackState would get broadcast to all clients.
+  function startHeartbeat() { /* intentionally empty */ }
+  function stopHeartbeat() { /* intentionally empty */ }
 
   // ── Internal ───────────────────────────────────────────
 

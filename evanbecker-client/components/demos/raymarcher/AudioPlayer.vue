@@ -106,28 +106,17 @@ onMounted(() => {
   })
 })
 
-// Session sync: play/pause + track load + time sync with cooldown
-// Queues the sync if the player isn't ready yet and applies once it is
+// Session sync — purely event-driven, no polling.
+// Fires when host explicitly broadcasts (play/pause/seek/track change).
 let pendingSync: typeof session.syncedPlayback.value = null
-let lastSeekTime = 0        // timestamp of last seek — cooldown prevents re-seeking too fast
-let lastSyncedVideoId = ''  // track what we already loaded to avoid re-loading same video
-const SEEK_COOLDOWN_MS = 8000  // don't re-seek within 8 seconds of last seek
-const DRIFT_THRESHOLD = 4.0    // seconds of actual drift before we seek
+let lastSyncedVideoId = ''
 
-// Track the raw ref — fires whenever the host sends a new PlaybackSync event.
-// NOT deep — the ref itself is replaced (not mutated) on each broadcast.
 watch(() => session.syncedPlayback.value, (state) => {
   if (!state || session.isHost.value) return
-
-  if (!yt.isReady.value) {
-    pendingSync = state
-    return
-  }
-
+  if (!yt.isReady.value) { pendingSync = state; return }
   applySyncState(state)
 })
 
-// Apply queued sync once player becomes ready
 watch(() => yt.isReady.value, (ready) => {
   if (ready && pendingSync && !session.isHost.value) {
     applySyncState(pendingSync)
@@ -136,28 +125,21 @@ watch(() => yt.isReady.value, (ready) => {
 })
 
 function applySyncState(state: NonNullable<typeof session.syncedPlayback.value>) {
-  const now = Date.now()
-
-  // Load new video if different
+  // New video
   if (state.videoId && state.videoId !== lastSyncedVideoId) {
     lastSyncedVideoId = state.videoId
-    // If host is already playing, load (auto-play) instead of cue
     if (state.isPlaying) {
       yt.loadVideo(state.videoId)
-      const networkDelta = state.sentAt ? (Date.now() - state.sentAt) / 1000 : 0
-      setTimeout(() => yt.seekTo(state.currentTime + networkDelta), 500)
+      const delta = state.sentAt ? (Date.now() - state.sentAt) / 1000 : 0
+      setTimeout(() => yt.seekTo(state.currentTime + delta), 500)
     } else {
       yt.cueVideo(state.videoId)
     }
-    lastSeekTime = now
-    console.log('%c[Session] Syncing host video:', 'color: #2D95FC', state.videoId, state.title, state.isPlaying ? '(playing)' : '(paused)')
+    console.log('%c[Session] Syncing video:', 'color: #2D95FC', state.videoId)
     return
   }
 
-  // Skip sync during buffering — the player is transitioning, don't fight it
-  if (yt.isBuffering.value) return
-
-  // Sync play/pause
+  // Play/pause — the only sync that matters
   if (state.isPlaying && !yt.isPlaying.value) {
     console.log('%c[Session] Host says play → playing', 'color: #10B981')
     yt.play()
@@ -166,18 +148,15 @@ function applySyncState(state: NonNullable<typeof session.syncedPlayback.value>)
     yt.pause()
   }
 
-  // Time-delta seek — cooldown prevents seek loops
-  if (state.currentTime > 0 && (now - lastSeekTime) > SEEK_COOLDOWN_MS) {
-    const networkDelta = state.sentAt ? (now - state.sentAt) / 1000 : 0
-    const hostTime = state.isPlaying ? state.currentTime + networkDelta : state.currentTime
+  // Seek — only when host explicitly seeks (event-driven, not drift-based)
+  if (state.currentTime > 0) {
+    const delta = state.sentAt ? (Date.now() - state.sentAt) / 1000 : 0
+    const hostTime = state.isPlaying ? state.currentTime + delta : state.currentTime
     const drift = Math.abs(yt.currentTime.value - hostTime)
-
-    if (drift > DRIFT_THRESHOLD) {
+    if (drift > 3) {
       yt.seekTo(hostTime)
-      // Resume playing after seek — seeking can pause the player
       if (state.isPlaying) setTimeout(() => yt.play(), 300)
-      lastSeekTime = now
-      console.log(`%c[Session] Seek to sync (drift: ${drift.toFixed(1)}s, latency: ${(networkDelta * 1000).toFixed(0)}ms)`, 'color: #F59E0B')
+      console.log(`%c[Session] Seek (drift: ${drift.toFixed(1)}s)`, 'color: #F59E0B')
     }
   }
 }
