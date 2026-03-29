@@ -104,12 +104,16 @@ export function useMeydaAnalyzer() {
         callback: (extracted: any) => {
           if (!extracted || !isActive.value) return
 
+          // Sanitize: Meyda returns NaN on silent/empty buffers.
+          // NaN poisons smoothStep and eventually all shader uniforms → black screen.
+          const safe = (v: unknown) => (typeof v === 'number' && Number.isFinite(v)) ? v : 0
+
           const raw: MeydaFeatures = {
-            rms: extracted.rms ?? 0,
-            spectralCentroid: extracted.spectralCentroid ?? 0,
-            spectralFlatness: extracted.spectralFlatness ?? 0,
-            zcr: extracted.zcr ?? 0,
-            spectralRolloff: extracted.spectralRolloff ?? 0,
+            rms: safe(extracted.rms),
+            spectralCentroid: safe(extracted.spectralCentroid),
+            spectralFlatness: safe(extracted.spectralFlatness),
+            zcr: safe(extracted.zcr),
+            spectralRolloff: safe(extracted.spectralRolloff),
             mfcc: extracted.mfcc ?? [],
             chroma: extracted.chroma ?? [],
           }

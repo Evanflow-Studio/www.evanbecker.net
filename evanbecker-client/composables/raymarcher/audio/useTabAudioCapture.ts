@@ -68,8 +68,10 @@ export function useTabAudioCapture() {
         return
       }
 
-      // Stop video tracks if we don't need them
-      stream.getVideoTracks().forEach(t => t.stop())
+      // Keep video tracks alive — stopping them while Chrome is capturing the
+      // current tab disrupts the compositor and causes the WebGL canvas to go black.
+      // The video tracks are unused but Chrome needs them for stable compositing.
+      // They get cleaned up when stopCapture() stops all tracks.
 
       mediaStream = stream
 

@@ -3,8 +3,9 @@
  * Stateless — every function is a pure computation.
  */
 
-/** Clamp a value between min and max */
+/** Clamp a value between min and max (NaN-safe — returns min on NaN) */
 export function clamp(v: number, min: number, max: number): number {
+  if (v !== v) return min // fast NaN check
   return v < min ? min : v > max ? max : v
 }
 
@@ -30,11 +31,16 @@ export function smoothOsc(seed: number, offset: number, freq: number = 1): numbe
 
 /** Linear interpolation with clamped t */
 export function lerp(a: number, b: number, t: number): number {
+  // NaN-safe: if t is NaN, return midpoint
+  if (t !== t) return (a + b) * 0.5
   return a + (b - a) * Math.max(0, Math.min(1, t))
 }
 
 /** Exponential smoothing toward target */
 export function smoothStep(current: number, target: number, rate: number): number {
+  // NaN-safe: if target is NaN, keep current value unchanged
+  if (target !== target) return current
+  if (current !== current) return target
   return current + (target - current) * rate
 }
 
