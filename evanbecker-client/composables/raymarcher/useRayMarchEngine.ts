@@ -77,8 +77,6 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
 
   let stableFrameCount = 0
   let contextLostAt = 0 // timestamp when context was lost — for watchdog
-  let blackCheckCount = 0
-  let lastRecompileTime = 0 // prevent recompile loops
 
   function render() {
     frame.animFrameId = requestAnimationFrame(render)
@@ -134,29 +132,31 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     renderPass(res, canvas.width, canvas.height)
     updateFrameStats(frame, now)
 
-    // Black screen watchdog — check center pixel every ~2s (120 frames)
-    // Only act if >10s since last recompile (prevents loops)
-    if (stableFrameCount > 120 && stableFrameCount % 120 === 0) {
+    // Diagnostic: log key render state every ~5s to debug black screen
+    if (stableFrameCount % 300 === 1) {
       const pixel = new Uint8Array(4)
       gl.readPixels(Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
-      if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0) {
-        blackCheckCount++
-        // 3 consecutive black checks (~6s) AND at least 10s since last recompile
-        if (blackCheckCount >= 3 && (now - lastRecompileTime) > 10000) {
-          console.warn('[RayMarcher] Black screen detected — recompiling shaders.')
-          blackCheckCount = 0
-          lastRecompileTime = now
-          store.gl.shaderCompiling = true
-          Object.assign(res, createGLResources())
-          compileShaders(canvas, res).then(() => {
-            store.gl.shaderCompiling = false
-            stableFrameCount = 0
-            resetFrameTiming(frame)
-          })
-        }
-      } else {
-        blackCheckCount = 0
-      }
+      const glErr = gl.getError()
+      console.log('[RayMarcher] Render diagnostic:', {
+        pixel: [pixel[0], pixel[1], pixel[2], pixel[3]],
+        glError: glErr,
+        canvasSize: [canvas.width, canvas.height],
+        drawingBuffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+        hasProgram: !!res.program,
+        hasPostProgram: !!res.postProgram,
+        hasFBO: !!res.fbo,
+        fboSize: [res.fboWidth, res.fboHeight],
+        elapsed,
+        scene: store.scene.index,
+        fogDensity: store.render.fogDensity,
+        wallThickness: store.lattice.wallThickness,
+        cellSpacing: store.lattice.cellSpacing,
+        zoom: store.render.zoom,
+        cameraPos: [store.camera.posX, store.camera.posY, store.camera.posZ],
+        bloom: store.render.bloomStrength,
+        chromatic: store.render.chromaticAmount,
+        preserveDrawingBuffer: gl.getContextAttributes()?.preserveDrawingBuffer,
+      })
     }
   }
 
@@ -221,6 +221,7 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
   }
 
   /** Force GL resource recreation — call after events that may invalidate the context (e.g., stopping tab capture) */
+  let lastRecompileTime = 0
   function requestRecompile() {
     const canvas = canvasRef.value
     if (!canvas) return
@@ -228,7 +229,6 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     const now = performance.now()
     if (now - lastRecompileTime < 5000) return
     lastRecompileTime = now
-    blackCheckCount = 0
     console.log('[RayMarcher] Recompile requested — recreating GL resources.')
     store.gl.shaderCompiling = true
     Object.assign(res, createGLResources())

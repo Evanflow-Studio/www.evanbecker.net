@@ -113,11 +113,14 @@ export async function compileShaders(
 
   // Don't force high-performance GPU — it causes context loss on some devices
   // when the discrete GPU isn't available or the driver fails to switch.
+  // preserveDrawingBuffer MUST be true — getDisplayMedia (tab capture) reads the
+  // canvas at compositor time. With false, the buffer is cleared after compositing,
+  // causing black frames when tab capture is active.
   const gl = canvas.getContext('webgl2', {
     antialias: false,
     powerPreference: 'default',
     failIfMajorPerformanceCaveat: false,
-    preserveDrawingBuffer: false,
+    preserveDrawingBuffer: true,
   })
   if (!gl) {
     store.gl.error = 'WebGL2 is not supported in this browser.'
