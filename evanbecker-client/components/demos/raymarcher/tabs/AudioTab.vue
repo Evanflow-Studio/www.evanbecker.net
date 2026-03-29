@@ -115,6 +115,15 @@ const MOOD_PRESETS = [
         {{ store.audio.bpm }} BPM
       </span>
 
+      <!-- Genre tags from MusicBrainz -->
+      <span
+        v-for="genre in store.audio.trackGenres"
+        :key="genre"
+        class="inline-flex items-center rounded-full border border-slate-600/50 bg-slate-800/30 px-2 py-0.5 text-[10px] font-medium text-slate-400"
+      >
+        {{ genre }}
+      </span>
+
     </div>
 
     <!-- Mood space dot plot -->
