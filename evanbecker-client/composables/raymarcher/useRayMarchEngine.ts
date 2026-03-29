@@ -76,10 +76,30 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
   }
 
   let stableFrameCount = 0
+  let contextLostAt = 0 // timestamp when context was lost — for watchdog
 
   function render() {
     frame.animFrameId = requestAnimationFrame(render)
-    if (contextLost) return
+
+    // Watchdog: if context has been lost for >3 seconds and no restore event fired, force recovery
+    if (contextLost) {
+      const now = performance.now()
+      if (!contextLostAt) contextLostAt = now
+      if (now - contextLostAt > 3000) {
+        console.warn('[RayMarcher] Context lost for >3s — forcing recovery.')
+        contextLost = false
+        contextLostAt = 0
+        stableFrameCount = 0
+        const canvas = canvasRef.value
+        if (canvas) {
+          Object.assign(res, createGLResources())
+          compileShaders(canvas, res).then(() => resetFrameTiming(frame))
+        }
+      }
+      return
+    }
+    contextLostAt = 0
+
     const { gl } = res
     if (!gl || !res.program) return
 
@@ -111,7 +131,28 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     uploadUniforms(res, elapsed)
     renderPass(res, canvas.width, canvas.height)
     updateFrameStats(frame, now)
+
+    // Black screen watchdog — every ~120 frames, check if output is all black
+    if (stableFrameCount > 60 && stableFrameCount % 120 === 0) {
+      const pixel = new Uint8Array(4)
+      gl.readPixels(Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel)
+      if (pixel[0] === 0 && pixel[1] === 0 && pixel[2] === 0) {
+        blackFrameCount++
+        if (blackFrameCount >= 3) { // ~6 seconds of black
+          console.warn('[RayMarcher] Black screen detected — recompiling shaders.')
+          blackFrameCount = 0
+          store.gl.shaderCompiling = true
+          compileShaders(canvas, res).then(() => {
+            store.gl.shaderCompiling = false
+            resetFrameTiming(frame)
+          })
+        }
+      } else {
+        blackFrameCount = 0
+      }
+    }
   }
+  let blackFrameCount = 0
 
   // === Lifecycle ===
 

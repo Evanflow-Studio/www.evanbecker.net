@@ -117,17 +117,17 @@ export function computeAnimation(f: AudioFeatures): number {
 export function computeGeometry(f: AudioFeatures): { cellSpacing: number; wallThickness: number } {
   const bpmNorm = Math.max(0, Math.min(1, (f.bpm - 60) / 140))
   return {
-    cellSpacing: lerp(0.08, 0.35, 1 - bpmNorm * 0.6 - f.energy * 0.4),
-    wallThickness: lerp(0.15, 0.65, f.percussiveness * 0.5 + f.energy * 0.3 + f.genreSeed * 0.2),
+    cellSpacing: lerp(0.12, 0.35, 1 - bpmNorm * 0.6 - f.energy * 0.4),
+    wallThickness: lerp(0.18, 0.50, f.percussiveness * 0.5 + f.energy * 0.3 + f.genreSeed * 0.2),
   }
 }
 
 export function computePostFX(f: AudioFeatures): { bloom: number; chromatic: number; fog: number; zoom: number } {
   return {
-    bloom: lerp(0.0, 0.6, f.energy * 0.6 + f.bass * 0.4),
-    chromatic: lerp(0.0, 0.3, f.percussiveness * 0.5 + f.energy * 0.3 + f.genreSeed * 0.2),
-    fog: lerp(0.0005, 0.008, (1 - f.brightness) * 0.6 + (1 - f.energy) * 0.4),
-    zoom: lerp(0.8, 1.4, f.brightness * 0.5 + f.valence * 0.3 + f.genreSeed * 0.2),
+    bloom: lerp(0.0, 0.5, f.energy * 0.6 + f.bass * 0.4),
+    chromatic: lerp(0.0, 0.25, f.percussiveness * 0.5 + f.energy * 0.3 + f.genreSeed * 0.2),
+    fog: lerp(0.0003, 0.003, (1 - f.brightness) * 0.6 + (1 - f.energy) * 0.4),
+    zoom: lerp(0.85, 1.3, f.brightness * 0.5 + f.valence * 0.3 + f.genreSeed * 0.2),
   }
 }
 

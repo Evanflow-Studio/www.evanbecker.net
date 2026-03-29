@@ -3,6 +3,11 @@
  * Stateless — every function is a pure computation.
  */
 
+/** Clamp a value between min and max */
+export function clamp(v: number, min: number, max: number): number {
+  return v < min ? min : v > max ? max : v
+}
+
 /** Deterministic hash from a string → 0-1 */
 export function hashString(s: string): number {
   let h = 0

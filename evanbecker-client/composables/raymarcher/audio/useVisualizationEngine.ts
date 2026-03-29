@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
-import { genreHash, smoothOsc, smoothStep, lerp } from './vizMath'
+import { genreHash, smoothOsc, smoothStep, lerp, clamp } from './vizMath'
 import { createClipDetectorState, updateClipDetector } from './useClipDetector'
 import {
   type AudioFeatures,
@@ -258,14 +258,14 @@ export function useVisualizationEngine() {
     if (targetGeo !== store.lattice.geoPreset && sceneLockTimer > 5) store.lattice.geoPreset = targetGeo
     if (targetAnim !== store.lattice.animation && sceneLockTimer > 3) store.lattice.animation = targetAnim
 
-    // Continuous params
-    store.lattice.cellSpacing = smoothStep(store.lattice.cellSpacing, geo.cellSpacing + f.bass * 0.04, SMOOTH_SLOW)
-    store.lattice.wallThickness = smoothStep(store.lattice.wallThickness, geo.wallThickness + f.percussiveness * 0.06, SMOOTH_SLOW)
-    store.render.bloomStrength = smoothStep(store.render.bloomStrength, fx.bloom + f.amplitude * 0.2 + f.bass * 0.1, SMOOTH_FAST)
-    store.render.chromaticAmount = smoothStep(store.render.chromaticAmount, fx.chromatic + f.percussiveness * 0.15, SMOOTH_FAST)
-    store.render.fogDensity = smoothStep(store.render.fogDensity, fx.fog * (1 - f.energy * 0.4), SMOOTH_SLOW)
-    store.render.zoom = smoothStep(store.render.zoom, fx.zoom + f.bass * 0.08, SMOOTH_MED)
-    store.time.speed = smoothStep(store.time.speed, animSpeed + f.amplitude * 0.4, SMOOTH_MED)
+    // Continuous params — with hard safety clamps to prevent black screen
+    store.lattice.cellSpacing = clamp(smoothStep(store.lattice.cellSpacing, geo.cellSpacing + f.bass * 0.04, SMOOTH_SLOW), 0.10, 0.50)
+    store.lattice.wallThickness = clamp(smoothStep(store.lattice.wallThickness, geo.wallThickness + f.percussiveness * 0.06, SMOOTH_SLOW), 0.10, 0.55)
+    store.render.bloomStrength = clamp(smoothStep(store.render.bloomStrength, fx.bloom + f.amplitude * 0.2 + f.bass * 0.1, SMOOTH_FAST), 0.0, 0.6)
+    store.render.chromaticAmount = clamp(smoothStep(store.render.chromaticAmount, fx.chromatic + f.percussiveness * 0.15, SMOOTH_FAST), 0.0, 0.3)
+    store.render.fogDensity = clamp(smoothStep(store.render.fogDensity, fx.fog * (1 - f.energy * 0.4), SMOOTH_SLOW), 0.0001, 0.004)
+    store.render.zoom = clamp(smoothStep(store.render.zoom, fx.zoom + f.bass * 0.08, SMOOTH_MED), 0.7, 1.5)
+    store.time.speed = clamp(smoothStep(store.time.speed, animSpeed + f.amplitude * 0.4, SMOOTH_MED), 0.1, 3.0)
 
     // Palette — continuous evolution
     const pt = cameraTime * 0.03
