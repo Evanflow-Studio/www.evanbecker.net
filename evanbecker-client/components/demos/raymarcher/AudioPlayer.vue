@@ -36,10 +36,16 @@ const controlsDisabled = computed(() => session.isConnected.value && !session.is
 const hostWaitingForReady = computed(() => session.isConnected.value && session.isHost.value && !session.allMembersFullyReady.value)
 
 
-// Track the last intentional play state — YouTube's isPlaying flickers
-// during buffering, but we should never broadcast those transient pauses.
-// Component-level so both playTrack and onMounted watches can access it.
+// Track the last intentional play state — ONLY set by explicit user actions
+// (button clicks, track changes). Never by YouTube's internal state transitions.
 let intentionallyPlaying = false
+
+/** Host play/pause — sets intent and broadcasts. Wire buttons to this, not yt.togglePlay() directly. */
+function hostTogglePlay() {
+  yt.togglePlay()
+  intentionallyPlaying = !intentionallyPlaying
+  if (session.isHost.value) session.broadcastPlaybackNow()
+}
 
 /**
  * Central function — every track change goes through here.
@@ -74,46 +80,18 @@ onMounted(() => {
     if (next) playTrack(next, true) // auto-advance plays automatically
   })
 
-  watch(() => yt.isPlaying.value, (playing) => {
-    // Only update if the player is NOT buffering — buffering causes
-    // PLAYING → PAUSED flickers that aren't user-initiated
-    if (!yt.isBuffering.value) intentionallyPlaying = playing
-  })
-
-  // Provide real-time player state to the session hub for heartbeat + immediate broadcasts
+  // Provide real-time player state to the session hub for heartbeat broadcasts.
+  // Uses intentionallyPlaying — NEVER reads yt.isPlaying directly for sync.
   session.setPlayerStateProvider(() => ({
     currentTime: yt.currentTime.value,
     duration: yt.duration.value,
-    // Use intentional state to prevent broadcasting transient buffer pauses
-    isPlaying: yt.isBuffering.value ? intentionallyPlaying : yt.isPlaying.value,
+    isPlaying: intentionallyPlaying,
     videoId: yt.currentVideoId.value,
   }))
 
-  // Host: broadcast on play/pause — only when NOT buffering.
-  // YouTube's PLAYING→BUFFERING→PAUSED→BUFFERING→PLAYING cycle during
-  // network stalls causes isPlaying to flicker. We only broadcast when
-  // the state settles AND the player is not buffering.
-  let playStateTimer: ReturnType<typeof setTimeout> | null = null
-  watch(() => yt.isPlaying.value, (playing) => {
-    if (!session.isHost.value) return
-    if (yt.isBuffering.value) return // never broadcast during buffering
-    if (playStateTimer) clearTimeout(playStateTimer)
-    playStateTimer = setTimeout(() => {
-      // Only broadcast if still the same and NOT buffering
-      if (yt.isPlaying.value === playing && !yt.isBuffering.value) {
-        session.broadcastPlaybackNow()
-      }
-    }, 500) // 500ms — longer debounce to survive buffer stall round-trips
-  })
-
-  // Host: detect seeks — if currentTime jumps by more than 2s, broadcast immediately
-  // Skip during buffering — buffer stalls can cause time jumps that aren't user seeks
-  watch(() => yt.currentTime.value, (now, prev) => {
-    if (!session.isHost.value || prev == null || yt.isBuffering.value) return
-    if (Math.abs(now - prev) > 2) {
-      session.broadcastPlaybackNow()
-    }
-  })
+  // NO watches on yt.isPlaying — YouTube's internal state flickers during
+  // buffering and causes phantom pause broadcasts. We broadcast ONLY from
+  // explicit user actions: hostTogglePlay(), onSeek(), playTrack().
 
   // Keep store in sync with YouTube player
   watch([yt.currentVideoId, yt.isPlaying], () => {
@@ -419,7 +397,7 @@ function onSeek(e: Event) {
               <button
                 class="flex items-center justify-center h-7 w-7 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors disabled:opacity-40"
                 :disabled="controlsDisabled"
-                @click="yt.togglePlay()"
+                @click="hostTogglePlay()"
               >
                 <svg v-if="!yt.isPlaying.value" class="h-3.5 w-3.5 text-white ml-0.5" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
@@ -614,7 +592,7 @@ function onSeek(e: Event) {
         <button
           class="text-slate-400 hover:text-white disabled:opacity-30"
           :disabled="controlsDisabled"
-          @click="activeTab === 'youtube' ? yt.togglePlay() : (audio.isPlaying.value ? audio.pause() : audio.play())"
+          @click="activeTab === 'youtube' ? hostTogglePlay() : (audio.isPlaying.value ? audio.pause() : audio.play())"
         >
           {{ (activeTab === 'youtube' ? yt.isPlaying.value : audio.isPlaying.value) ? '⏸' : '▶' }}
         </button>
