@@ -41,9 +41,13 @@ const hostWaitingForReady = computed(() => session.isConnected.value && session.
  * Loads video + resolves metadata in one place.
  */
 function playTrack(track: YouTubeTrack) {
-  yt.loadVideo(track.videoId)
+  // In a session, cue without auto-play if not all members are ready
+  if (session.isConnected.value && session.isHost.value && !session.allMembersFullyReady.value) {
+    yt.cueVideo(track.videoId)
+  } else {
+    yt.loadVideo(track.videoId)
+  }
   trackMeta.resolve(track.title, track.channel)
-  // Keep store in sync for session heartbeat
   store.audio.youtubeUrl = track.videoId
   store.audio.trackTitle = track.title
   store.audio.trackArtist = track.channel
@@ -80,6 +84,13 @@ onMounted(() => {
   watch([yt.currentVideoId, yt.isPlaying], () => {
     store.audio.youtubeUrl = yt.currentVideoId.value
   })
+
+  // Auto-broadcast visualizer connection status when tab capture starts/stops
+  watch(() => tabCapture.isCapturing.value, (capturing) => {
+    if (session.isConnected.value) {
+      session.setVisualizerConnected(capturing)
+    }
+  })
 })
 
 // Session sync: play/pause + track load + time sync with cooldown
@@ -112,26 +123,34 @@ watch(() => yt.isReady.value, (ready) => {
 function applySyncState(state: NonNullable<typeof session.syncedPlayback.value>) {
   const now = Date.now()
 
-  // Load new video if different
+  // Load new video if different — cue only, don't auto-play
   if (state.videoId && state.videoId !== lastSyncedVideoId) {
     lastSyncedVideoId = state.videoId
-    yt.loadVideo(state.videoId)
-    lastSeekTime = now // treat initial load as a seek (gives it time to buffer)
-    if (import.meta.dev) console.log('%c[Session] Loading host video:', 'color: #2D95FC', state.videoId, state.title)
-    return // let it buffer — next heartbeat will handle play/seek
+    yt.cueVideo(state.videoId)
+    lastSeekTime = now
+    if (import.meta.dev) console.log('%c[Session] Cueing host video:', 'color: #2D95FC', state.videoId, state.title)
+    // If host says it's already playing, start after a brief buffer delay
+    if (state.isPlaying) {
+      setTimeout(() => {
+        const networkDelta = state.sentAt ? (Date.now() - state.sentAt) / 1000 : 0
+        yt.seekTo(state.currentTime + networkDelta)
+        yt.play()
+      }, 500)
+    }
+    return
   }
 
-  // Sync play/pause (always — this is instant and non-disruptive)
+  // Sync play/pause — this is the primary event-driven sync
   if (state.isPlaying && !yt.isPlaying.value && !yt.isBuffering.value) {
     yt.play()
   } else if (!state.isPlaying && yt.isPlaying.value) {
     yt.pause()
   }
 
-  // Time-delta compensation — only seek if cooldown expired
-  if (state.isPlaying && state.currentTime > 0 && (now - lastSeekTime) > SEEK_COOLDOWN_MS) {
+  // Time-delta seek — only when host explicitly sends state (cooldown prevents loops)
+  if (state.currentTime > 0 && (now - lastSeekTime) > SEEK_COOLDOWN_MS) {
     const networkDelta = state.sentAt ? (now - state.sentAt) / 1000 : 0
-    const hostTime = state.currentTime + networkDelta
+    const hostTime = state.isPlaying ? state.currentTime + networkDelta : state.currentTime
     const drift = Math.abs(yt.currentTime.value - hostTime)
 
     if (drift > DRIFT_THRESHOLD) {

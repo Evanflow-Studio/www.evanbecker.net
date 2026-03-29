@@ -1,4 +1,4 @@
-import { ref, onUnmounted, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { HubConnectionBuilder, HubConnection, LogLevel } from '@microsoft/signalr'
 import { useAuth0 } from '@auth0/auth0-vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
@@ -56,7 +56,8 @@ let heartbeatInterval: ReturnType<typeof setInterval> | null = null
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 
 const isConnected = ref(false)
-const isHost = ref(false)
+const myUserId = ref('')  // Our user ID from the session — used to derive isHost
+const hostUserId = ref('') // The host's user ID — set from session state
 const roomCode = ref('')
 const hostName = ref('')
 const members = ref<SessionMember[]>([])
@@ -65,6 +66,9 @@ const error = ref('')
 const hostDisconnectedCountdown = ref(0)
 const syncedPlayback = ref<PlaybackState | null>(null)
 const syncedQueue = ref<QueueState | null>(null)
+
+// Derive isHost from actual IDs — never a separately tracked flag
+const isHost = computed(() => !!myUserId.value && myUserId.value === hostUserId.value)
 
 const MAX_CHAT_MESSAGES = 200
 
@@ -182,9 +186,10 @@ export function useSessionHub() {
         error.value = 'Failed to create room'
         return null
       }
-      applyState(state, true)
+      // Host's userId comes from the state — we ARE the host
+      applyState(state, state.host.userId)
       startHeartbeat()
-      if (import.meta.dev) console.log('%c[Session] Room created:', 'color: #10B981; font-weight: bold', state.roomCode)
+      if (import.meta.dev) console.log('%c[Session] Room created:', 'color: #10B981; font-weight: bold', state.roomCode, 'hostId:', state.host.userId)
       return state.roomCode
     } catch (e: any) {
       error.value = e.message || 'Failed to create room'
@@ -201,8 +206,11 @@ export function useSessionHub() {
         error.value = 'Room not found or full'
         return false
       }
-      applyState(state, false)
-      if (import.meta.dev) console.log('%c[Session] Joined room:', 'color: #10B981; font-weight: bold', code)
+      // Find ourselves in the members list to get our userId
+      const me = state.members.find(m => !m.isHost && m.userId !== state.host.userId)
+        ?? state.members[state.members.length - 1] // fallback: last joined
+      applyState(state, me.userId)
+      if (import.meta.dev) console.log('%c[Session] Joined room:', 'color: #10B981; font-weight: bold', code, 'myId:', me.userId, 'hostId:', state.host.userId)
       return true
     } catch (e: any) {
       error.value = e.message || 'Failed to join room'
@@ -329,9 +337,10 @@ export function useSessionHub() {
 
   // ── Internal ───────────────────────────────────────────
 
-  function applyState(state: SessionState, asHost: boolean) {
+  function applyState(state: SessionState, currentUserId: string) {
     isConnected.value = true
-    isHost.value = asHost
+    myUserId.value = currentUserId
+    hostUserId.value = state.host.userId
     roomCode.value = state.roomCode
     hostName.value = `${state.host.firstName}${state.host.lastName ? ` ${state.host.lastName}` : ''}`
     members.value = state.members
@@ -339,17 +348,17 @@ export function useSessionHub() {
     hostDisconnectedCountdown.value = 0
     error.value = ''
 
-    if (!asHost && state.playback) {
-      syncedPlayback.value = state.playback
-    }
-    if (!asHost && state.queue) {
-      syncedQueue.value = state.queue
+    // Non-host: apply existing session state
+    if (currentUserId !== state.host.userId) {
+      if (state.playback) syncedPlayback.value = state.playback
+      if (state.queue) syncedQueue.value = state.queue
     }
   }
 
   function resetState() {
     isConnected.value = false
-    isHost.value = false
+    myUserId.value = ''
+    hostUserId.value = ''
     roomCode.value = ''
     hostName.value = ''
     members.value = []

@@ -127,6 +127,15 @@ export function useYouTubePlayer() {
     }
   }
 
+  /** Load without auto-playing — use when waiting for ready-up */
+  function cueVideo(videoId: string) {
+    error.value = ''
+    currentVideoId.value = videoId
+    if (player && isReady.value) {
+      player.cueVideoById(videoId)
+    }
+  }
+
   function play() {
     player?.playVideo()
   }
@@ -172,6 +181,7 @@ export function useYouTubePlayer() {
     // Methods
     init,
     loadVideo,
+    cueVideo,
     play,
     pause,
     togglePlay,
