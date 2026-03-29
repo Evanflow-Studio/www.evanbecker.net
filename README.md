@@ -161,6 +161,7 @@ Each sub-project has its own README with detailed structure, setup, and configur
 - **[`evanbecker-client/README.md`](evanbecker-client/README.md)** — Frontend development, demos, environment variables
 - **[`evanbecker-api/README.md`](evanbecker-api/README.md)** — API endpoints, secrets architecture, database setup
 - **[`infrastructure/README.md`](infrastructure/README.md)** — LXC containers, deployment, security
+- **[`evanbecker-client/composables/raymarcher/README.md`](evanbecker-client/composables/raymarcher/README.md)** — Ray marcher architecture, audio pipeline, jam sessions
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -240,9 +241,12 @@ See [`infrastructure/README.md`](infrastructure/README.md) for full deployment d
 ## Features
 
 - **Blog** — Markdown-powered articles with syntax-highlighted code blocks via Nuxt Content
-- **Commenting System** — Auth0-authenticated comments with nested replies on articles
-- **Contact Form** — Submissions stored in PostgreSQL
-- **Newsletter** — Email subscription signup
+- **Commenting System** — Auth0-authenticated real-time comments via SignalR with nested replies
+- **Contact Form** — Submissions stored in PostgreSQL with SMTP2Go email notifications
+- **Newsletter** — Email subscription with duplicate detection and SMTP2Go notifications
+- **Ray Marcher** — GPU-powered fractal visualizer with 4 scenes, cosine palettes, and post-FX ([docs](evanbecker-client/composables/raymarcher/README.md))
+- **Audio-Reactive Visualizer** — YouTube playback + tab audio capture → Meyda/Essentia analysis → real-time visual parameter mapping
+- **Jam Sessions** — Multiplayer shared visualizer via SignalR with host authority, ready-up flow, and playback sync
 - **Projects Showcase** — Portfolio of work
 - **Dark/Light Mode** — Theme toggle via @nuxtjs/color-mode
 - **RSS Feed** — Auto-generated at `/feed.xml`

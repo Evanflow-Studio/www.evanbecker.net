@@ -53,7 +53,9 @@ evanbecker-client/
 ## Interactive Demos (`/sandbox`)
 
 ### Ray Marcher
-WebGL2 GPU ray marcher with 4 scenes, 10 geometry presets, 9 animation modes, FPS camera, 12+ color palettes, post-processing, FOV zoom, and GLSL/JS scripting.
+WebGL2 GPU ray marcher with 4 scenes, 10 geometry presets, 9 animation modes, FPS camera, 12+ color palettes, post-processing, FOV zoom, and GLSL/JS scripting. Includes an audio-reactive visualization engine (YouTube + tab audio capture → Meyda/Essentia → real-time fractal parameter mapping) and multiplayer jam sessions via SignalR.
+
+See [`composables/raymarcher/README.md`](composables/raymarcher/README.md) for full architecture docs.
 
 ### Homelab Viewer
 3D topology of the Proxmox homelab with live status from Uptime Kuma — sonar ping animations show green for up, red (larger) for down.

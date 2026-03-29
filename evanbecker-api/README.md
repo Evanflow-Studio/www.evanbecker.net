@@ -1,12 +1,15 @@
 # evanbecker-api
 
-REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles comments, contact form submissions, newsletter subscriptions, and user management.
+REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles comments, contact form submissions, newsletter subscriptions, user management, YouTube search proxy, and real-time features via SignalR.
 
 ## Tech Stack
 
 - **.NET 10** / ASP.NET Core
 - **Entity Framework Core** with PostgreSQL 18
 - **Auth0** JWT Bearer authentication
+- **SignalR** for real-time comments and multiplayer jam sessions
+- **SMTP2Go** for email notifications (contact form, newsletter)
+- **YouTube Data API v3** for search (proxied to keep key server-side)
 - **Infisical** for secrets management (via `SecretsConfigurationProvider`)
 
 ## Project Structure
