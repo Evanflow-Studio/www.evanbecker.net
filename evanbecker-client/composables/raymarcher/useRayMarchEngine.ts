@@ -117,15 +117,13 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
     stableFrameCount++
     gl.viewport(0, 0, canvas.width, canvas.height)
 
-    // Time — guard against NaN from poisoned store.time.speed
+    // Time
     const now = performance.now()
     if (!store.time.paused) {
-      const speed = Number.isFinite(store.time.speed) ? store.time.speed : 1
-      const dt = (now - frame.lastFrameTime) / 1000.0
-      frame.accumulatedTime += Number.isFinite(dt) ? dt * speed : 0
+      frame.accumulatedTime += (now - frame.lastFrameTime) / 1000.0 * store.time.speed
     }
     frame.lastFrameTime = now
-    const elapsed = Number.isFinite(frame.accumulatedTime) ? frame.accumulatedTime : 0
+    const elapsed = frame.accumulatedTime
 
     // Update
     processKeys(input)

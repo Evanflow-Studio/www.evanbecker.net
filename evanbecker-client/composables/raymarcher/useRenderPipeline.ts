@@ -33,39 +33,35 @@ function computeLightDir(store: ReturnType<typeof useRayMarcherStore>, elapsed: 
   ]
 }
 
-/** NaN-safe: WebGL uniforms with NaN produce black output */
-const s = (v: number, fallback = 0) => v === v ? v : fallback
-
 export function uploadUniforms(res: GLResources, elapsed: number) {
   const { gl, mainCache } = res
   if (!gl) return
 
   const store = useRayMarcherStore()
-  const safeElapsed = s(elapsed)
-  const light = computeLightDir(store, safeElapsed)
+  const light = computeLightDir(store, elapsed)
   const qPreset = QUALITY_PRESETS[store.render.quality]
 
   gl.uniform2f(mainCache['u_resolution'], gl.drawingBufferWidth, gl.drawingBufferHeight)
-  gl.uniform1f(mainCache['u_time'], safeElapsed)
-  gl.uniform1f(mainCache['u_cameraYaw'], s(store.camera.yaw))
-  gl.uniform1f(mainCache['u_cameraPitch'], s(store.camera.pitch))
-  gl.uniform3f(mainCache['u_cameraPos'], s(store.camera.posX), s(store.camera.posY), s(store.camera.posZ, 3))
+  gl.uniform1f(mainCache['u_time'], elapsed)
+  gl.uniform1f(mainCache['u_cameraYaw'], store.camera.yaw)
+  gl.uniform1f(mainCache['u_cameraPitch'], store.camera.pitch)
+  gl.uniform3f(mainCache['u_cameraPos'], store.camera.posX, store.camera.posY, store.camera.posZ)
   gl.uniform1i(mainCache['u_iterations'], store.scene.iterations)
   gl.uniform1i(mainCache['u_scene'], store.scene.index)
   gl.uniform1i(mainCache['u_palette'], store.scene.palette)
-  gl.uniform3f(mainCache['u_lightDir'], s(light[0]), s(light[1], 1), s(light[2]))
+  gl.uniform3f(mainCache['u_lightDir'], light[0], light[1], light[2])
 
-  gl.uniform1f(mainCache['u_cellSpacing'], s(store.lattice.cellSpacing, 0.2))
-  gl.uniform1f(mainCache['u_wallThickness'], s(store.lattice.wallThickness, 0.3))
+  gl.uniform1f(mainCache['u_cellSpacing'], store.lattice.cellSpacing)
+  gl.uniform1f(mainCache['u_wallThickness'], store.lattice.wallThickness)
   gl.uniform1i(mainCache['u_geoPreset'], store.lattice.geoPreset)
   gl.uniform1i(mainCache['u_animation'], store.lattice.animation)
-  gl.uniform1f(mainCache['u_animOffset'], s(store.lattice.animOffset))
+  gl.uniform1f(mainCache['u_animOffset'], store.lattice.animOffset)
   gl.uniform1i(mainCache['u_maxSteps'], store.effectiveSteps)
   gl.uniform1f(mainCache['u_hitThreshold'], qPreset.threshold)
   gl.uniform1f(mainCache['u_maxDist'], qPreset.maxDist)
   gl.uniform1f(mainCache['u_warpCorrection'], qPreset.warpCorrection)
-  gl.uniform1f(mainCache['u_fogDensity'], s(store.render.fogDensity, 0.001))
-  gl.uniform1f(mainCache['u_zoom'], s(store.render.zoom, 1))
+  gl.uniform1f(mainCache['u_fogDensity'], store.render.fogDensity)
+  gl.uniform1f(mainCache['u_zoom'], store.render.zoom)
 
   gl.uniform3fv(mainCache['u_paletteA'], store.customPalette.a)
   gl.uniform3fv(mainCache['u_paletteB'], store.customPalette.b)
