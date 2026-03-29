@@ -16,7 +16,8 @@ public record PlaybackStateDto(
     string? Thumbnail,
     double CurrentTime,
     double Duration,
-    bool IsPlaying);
+    bool IsPlaying,
+    long? SentAt = null);
 
 public record QueueTrackDto(
     string VideoId,

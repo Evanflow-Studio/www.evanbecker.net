@@ -98,8 +98,8 @@ onMounted(() => {
 let pendingSync: typeof session.syncedPlayback.value = null
 let lastSeekTime = 0        // timestamp of last seek — cooldown prevents re-seeking too fast
 let lastSyncedVideoId = ''  // track what we already loaded to avoid re-loading same video
-const SEEK_COOLDOWN_MS = 5000  // don't re-seek within 5 seconds of last seek
-const DRIFT_THRESHOLD = 2.0    // seconds of drift before we seek
+const SEEK_COOLDOWN_MS = 8000  // don't re-seek within 8 seconds of last seek
+const DRIFT_THRESHOLD = 4.0    // seconds of actual drift before we seek
 
 // Track the raw ref — fires whenever the host sends a new PlaybackSync event.
 // NOT deep — the ref itself is replaced (not mutated) on each broadcast.
@@ -161,6 +161,8 @@ function applySyncState(state: NonNullable<typeof session.syncedPlayback.value>)
 
     if (drift > DRIFT_THRESHOLD) {
       yt.seekTo(hostTime)
+      // Resume playing after seek — seeking can pause the player
+      if (state.isPlaying) setTimeout(() => yt.play(), 300)
       lastSeekTime = now
       console.log(`%c[Session] Seek to sync (drift: ${drift.toFixed(1)}s, latency: ${(networkDelta * 1000).toFixed(0)}ms)`, 'color: #F59E0B')
     }
