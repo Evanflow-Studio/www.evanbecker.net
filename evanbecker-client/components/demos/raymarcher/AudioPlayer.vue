@@ -36,25 +36,32 @@ const controlsDisabled = computed(() => session.isConnected.value && !session.is
 const hostWaitingForReady = computed(() => session.isConnected.value && session.isHost.value && !session.allMembersFullyReady.value)
 
 
+// Track the last intentional play state — YouTube's isPlaying flickers
+// during buffering, but we should never broadcast those transient pauses.
+// Component-level so both playTrack and onMounted watches can access it.
+let intentionallyPlaying = false
+
 /**
  * Central function — every track change goes through here.
  * Loads video + resolves metadata in one place.
  */
 function playTrack(track: YouTubeTrack, autoPlay = false) {
-  // Always cue by default — user presses play when ready
   if (autoPlay) {
     yt.loadVideo(track.videoId)
+    intentionallyPlaying = true // set intent before YouTube state catches up
   } else {
     yt.cueVideo(track.videoId)
+    intentionallyPlaying = false
   }
   trackMeta.resolve(track.title, track.channel)
   store.audio.youtubeUrl = track.videoId
   store.audio.trackTitle = track.title
   store.audio.trackArtist = track.channel
   if (import.meta.dev) console.log('%c[Player] Playing track', 'color: #2D95FC; font-weight: bold', track.title)
-  // Host: immediately broadcast the new track to all clients
+  // Host: broadcast track change — delay to let YouTube initialize so
+  // the broadcast includes the correct video ID and play intent
   if (session.isHost.value) {
-    nextTick(() => session.broadcastPlaybackNow())
+    setTimeout(() => session.broadcastPlaybackNow(), 1000)
   }
 }
 
@@ -67,9 +74,6 @@ onMounted(() => {
     if (next) playTrack(next, true) // auto-advance plays automatically
   })
 
-  // Track the last intentional play state — YouTube's isPlaying flickers
-  // during buffering, but we should never broadcast those transient pauses.
-  let intentionallyPlaying = false
   watch(() => yt.isPlaying.value, (playing) => {
     // Only update if the player is NOT buffering — buffering causes
     // PLAYING → PAUSED flickers that aren't user-initiated
