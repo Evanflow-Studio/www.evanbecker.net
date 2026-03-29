@@ -375,8 +375,7 @@ function onSeek(e: Event) {
 
               <button
                 class="flex items-center justify-center h-7 w-7 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors disabled:opacity-40"
-                :disabled="controlsDisabled || hostWaitingForReady"
-                :title="hostWaitingForReady ? 'Waiting for all members to be ready' : ''"
+                :disabled="controlsDisabled"
                 @click="yt.togglePlay()"
               >
                 <svg v-if="!yt.isPlaying.value" class="h-3.5 w-3.5 text-white ml-0.5" viewBox="0 0 20 20" fill="currentColor">
