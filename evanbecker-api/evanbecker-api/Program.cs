@@ -152,8 +152,8 @@ app.UseCors("cors");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHub<CommentHub>("/hubs/comments");
-app.MapHub<SessionHub>("/hubs/session");
+app.MapHub<CommentHub>("/hubs/comments").RequireCors("cors");
+app.MapHub<SessionHub>("/hubs/session").RequireCors("cors");
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResultStatusCodes =
