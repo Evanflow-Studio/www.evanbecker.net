@@ -94,9 +94,6 @@ export function useVisualizationEngine() {
     bpm: 120, energy: 0, valence: 0.5, brightness: 0.5,
     percussiveness: 0, bass: 0, mid: 0, treble: 0, amplitude: 0, genreSeed: 0.5,
   }
-
-  // ── Feature smoothing ──────────────────────────────────────
-
   function updateSmoothedFeatures() {
     const rate = 0.04
     const jt = cameraTime * 0.07 + sessionJitter * 100
@@ -113,9 +110,6 @@ export function useVisualizationEngine() {
     smoothed.amplitude = smoothStep(smoothed.amplitude, store.audio.amplitude, rate * 2)
     smoothed.genreSeed = (currentSeed.value + sessionJitter * 0.05) % 1
   }
-
-  // ── Camera safety ───────────────────────────────────────────
-
   /** Move camera to a safe position for the given scene with some randomization */
   function teleportToSafePosition(sceneIdx: number) {
     const safe = SAFE_CAMERAS[sceneIdx] ?? SAFE_CAMERAS[0]
@@ -135,9 +129,6 @@ export function useVisualizationEngine() {
     clipState.isClipping = false
     clipState.timeSinceCheck = 0
   }
-
-  // ── Scene weight management ────────────────────────────────
-
   // Per-scene max dwell time (seconds) — Fractal Descent is a brief spectacle
   const SCENE_MAX_DWELL = [60, 45, 45, 15] // Lattice, Mandelbulb, CSG, Fractal Descent
 
@@ -198,9 +189,6 @@ export function useVisualizationEngine() {
       }
     }
   }
-
-  // ── Camera drift ───────────────────────────────────────────
-
   function updateCamera(dt: number) {
     const f = smoothed
     const camSpeed = computeCameraSpeed(f)
@@ -233,9 +221,6 @@ export function useVisualizationEngine() {
         Math.cos(cameraTime * 0.15) * wanderScale + Math.sin(cameraTime * 0.37) * wanderScale * 0.25 - 2, SMOOTH_SLOW)
     }
   }
-
-  // ── Core update ────────────────────────────────────────────
-
   function update(dt: number) {
     if (!isActive.value) return
     const f = smoothed
@@ -306,9 +291,6 @@ export function useVisualizationEngine() {
       }
     }
   }
-
-  // ── Snapshot / restore ─────────────────────────────────────
-
   function captureSnapshot(): StoreSnapshot {
     return {
       scene: store.scene.index, palette: store.scene.palette,
@@ -339,9 +321,6 @@ export function useVisualizationEngine() {
     store.customPalette.a = snap.customPalette.a; store.customPalette.b = snap.customPalette.b
     store.customPalette.c = snap.customPalette.c; store.customPalette.d = snap.customPalette.d
   }
-
-  // ── Start / stop ───────────────────────────────────────────
-
   function start() {
     preEngineSnapshot = captureSnapshot()
     isActive.value = true

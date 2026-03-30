@@ -3,9 +3,6 @@ import { HubConnectionBuilder, HubConnection, LogLevel } from '@microsoft/signal
 import { useAuth0 } from '@auth0/auth0-vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import type { YouTubeTrack } from './useYouTubePlayer'
-
-// ── Types ────────────────────────────────────────────────────
-
 export interface SessionMember {
   userId: string
   firstName: string
@@ -47,9 +44,6 @@ interface SessionState {
   playback: PlaybackState | null
   queue: QueueState | null
 }
-
-// ── Composable ───────────────────────────────────────────────
-
 // Module-level state so it's shared across components
 let connection: HubConnection | null = null
 let countdownInterval: ReturnType<typeof setInterval> | null = null
@@ -80,9 +74,6 @@ export function useSessionHub() {
     const { getAccessTokenSilently } = useAuth0()
     getTokenFn = getAccessTokenSilently
   }
-
-  // ── Connection ───────────────────────────────────────────
-
   async function connect(): Promise<HubConnection> {
     if (connection?.state === 'Connected') return connection
 
@@ -95,9 +86,6 @@ export function useSessionHub() {
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .configureLogging(LogLevel.Warning)
       .build()
-
-    // ── Event listeners ──────────────────────────────────
-
     connection.on('PlaybackSync', (state: PlaybackState) => {
       if (!isHost.value) syncedPlayback.value = state
     })
@@ -173,9 +161,6 @@ export function useSessionHub() {
     await connection.start()
     return connection
   }
-
-  // ── Room operations ────────────────────────────────────
-
   async function createRoom(): Promise<string | null> {
     try {
       error.value = ''
@@ -269,9 +254,6 @@ export function useSessionHub() {
       if (import.meta.dev) console.warn('[Session] Kick failed:', e)
     }
   }
-
-  // ── Host broadcast ─────────────────────────────────────
-
   async function broadcastPlayback(state: PlaybackState) {
     if (!connection || !roomCode.value || !isHost.value) return
     try {
@@ -286,7 +268,6 @@ export function useSessionHub() {
     } catch { /* non-critical */ }
   }
 
-  // ── Heartbeat ──────────────────────────────────────────
   // Reads directly from the store — no provider function needed.
   // The store always has current playback state from the YouTube player.
 
@@ -317,9 +298,6 @@ export function useSessionHub() {
     if (!isHost.value || !connection) return
     broadcastPlayback(buildPlaybackState())
   }
-
-
-  // ── Internal ───────────────────────────────────────────
 
   function applyState(state: SessionState, currentUserId: string) {
     isConnected.value = true

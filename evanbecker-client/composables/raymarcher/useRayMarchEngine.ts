@@ -39,9 +39,6 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
   const mouse = createMouseHandlers(input, lookSpeed)
   const touch = createTouchHandlers(input, lookSpeed)
   const keys = createKeyHandlers(input, { captureScreenshot: () => doScreenshot(canvasRef.value!, res) })
-
-  // === Render loop ===
-
   let contextLossCount = 0
 
   function onContextLost(e: Event) {
@@ -159,9 +156,6 @@ export function useRayMarchEngine(canvasRef: Ref<HTMLCanvasElement | null>) {
       })
     }
   }
-
-  // === Lifecycle ===
-
   async function start() {
     const canvas = canvasRef.value
     if (!canvas) return
