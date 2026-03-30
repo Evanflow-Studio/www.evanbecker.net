@@ -16,13 +16,6 @@ const demos = [
     to: '/sandbox/homelab',
     icon: '⬡',
   },
-  {
-    id: 'archgraph',
-    label: 'Architecture Graph',
-    description: '3D force-directed knowledge graph of architecture patterns, quality attributes, and technologies.',
-    to: '/sandbox/archgraph',
-    icon: '◉',
-  },
 ]
 </script>
 
