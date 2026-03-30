@@ -24,9 +24,6 @@ export interface AudioState {
   amplitude: number
   isCapturing: boolean
   youtubeUrl: string
-  autoplayerEnabled: boolean
-  autoplayerEnergy: 'calm' | 'building' | 'intense' | 'breakdown'
-  autoplayerBeats: number
   // Meyda-derived features
   brightness: number       // spectralCentroid normalized 0-1
   percussiveness: number   // zcr normalized 0-1

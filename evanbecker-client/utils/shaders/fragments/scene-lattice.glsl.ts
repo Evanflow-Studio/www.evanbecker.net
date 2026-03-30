@@ -198,7 +198,7 @@ vec2 latticeScene(vec3 p) {
     p = rp + animCenter;
   }
 
-  // Domain repetition — audio-reactive spacing (more dramatic for autoplayer)
+  // Domain repetition — audio-reactive spacing
   float cellSize = mix(4.0, 10.0, u_cellSpacing) + u_bass * 1.5;
   vec3 cellId = floor((p + cellSize * 0.5) / cellSize);
   vec3 q = mod(p + cellSize * 0.5, cellSize) - cellSize * 0.5;

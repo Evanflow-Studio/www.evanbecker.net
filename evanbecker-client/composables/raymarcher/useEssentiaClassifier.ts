@@ -9,7 +9,7 @@ import type { MoodCategory } from '~/types/raymarcher'
  *
  * If Essentia.js WASM fails to load (common in Vite/Nuxt environments),
  * the composable degrades gracefully — all values stay at defaults and
- * `loadError` is set. The autoplayer continues using Meyda-only features.
+ * `loadError` is set. The visualization engine continues using Meyda-only features.
  */
 export function useEssentiaClassifier() {
   const isReady = ref(false)

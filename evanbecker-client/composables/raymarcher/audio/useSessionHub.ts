@@ -52,7 +52,6 @@ interface SessionState {
 
 // Module-level state so it's shared across components
 let connection: HubConnection | null = null
-let heartbeatInterval: ReturnType<typeof setInterval> | null = null
 let countdownInterval: ReturnType<typeof setInterval> | null = null
 
 const isConnected = ref(false)
@@ -188,7 +187,7 @@ export function useSessionHub() {
       }
       // Host's userId comes from the state — we ARE the host
       applyState(state, state.host.userId)
-      startHeartbeat()
+
       if (import.meta.dev) console.log('%c[Session] Room created:', 'color: #10B981; font-weight: bold', state.roomCode, 'hostId:', state.host.userId)
       return state.roomCode
     } catch (e: any) {
@@ -223,7 +222,7 @@ export function useSessionHub() {
     try {
       await connection.invoke('LeaveRoom', roomCode.value)
     } catch { /* ignore */ }
-    stopHeartbeat()
+
     await connection.stop()
     connection = null
     resetState()
@@ -319,11 +318,6 @@ export function useSessionHub() {
     broadcastPlayback(buildPlaybackState())
   }
 
-  // No heartbeat — sync is purely event-driven (play/pause/seek/track change).
-  // Heartbeat caused phantom pauses because any transient state that leaked
-  // into buildPlaybackState would get broadcast to all clients.
-  function startHeartbeat() { /* intentionally empty */ }
-  function stopHeartbeat() { /* intentionally empty */ }
 
   // ── Internal ───────────────────────────────────────────
 
@@ -356,7 +350,7 @@ export function useSessionHub() {
     hostDisconnectedCountdown.value = 0
     syncedPlayback.value = null
     syncedQueue.value = null
-    stopHeartbeat()
+
     if (countdownInterval) {
       clearInterval(countdownInterval)
       countdownInterval = null
