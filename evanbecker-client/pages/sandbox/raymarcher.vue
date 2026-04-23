@@ -1,20 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRayMarchTests } from '~/composables/useDemoTests'
 
 useHead({ title: 'Ray Marcher - Sandbox - Evan Becker', meta: [{ name: 'robots', content: 'noindex' }] })
 
 const rayMarchRef = ref<any>(null)
-const tests = useRayMarchTests(() => rayMarchRef.value)
-
-function statusIcon(status: string): string {
-  switch (status) {
-    case 'pass': return 'PASS'
-    case 'fail': return 'FAIL'
-    case 'running': return '...'
-    default: return '---'
-  }
-}
 </script>
 
 <template>
@@ -54,38 +43,6 @@ function statusIcon(status: string): string {
         coloring. Inigo Quilez cosine palettes generate mathematically smooth color gradients, while fresnel
         rim lighting and near-miss glow add depth. Everything runs entirely on the GPU.
       </p>
-    </div>
-
-    <!-- Tests -->
-    <div class="mt-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#0f1729]">
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Tests</h3>
-        <div class="flex items-center gap-3">
-          <span v-if="tests.passCount.value > 0 || tests.failCount.value > 0" class="text-xs text-slate-500">
-            <span class="text-green-500">{{ tests.passCount.value }} passed</span>
-            <span v-if="tests.failCount.value > 0" class="ml-2 text-red-500">{{ tests.failCount.value }} failed</span>
-          </span>
-          <button @click="tests.run()" :disabled="tests.running.value" class="rounded-lg bg-[#0C65E5] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#2D95FC] disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ tests.running.value ? 'Running...' : 'Run Tests' }}
-          </button>
-        </div>
-      </div>
-      <div class="mt-3 space-y-1">
-        <div v-for="result in tests.results.value" :key="result.name" class="flex items-center justify-between rounded-md px-3 py-1.5 text-xs"
-          :class="{ 'bg-green-500/5': result.status === 'pass', 'bg-red-500/5': result.status === 'fail', 'bg-slate-500/5': result.status === 'pending' || result.status === 'running' }"
-        >
-          <div class="flex items-center gap-2">
-            <span class="w-10 rounded px-1 py-0.5 text-center font-mono text-[10px] font-bold"
-              :class="{ 'bg-green-500/20 text-green-400': result.status === 'pass', 'bg-red-500/20 text-red-400': result.status === 'fail', 'bg-amber-500/20 text-amber-400': result.status === 'running', 'bg-slate-500/10 text-slate-500': result.status === 'pending' }"
-            >{{ statusIcon(result.status) }}</span>
-            <span class="text-slate-600 dark:text-slate-300">{{ result.name }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span v-if="result.error" class="max-w-[200px] truncate text-red-400" :title="result.error">{{ result.error }}</span>
-            <span v-if="result.duration > 0" class="font-mono text-slate-500">{{ result.duration }}ms</span>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>

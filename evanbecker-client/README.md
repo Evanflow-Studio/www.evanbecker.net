@@ -33,8 +33,7 @@ evanbecker-client/
 │   ├── useRayMarchGL.ts         # WebGL2 render engine
 │   ├── useCommandDispatcher.ts  # Command pattern for demo controls
 │   ├── useUptimeKuma.ts         # Live status from Uptime Kuma
-│   ├── useUrlState.ts           # URL hash state serialization
-│   └── useDemoTests.ts          # Demo test framework
+│   └── useUrlState.ts           # URL hash state serialization
 ├── utils/shaders/               # GLSL shader modules
 │   ├── constants.ts             # Shared enums and config
 │   ├── lattice-presets.ts       # Named scene presets
