@@ -36,7 +36,10 @@ public class RecaptchaService : IRecaptchaService
         }
 
         if (string.IsNullOrEmpty(token))
+        {
+            _logger.LogWarning("reCAPTCHA token was empty — failing closed. The frontend likely doesn't have NUXT_PUBLIC_RECAPTCHA_SITE_KEY set.");
             return false;
+        }
 
         var response = await _httpClient.PostAsync(
             "https://www.google.com/recaptcha/api/siteverify",
