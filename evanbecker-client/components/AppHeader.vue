@@ -17,6 +17,10 @@ const isScrolled = ref(false)
 const auth0Available = ref(false)
 const isAuthenticated = ref(false)
 const isLoading = ref(true)
+// Auth0's decoded ID token user — populated the moment isAuthenticated is true,
+// no network needed. Used as the instant fallback before the backend sync
+// completes so the avatar is never blank or a `?` when we have real data.
+const auth0User = ref<{ name?: string; picture?: string; email?: string } | null>(null)
 let loginWithRedirect: (() => void) | null = null
 let logout: (() => void) | null = null
 
@@ -25,8 +29,17 @@ let _syncInProgress = false
 async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
   if (_syncInProgress) return
   _syncInProgress = true
+  let token: string
   try {
-    const token = await getToken()
+    token = await getToken()
+  } catch {
+    // Refresh token dead — leave currentUser as whatever the localStorage cache
+    // had. The user stays "signed in" from the UI's perspective until they try
+    // to perform an authenticated action.
+    _syncInProgress = false
+    return
+  }
+  try {
     const baseUrl = config.public.apiUrl?.replace(/\/$/, '') || ''
     const nameParts = (auth0User?.name || '').split(' ')
     const res = await fetch(`${baseUrl}/api/v1/user`, {
@@ -47,7 +60,7 @@ async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
       if (res.status === 201) needsProfileSetup.value = true
     }
   } catch {
-    // sync failures are non-fatal; user can still browse
+    // API sync failures are non-fatal; user can still browse
   } finally {
     _syncInProgress = false
   }
@@ -70,14 +83,27 @@ if (import.meta.client) {
       auth0.logout({ logoutParams: { returnTo: window.location.origin } })
     }
 
+    // Seed the auth0User ref with whatever's already in the ID token cache.
+    auth0User.value = auth0.user.value ?? null
+
     // Fire sync once Auth0 finishes loading — user and isAuthenticated are both settled at this point
     watch(() => auth0.isLoading.value, async (loading: boolean) => {
       isLoading.value = loading
       isAuthenticated.value = auth0.isAuthenticated.value
-if (!loading && auth0.isAuthenticated.value && auth0.user.value) {
+      auth0User.value = auth0.user.value ?? null
+      if (!loading && auth0.isAuthenticated.value && auth0.user.value) {
         await syncUserToApi(auth0.user.value, auth0.getAccessTokenSilently)
       }
     })
+
+    // Keep isAuthenticated in sync if tokens expire mid-session without a loading transition
+    watch(() => auth0.isAuthenticated.value, (val: boolean) => {
+      isAuthenticated.value = val
+      if (!val) auth0User.value = null
+    })
+
+    // Keep auth0User fresh if it populates after isAuthenticated (race on first login)
+    watch(() => auth0.user.value, (u: any) => { auth0User.value = u ?? null })
 
     // If Auth0 has already settled before this component mounted (e.g. navigating between pages)
     if (!auth0.isLoading.value && auth0.isAuthenticated.value && auth0.user.value) {
@@ -91,10 +117,28 @@ if (!loading && auth0.isAuthenticated.value && auth0.user.value) {
   isLoading.value = false
 }
 
+// Avatar source priority: backend-uploaded > Auth0 identity provider picture.
+// Returns null if neither exists, in which case the template falls back to
+// rendering initials in a colored circle.
+const avatarSrc = computed(() => currentUser.value?.avatar || auth0User.value?.picture || null)
+
+// Initials priority: backend profile > Auth0 name > `?`. The `?` should
+// essentially never show — it would mean the user is authenticated but we
+// have zero name info from any source, which is a genuinely broken account.
 function userInitials() {
-  const first = currentUser.value?.firstName?.[0] ?? ''
-  const last = currentUser.value?.lastName?.[0] ?? ''
-  return (first + last).toUpperCase() || '?'
+  const first = currentUser.value?.firstName?.[0]
+  const last = currentUser.value?.lastName?.[0]
+  if (first || last) return ((first ?? '') + (last ?? '')).toUpperCase()
+
+  const name = auth0User.value?.name?.trim()
+  if (name) {
+    const parts = name.split(/\s+/)
+    const a = parts[0]?.[0] ?? ''
+    const b = parts.length > 1 ? parts[parts.length - 1][0] : ''
+    return (a + b).toUpperCase()
+  }
+
+  return '?'
 }
 
 onMounted(() => {
@@ -152,8 +196,8 @@ const navLinks = [
               <Menu as="div" class="relative">
                 <MenuButton class="flex items-center gap-2 rounded-full transition px-1">
                   <img
-                    v-if="currentUser?.avatar"
-                    :src="currentUser.avatar"
+                    v-if="avatarSrc"
+                    :src="avatarSrc"
                     alt="Profile"
                     class="h-8 w-8 rounded-full"
                   />

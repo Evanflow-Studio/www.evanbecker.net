@@ -49,6 +49,15 @@ export default defineNuxtConfig({
     },
   },
 
+  vite: {
+    // #app-manifest is a server-only virtual import that Nuxt references inside
+    // a dead `if (false)` branch of manifest.js when bundling for the client.
+    // Vite's dep optimizer still tries to pre-resolve it and spams the console.
+    optimizeDeps: {
+      exclude: ['#app-manifest'],
+    },
+  },
+
   runtimeConfig: {
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',

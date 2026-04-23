@@ -19,15 +19,9 @@ export function useApi() {
       ...(options.headers as Record<string, string> || {}),
     }
 
-    try {
-      if (getTokenFn) {
-        const token = await getTokenFn()
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
-        }
-      }
-    } catch (e) {
-      console.warn('useApi: could not get access token:', e)
+    if (getTokenFn) {
+      const token = await getTokenFn()
+      headers['Authorization'] = `Bearer ${token}`
     }
 
     const response = await fetch(`${baseUrl}/api/v1/${path}`, {

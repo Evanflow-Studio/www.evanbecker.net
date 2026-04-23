@@ -34,13 +34,30 @@ if (import.meta.client) {
   isLoading.value = false
 }
 
+// If AppHeader's sync didn't populate currentUser (e.g. token was dead during nav),
+// try to fetch it directly. On failure, leave it null — the template will show
+// an inline error rather than redirecting the user away from a page they may
+// just be browsing.
+const profileLoadFailed = ref(false)
+watchEffect(async () => {
+  if (!isLoading.value && isAuthenticated.value && !currentUser.value && !profileLoadFailed.value) {
+    try {
+      currentUser.value = await fetchWithAuth('user')
+    } catch {
+      profileLoadFailed.value = true
+    }
+  }
+})
+
 // Profile editing
 const profileSaving = ref(false)
 const profileSaved = ref(false)
+const profileSaveError = ref(false)
 
 async function onProfileSave(payload: { firstName: string; lastName: string; avatar: string | null }) {
   profileSaving.value = true
   profileSaved.value = false
+  profileSaveError.value = false
   try {
     const updated = await fetchWithAuth('user', {
       method: 'PATCH',
@@ -50,7 +67,10 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
     profileSaved.value = true
     setTimeout(() => { profileSaved.value = false }, 3000)
   } catch (e) {
+    // Active action failed — most likely the token is dead. Surface an error
+    // and let the user click Sign In rather than yanking them away mid-edit.
     console.error('Failed to update profile:', e)
+    profileSaveError.value = true
   } finally {
     profileSaving.value = false
   }
@@ -95,12 +115,29 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
               leave-to-class="opacity-0"
             >
               <span v-if="profileSaved" class="text-xs font-medium text-green-400">Saved!</span>
+              <span v-else-if="profileSaveError" class="text-xs font-medium text-red-400">Session expired — sign in again to save.</span>
             </Transition>
           </div>
 
           <div v-if="currentUser">
             <div class="mb-1 text-xs text-slate-500">{{ currentUser.email }}</div>
             <ProfileForm :user="currentUser" :saving="profileSaving" @save="onProfileSave" />
+            <button
+              v-if="profileSaveError"
+              @click="loginWithRedirect?.()"
+              class="mt-4 text-xs font-medium text-[#2D95FC] hover:underline"
+            >
+              Sign in again
+            </button>
+          </div>
+          <div v-else-if="profileLoadFailed" class="py-6 text-sm text-slate-400">
+            Couldn't load your profile — your session may have expired.
+            <button
+              @click="loginWithRedirect?.()"
+              class="ml-1 font-medium text-[#2D95FC] hover:underline"
+            >
+              Sign in again
+            </button>
           </div>
           <div v-else class="flex items-center justify-center py-8">
             <LoadingSpinner size="md" />
