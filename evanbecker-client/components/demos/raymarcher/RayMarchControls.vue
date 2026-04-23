@@ -6,6 +6,12 @@ import { QUALITY_NAMES, GEO_PRESET_NAMES, ANIMATION_NAMES } from '~/utils/shader
 const store = useRayMarcherStore()
 const presetNames = LATTICE_PRESETS.map(p => p.name)
 
+const props = defineProps<{
+  /** When true, the experimental Audio tab is exposed. Mirrors the lab gate
+   *  in RayMarchDemo — driven by isAuthenticated + experiments.rayMarcherLab. */
+  labMode?: boolean
+}>()
+
 const emit = defineEmits<{
   screenshot: []
   fullscreen: []
@@ -13,14 +19,19 @@ const emit = defineEmits<{
 
 
 const showAdvanced = ref(false)
-const activeTags = ref(new Set(['scene', 'color', 'fx', 'audio', 'tools']))
-const tags = [
-  { id: 'scene', label: 'Scene' },
-  { id: 'color', label: 'Color' },
-  { id: 'fx', label: 'FX' },
-  { id: 'audio', label: 'Audio' },
-  { id: 'tools', label: 'Tools' },
-]
+const activeTags = ref(new Set(props.labMode
+  ? ['scene', 'color', 'fx', 'audio', 'tools']
+  : ['scene', 'color', 'fx', 'tools']))
+const tags = computed(() => {
+  const base = [
+    { id: 'scene', label: 'Scene' },
+    { id: 'color', label: 'Color' },
+    { id: 'fx', label: 'FX' },
+  ]
+  if (props.labMode) base.push({ id: 'audio', label: 'Audio' })
+  base.push({ id: 'tools', label: 'Tools' })
+  return base
+})
 
 function toggleTag(id: string) {
   if (activeTags.value.has(id)) {

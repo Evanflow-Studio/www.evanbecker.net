@@ -1,9 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 useHead({ title: 'Ray Marcher - Sandbox - Evan Becker', meta: [{ name: 'robots', content: 'noindex' }] })
 
 const rayMarchRef = ref<any>(null)
+const experiments = useExperiments()
+
+// Auth state — same dynamic-import pattern used elsewhere to avoid SSR issues
+// with @auth0/auth0-vue. The experimental raymarcher layer is gated on BOTH
+// isAuthenticated AND the opt-in flag — someone hand-editing localStorage
+// without being signed in doesn't unlock it.
+const isAuthenticated = ref(false)
+if (import.meta.client) {
+  try {
+    const { useAuth0 } = await import('@auth0/auth0-vue')
+    const auth0 = useAuth0()
+    isAuthenticated.value = auth0.isAuthenticated.value
+    watch(() => auth0.isAuthenticated.value, (v: boolean) => { isAuthenticated.value = v })
+  } catch { /* auth0 not configured — labMode stays false, fine */ }
+}
+
+const labMode = computed(() => isAuthenticated.value && experiments.value.rayMarcherLab)
 </script>
 
 <template>
@@ -22,7 +39,7 @@ const rayMarchRef = ref<any>(null)
 
     <ClientOnly>
       <div class="h-[500px]">
-        <RayMarchDemo ref="rayMarchRef" />
+        <RayMarchDemo ref="rayMarchRef" :lab-mode="labMode" />
       </div>
       <template #fallback>
         <div class="flex h-[500px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-[#0f1729]">
