@@ -31,10 +31,9 @@ All defined in [`docker-compose.production.yaml`](../docker-compose.production.y
 
 ### Branch Strategy
 
-| Branch | Deploys To | Image Tag | URL |
-|--------|-----------|-----------|-----|
-| `develop` | Test | `:test` | test.evanbecker.net / api-test.evanbecker.net |
-| `main` | Production | `:latest` | www.evanbecker.net / api.evanbecker.net |
+Two branches: `develop` → test (`:test` tag), `main` → prod (`:latest` tag). Both protected against deletion and force-push. No `release` branch, no gitflow.
+
+For the full branching strategy, workflow, protection rules, and re-apply commands, see the root [`README.md` → Branching Strategy](../README.md#branching-strategy).
 
 ### How It Works
 
