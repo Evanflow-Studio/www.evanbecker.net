@@ -1,6 +1,6 @@
 ---
 title: 'Math Pretending to Be Architecture'
-description: 'How I rebuilt my Unity ray marcher from scratch in WebGL2 with Claude — the patterns that worked, the ones that didn't, and what fell out of a week of collaboration.'
+description: 'Signed distance functions, ray marching, and rebuilding my old Unity shader as something I can actually maintain. The math that hooked me, and where it points next.'
 date: '2026-03-25'
 tags:
   - software
@@ -8,120 +8,129 @@ tags:
   - graphics
 ---
 
-There's a rendering technique where instead of building 3D shapes out of polygons, you describe them purely as math. You want a sphere? Write a function that returns the distance from any point to its surface. That single equation, evaluated everywhere in space, *is* the sphere. The GPU doesn't model it, doesn't triangulate it, doesn't even store it. It just fires a ray from each pixel, steps forward calling your function at each step, and when the distance gets small enough, it lights the pixel. Echolocation for geometry.
+There's a way to describe a 3D shape that doesn't involve a single triangle. You don't list vertices, you don't define edges, you don't model a mesh. You write a function. Pass any point in space into it, and it returns the distance from that point to the nearest surface. If the point is inside the shape, the distance is negative.
 
-The functions are called signed distance functions. The stepping algorithm is ray marching. And the things you can do by combining them get interesting fast. Subtract one shape from another and you get carving: a sphere carved from a cube produces a hollow cube. Apply a modulo to the input coordinates and one hollow cube tiles infinitely through space, stretching in every direction. Blend two shapes together and they melt into each other like wax. You can see some of these operations running live in the :scene-link{:scene="2" :palette="4" label="CSG Operations scene"}. It's math pretending to be architecture, and the GPU recalculates the entire scene from scratch sixty times a second.
+That's it. The function *is* the shape.
 
-My old website (rest in peace, evanbecker.com) had a modest one of these running as a Unity banner at the top of the page. When I rebuilt the site this year, I kept looking at the empty space where it used to be. I wanted it back, but I also wanted to find out what would happen if I rebuilt it from scratch in raw WebGL2 with Claude, without Unity handling the hard parts. What happened was a week of collaboration that taught me as much about working with an AI as it did about shader programming.
+A signed distance function for a sphere centered at the origin, radius `r`:
+
+```glsl
+float sphere(vec3 p) {
+  return length(p) - r;
+}
+```
+
+Three lines. No mesh. No triangulation. No storage of geometric data anywhere except inside the math itself. To render this, you fire a ray from each pixel into the scene and step forward, calling the SDF at each step. When the distance gets very small, you've hit the surface and you light the pixel. The trick is that the SDF tells you *exactly how far you can step* before there's any chance of hitting something. Instead of marching one tiny increment at a time, you sphere-trace: take the distance the function gave you and jump that whole way at once. Geometry by echolocation.
+
+This rendering technique is called ray marching. The functions are called signed distance functions, or SDFs. And the things you can do by combining them get interesting fast.
 
 ::ray-march-embed{preset="Deep Sea" height="h-[400px]"}
 ::
 
-## The Original
+My old website had a small ray marcher running as a Unity-rendered banner at the top of every page. When I rebuilt the site this year, I wanted it back. So I rebuilt it. Three months later, the rebuild has its own questions, the old answers don't quite fit, and I've ended up several layers deeper than where I started.
 
-The [Unity version](https://github.com/evanjbecker/Raymarch) was more sophisticated than a quick portfolio banner might suggest. The C# script (`RaymarchCamera.cs`) attached to a camera and rendered SDFs as a post-processing effect via `OnRenderImage`. The shader itself was HLSL (Unity's Cg dialect), and the scene it rendered was a smooth boolean composition: a rounded box with a sphere subtracted out of it, intersected with a second sphere, all configurable from the Unity inspector. The `DistanceFunctions.cginc` include file had the full set of smooth boolean operators — `SmoothUnion`, `SmoothSubtraction`, `SmoothIntersection` — plus a `Modulator` function for domain repetition that could tile the geometry infinitely along any axis.
+This is mostly about the math. Some about the rebuild. And a little about where the math wants to go.
 
-The lighting was genuinely solid. Soft shadows with configurable penumbra and distance bounds. Multi-step ambient occlusion. Directional light with adjustable color and intensity. A `FlyCamera.cs` script for navigating the scene. There was even a second scene with a Sierpinski tetrahedron fractal (`TetrahedronShader.shader`). All told, roughly 250 lines of shader code, 80 lines of distance functions, and 130 lines of C# camera/material management.
+## What an SDF Actually Is
 
-The irony is that some of the features the original had — soft shadows, ambient occlusion — were features we had to *remove* from the WebGL2 version to solve a performance crisis. More on that later.
+The sphere case makes the idea look almost trivial. A function from a point in space to a scalar distance. The implications get sharp once you start composing.
 
-But Unity is a game engine, and a game engine handles an enormous amount of infrastructure: the GL context, the render loop, the camera frustum, the input system, the windowing, depth buffer integration. All of which evaporates the moment you decide to render the same thing in a browser with nothing but WebGL2 and TypeScript. That gap between "write a shader" and "get a shader onto a webpage" is where most of the work went.
+A box is just slightly more involved:
 
-## How It Actually Went
+```glsl
+float box(vec3 p, vec3 b) {
+  vec3 d = abs(p) - b;
+  return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
+}
+```
 
-I didn't write a spec. There was no design document or architecture diagram. The process was closer to pair programming than delegation: I described what I wanted, Claude wrote code, I told it what worked and what didn't, we iterated. Some sessions were productive. Some produced code that had to be thrown out entirely. The patterns that emerged are the interesting part.
+A torus, a cylinder, a cone, a triangular prism, a hexagonal prism, each one is a few lines of math. There's a whole library of them, codified by [Inigo Quilez](https://iquilezles.org/articles/distfunctions/), who has done more than anyone alive to popularize the technique.
 
-### Start with a sphere
+What makes SDFs powerful is that all of these primitives compose with each other through the simplest possible operators.
 
-The first thing we built was the dumbest possible ray marcher. A fullscreen quad. A fragment shader with a sphere SDF. Phong lighting. No controls, no UI, no architecture. Just a sphere on screen proving the WebGL2 pipeline worked end to end.
+```glsl
+float opUnion(float a, float b)        { return min(a, b); }
+float opIntersection(float a, float b) { return max(a, b); }
+float opSubtraction(float a, float b)  { return max(a, -b); }
+```
 
-This turned out to be the most important decision of the project. Every feature after that was an incremental addition to something that already rendered. When the smooth-subtracted box-sphere from the Unity version replaced the test sphere, the GL pipeline was already proven. When we added domain repetition, the SDF was already proven. When we added controls, the rendering was already proven. There was never a moment where we wired up five systems at once and couldn't figure out which one was broken.
+`min` is union. `max` is intersection. `max` of the first against the negative of the second is subtraction. That's the entire boolean algebra of solids, expressed in three operators applied to scalar distances. There's no mesh CSG, no algorithm to compute the intersection of two polygon meshes, no degenerate triangles, no broken topology. The math just composes. You can see this running live in the :scene-link{:scene="2" :palette="4" label="CSG Operations scene"}.
 
-### Screenshots are the protocol
+The killer feature is that these compositions can be made *smooth*. The hard `min` of two SDFs gives you a sharp seam where the surfaces meet. There's also a polynomial smooth-minimum that interpolates between them based on a smoothness factor `k`:
 
-Claude can't see your screen. This shapes the entire collaboration more than you'd expect. I sent screenshots constantly — not just when things broke, but when things looked *right*. When I said "this looks incredible, make this the default view," Claude had the exact visual context to understand which camera angle, zoom, and palette I meant.
+```glsl
+float smin(float a, float b, float k) {
+  float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+```
 
-The inverse was even more valuable. "The geometry is clipping" with a screenshot communicates in one image what would take three paragraphs of text. And because SDFs produce visual artifacts that are hard to describe ("there's a green tint in the void" or "the cells are bleeding through each other"), screenshots became the primary communication channel for any rendering issue.
+Two spheres unioned with `smin` melt into each other. The transition is exact, parametric, mathematically smooth, and it costs you a single extra `clamp` and a `mix`. Try doing that with triangles.
 
-### Name things early
+## Domain Tricks
 
-At some point I saw a configuration I liked — Forest palette, Pulse animation, specific spacing values — and said "save this as Jellyfish." That single name became a shared reference for the rest of the project. Instead of reciting six parameter values, I could say "make Jellyfish the default" and Claude knew exactly what I meant.
+The other lever you get with SDFs is on the *input*. Before you evaluate the SDF, you transform the point.
 
-We ended up with named presets like Deep Sea, Jellyfish, Crystal Array, Infinite Descent, Vortex, and more. Each one a stable landmark that both of us could point to. Naming things turns configuration into vocabulary, and vocabulary compounds over time.
+```glsl
+vec3 p = mod(originalP + 0.5 * cellSize, cellSize) - 0.5 * cellSize;
+```
 
-### Let the AI propose
+That single line tiles the entire scene infinitely. The SDF evaluates as if there's one shape, but `mod` says "treat all of space as if it's the same cell, repeating." A single sphere becomes a lattice of spheres extending to the horizon in every direction. Mirror operations, twists, bends, displacements, all of them are point transformations applied before the SDF gets called. The function never knows it was deceived.
 
-When I asked "what would make this cooler?", Claude proposed audio reactivity, post-processing, shareable URLs, time controls, a scripting system, and more. I didn't accept everything. But having a menu of options to choose from was more productive than generating every idea myself.
+This is where ray marching stops being "a way to draw spheres" and becomes a way to think about geometry. You can describe shapes that would be impossible to mesh: infinite tilings, fractal structures, twisted columns, surfaces displaced by procedural noise. The Sierpinski tetrahedron in the [Unity version](https://github.com/evanjbecker/Raymarch) is recursive: a function that calls itself a fixed number of times, applying scale and folding operations until each layer subdivides into the next.
 
-The important part: I always made the call. Claude proposed. I decided. When I said "get rid of all the audio stuff," it was gone within minutes. No sunk cost, no pushback. This dynamic — AI as proposal engine, human as decision maker — worked well throughout.
+::ray-march-embed{preset="Vortex" height="h-[400px]"}
+::
 
-### Refactor in waves
+The big realization, the one that took a while to land: SDFs are a *language for describing geometry*. The fact that you can render them is downstream of the fact that the math itself is exact. There are no approximations until the very end, when you sample the field. The shape exists with infinite precision until the moment you look at it.
 
-We didn't write clean code from the start. The first version of the main composable was a 900-line file with thirty refs passed as function arguments. It worked. It was also the kind of code that makes you close your editor and take a walk.
+## The Port
 
-Rather than refactoring continuously (which slows feature development to a crawl), I let it grow until it became genuinely painful, then dedicated a full session to architecture. We introduced Pinia for state management, split the monolith into focused composables, extracted types, eliminated prop drilling. The 900-line file became seven files, none over 190 lines.
+The Unity original was a few hundred lines of HLSL and C#. Soft shadows, ambient occlusion, smooth booleans, a fly camera, two scenes. The math was solid and the visuals were good. None of it was particularly portable, and the C# script wrapping it had grown into the kind of glue code that only worked because Unity was holding everything in place around it.
 
-This mirrors how I work with human teammates too: ship the feature, then clean the kitchen.
+Unity does an enormous amount of infrastructure work that you stop noticing until it's gone: the GL context, the render loop, the camera matrix, input handling, depth integration, the windowing system. The moment you decide to render the same shader in a browser with raw WebGL2 and TypeScript, that whole stack disappears. The shader was a few hundred lines. Getting it onto a webpage was almost everything else.
 
-## Where It Went Wrong
+I worked on this with Claude. The framing matters. The math was already mine, brought from years of writing this kind of shader in Unity. The compositions, the visual choices, the palette and animation system, the SDF library itself, all of it was logic I'd already proven out and was carrying across. The work I needed help with was the boilerplate of the new platform. WebGL2 context setup. Pinia store wiring. The composable architecture that replaced Unity's component model. The build system. The cross-browser shader compilation strategy.
 
-Not everything worked. Some of the failures were instructive. Some were just expensive.
+The honest description: I had a working system in one runtime, I wanted the same logic in a different runtime, and I had a typing partner who was very fast at TypeScript and could pattern-match on framework conventions I hadn't memorized. Architecture decisions like Pinia for state, focused composables instead of one mega-file, a two-shader strategy for compile-time UX, named-preset auto-fork: those came out of conversations where I had strong opinions about what good code looked like and Claude was useful for typing them out. Some of those conversations ended with code thrown out. Some ended with me explicitly overriding what Claude was suggesting.
 
-### The compilation crisis
+The bigger value of the rebuild wasn't speed. It was that the original was built as a Unity script, and a Unity script lives or dies with the editor. Pulling the math out of that environment forced it to stand on its own. The shader is now a string in a TypeScript module, the scene state lives in a Pinia store, parameters round-trip through the URL, and every piece of geometry behavior has a place to live that isn't a `MonoBehaviour`. That's the kind of code I can actually maintain a year from now.
 
-The worst bug: the ray marcher took 123 seconds to load a page. Two full minutes of a frozen browser tab.
+The most expensive bug along the way was a 123-second compile time. Claude's first three diagnoses were all surface-level: reduce loop count, async compilation, deferred validation. Each fix either broke something or only worked on one browser. The actual cause was that the Unity-style soft shadows and ambient occlusion required secondary ray marches inside the main loop, and the cross product of geometry presets, animations, and secondary marches was making the shader compiler do exponentially more work. The fix was architectural: strip the secondary marches, ship a minimal shader that compiles in 100ms, swap in the full shader once it's ready in the background.
 
-The root cause was GPU shader compilation. The Unity original had soft shadows and ambient occlusion — both of which require secondary ray marches inside the main loop. When we ported those features and added ten geometry presets and seven animations on top, the GPU compiler had exponentially more branch paths to analyze. Every geometry function and every animation function had to be considered at every step of every secondary march inside every step of the primary march.
+Claude implemented all of that. It didn't get there until I said "you're cycling on surface fixes, the problem is somewhere else." That's the working pattern that came out of this whole project. AI is excellent at implementation. It's a typing partner that's read every framework. It is sometimes wrong about diagnosis, especially when the right move is to step back and rethink rather than fix harder. The judgment call about when to step back stays human.
 
-Claude's instinct was to reduce the loop count. That barely helped. Then it tried async shader compilation with `KHR_parallel_shader_compile`. That worked on Chrome but not Firefox. Then it tried clamping distances. Then deferred validation. Then polling. Each fix either broke something or only worked on one browser.
+A few small patterns from this collaboration that compounded:
 
-I eventually had to say: "You're in a loop. Something fundamental changed." That reframing led to the actual fix: we removed the expensive secondary ray marches (the same soft shadows and AO the Unity version had), reduced compile-time branching, and implemented a two-shader strategy where a minimal placeholder loads instantly while the real shader compiles in the background. The features that made the Unity original's lighting so good were exactly the features that made the WebGL version's compilation unbearable.
+**Start with the smallest working thing.** A sphere on a fullscreen quad with Phong lighting. Once that pipeline was proven, every feature after was an incremental addition to something that already rendered.
 
-The lesson here wasn't about shaders. It was about when to tell an AI "your diagnosis is wrong" instead of letting it keep iterating on the wrong solution. Claude is excellent at implementing fixes. But it can sometimes cycle through surface-level solutions when the real problem requires stepping back and rethinking the approach entirely.
+**Screenshots are the protocol.** Claude can't see your screen. Sending a screenshot of a working configuration ("save this as Jellyfish, make it the default") communicates in one image what would take three paragraphs of text.
 
-### The audio system
+**Name your configurations.** Once we had Deep Sea, Jellyfish, Crystal Array, Vortex, and a dozen others, the conversation got a vocabulary. "Make Jellyfish the default" is faster than "set spacing to 6, palette to forest, animation to pulse, threshold to 0.5."
 
-We built a generative audio system. Procedural ambient drones using Web Audio API oscillators, with different chord progressions per scene. Microphone input for audio-reactive geometry. FFT bands driving cell spacing and thickness. It was technically solid.
+These are useful. They aren't the point of this article.
 
-In practice, it was buggy across browsers. The drone lacked variety. Source switching had race conditions. The FFT analysis didn't map to the geometry in a way that felt meaningful. I killed the entire system after three days.
+## What Stayed Experimental
 
-Sometimes the right feature is the one you remove.
+Two things came along for the ride and didn't quite fit. A generative audio system using Web Audio API oscillators and microphone-driven FFT analysis, where the geometry would react to whatever was playing. A SignalR-based session model where multiple people could share a configuration in real time. Both shipped working code. Neither felt like the right direction.
 
-### Cross-browser reality
+The audio reactivity worked, and didn't add to the experience the way I'd hoped. The shared sessions worked, and raised more questions than they answered: what's the social model here, who's the audience, why would anyone want this? I moved both of them behind an experimental flag, the way you'd put a beta feature behind a setting. They're available to anyone who turns them on. Most people will never need to.
 
-Every WebGL behavior differs between Firefox and Chrome. `KHR_parallel_shader_compile` only exists in Chrome. Firefox blocks on shader status checks. Touch events have different timing. The same shader compiles in 200ms on Chrome and three seconds on Firefox.
+Pulling them out turned out to be more clarifying than building them. What surfaced once they were gone was a different question about what SDFs are actually for.
 
-Claude couldn't test either browser — it could only reason about the differences from documentation and my reports. I became the cross-browser test harness, running the same action on both browsers and describing what happened. This worked, but it was slow, and some bugs took multiple round-trips to isolate.
+## Where the Math Wants to Go
 
-## The Architecture
+After enough time in this codebase, a thought kept surfacing. Ray marching uses SDFs to render. The rendering is one thing the math can do. The math itself describes geometry, and lighting a pixel from the description is just the easiest thing to do with it.
 
-After several refactoring passes, here's roughly where things landed.
+If you can describe a shape with `length(p) - r`, and you can compose shapes with `min`, `max`, and `smin`, and you can apply domain tricks to tile and twist and mirror, and the whole thing is exact at every step, then in principle you can take that field and turn it into geometry that exists outside the GPU. A real mesh. A 3D-printable file. A part with a smooth blend you couldn't have produced in pure CSG. A lattice infill (gyroid, Schwartz-P, diamond) defined by a single trigonometric equation, made physically real.
 
-A **Pinia store** owns all state: scene configuration, camera position, lattice parameters, render quality, time controls. Components read and write state directly without prop drilling. The store also handles URL import/export — the share button serializes everything to a URL hash, and loading that URL hydrates the store on arrival.
+The bridge between "render a field" and "manifest a field" is a level set extractor. The library that does this best is [Manifold](https://manifoldcad.org/). You feed it an SDF and a voxel grid resolution, it gives you a guaranteed-manifold mesh. The output is a real solid, watertight, ready to slice and print.
 
-Seven **focused composables** each handle one concern: shader compilation, input handling, camera movement, the render pipeline, screenshots, and a thin orchestrator that wires them together. None exceeds 190 lines.
+The maker-tier 3D modeling space is a strange shape. TinkerCAD is a toy. OpenSCAD is code-only and has no SDF support beyond raw level sets. Fusion 360 wants a subscription and a learning curve. nTop costs more than a car and ships with a sales call. The thing that should exist, a browser-native modeler where the file is a parametric program, where SDF lattices and smooth blends are first-class operations, where the math composes the way the math actually composes, doesn't yet exist as a focused product.
 
-An **auto-fork preset system** locks the UI when a named preset is selected. The moment you tweak any control, it forks to "Custom (from Deep Sea)" with a reset button. This is essentially copy-on-write for configuration — borrowed from how game engines handle material instances.
+I've been building it. It's called Zeroset. The same SDF math that lights pixels in this browser ray marcher does real work over there: lattice infill, smooth boolean blends, parametric shapes that export to a printable mesh through a Manifold-backed level-set mesher. The shader I wrote for this article and the geometry kernel I'm writing for that product are mathematical cousins. One renders the field. The other extracts a manifold from it.
 
-The **two-shader compile strategy** loads a minimal placeholder (48 steps, one geometry, no branching) that compiles in under 100ms, then swaps in the full shader once the GPU finishes. Chrome uses `KHR_parallel_shader_compile` for non-blocking compilation. Firefox falls back to a deferred swap.
+The ray marcher started as a banner I missed from my old site. It became, somewhere along the way, the thing that pointed me at the work I'm actually doing now. The rendering is a window into the math. The math is the part worth building on.
 
-## What Held Up
-
-If I distilled this down to the patterns worth keeping:
-
-**Start with the smallest working thing.** Not the smallest *useful* thing. The smallest thing that proves the pipeline works. A sphere rendering on a WebGL2 canvas. Then build on it.
-
-**Visual feedback is the communication layer.** With graphics work especially, screenshots beat description by an enormous margin. Send them proactively, not just when debugging.
-
-**Name your configurations.** "Jellyfish" is worth more than six parameter values. Shared vocabulary reduces friction in every subsequent conversation.
-
-**Let the AI generate options, but make decisions yourself.** The proposal-decision split keeps the collaboration productive without surrendering judgment.
-
-**Refactor in dedicated passes.** Ship first, clean second. Trying to maintain perfect architecture while exploring features leads to neither.
-
-**Know when to override the diagnosis.** If three fixes haven't worked, the problem probably isn't what either of you thinks it is. Say so. Step back. Rethink.
-
-The ray marcher started as a Unity shader with smooth booleans, soft shadows, and ambient occlusion, and became a WebGL2 application with a Pinia store, seven composables, ten geometry presets, a fractal fly-through, embeddable blog components, and shareable URLs — but without the soft shadows and AO it started with. The path between those two points wasn't linear. It looped, backtracked, and produced features that got deleted. But the patterns above are what kept the loops productive rather than frustrating.
-
-::sandbox-link{to="/sandbox/raymarcher" label="Try the Ray Marcher" description="Interactive WebGL2 ray marcher — WASD to move, mouse to look"}
+::sandbox-link{to="/sandbox/raymarcher" label="Try the Ray Marcher" description="Interactive WebGL2 ray marcher with SDF lattices, smooth booleans, and a Sierpinski fractal scene"}
 ::
