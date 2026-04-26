@@ -12,13 +12,13 @@ tags:
 
 ## I. The Wall
 
-In 2016, as a junior at the University of Wisconsin–Milwaukee, I worked on a research project with Jacques du Plessis, an associate professor in UWM's School of Information Studies. The project was called EarGear. It wasn't a linguistics project, exactly. It was an accessibility project. Take a language-learning application, with its flashcards and lessons and exercises, the kind of UI a sighted student moves through on a phone or laptop. Figure out how a blind student could navigate that same application using only audio and physical input.
+As a junior at the University of Wisconsin–Milwaukee, I was a co-researcher on a grant-funded project with Jacques du Plessis, an associate professor in UWM's School of Information Studies. The project was called EarGear. It wasn't a linguistics project, exactly. It was an accessibility project. Take a language-learning application, with its flashcards and lessons and exercises, the kind of UI a sighted student moves through on a phone or laptop. Figure out how a blind student could navigate that same application using only audio and physical input.
 
 The language part translated cleanly. Audio handles vocabulary natively. Pronunciation is its native domain. Flashcards can be spoken; quizzes can be answered with keyboard input. None of that was the hard part.
 
 The hard part was UX. The things sighted users get from a screen refuse to translate to audio without something getting lost. Where am I in the menu? What's above me and below me? What's the spatial relationship between the lesson I just finished and the one I'm about to start? Sighted users answer those questions instantly with a glance. We tried longer descriptions. We built richer cues. We mapped keyboard shortcuts to navigation actions. We did everything we could to encode the spatial awareness a sighted user gets for free, and the gap stayed. Something a screen does, audio doesn't quite manage to do, no matter how clever the encoding.
 
-I didn't have words for that in 2016. I spent months working around the edges of something I could tell was there but couldn't name.
+I didn't have words for it back then. I spent months working around the edges of something I could tell was there but couldn't name.
 
 Ten years later, three hours into debugging an AI agent's tool-calling loop, I was in the same place.
 
@@ -36,7 +36,7 @@ Be the kind of agent I would trust to act on my behalf, in situations I haven't 
 
 The space between those two sides is the wall. It lives in the tools we've inherited, not in reality. The boundary between what you can write down in symbols and what those symbols are trying to point at. Formal specification lives on one side. Judgment, experience, meaning, and consciousness were declared, four centuries ago, to live on the other. They didn't go anywhere. They're still here, in every conscious moment you're having, including this one. They're just not what our tools were made to reach. Chain-of-thought, few-shot, fine-tuning, careful prompt design: all of it narrows the gap. None of it closes it.
 
-It was the same wall I'd been hitting in 2016. What I'd been calling a UX problem had an older name: the hard problem of consciousness. The people who have thought hardest about it are not engineers. The people who have thought hardest about it built the wall, four centuries ago, by deciding what science would and wouldn't be allowed to study.
+It was the same wall I'd been hitting back then. What I'd been calling a UX problem had an older name: the hard problem of consciousness. The people who have thought hardest about it are not engineers. The people who have thought hardest about it built the wall, four centuries ago, by deciding what science would and wouldn't be allowed to study.
 
 ## II. The Line
 
@@ -174,7 +174,7 @@ The third is recognizing the "more context" anti-pattern. The default response t
 
 ---
 
-Three hours into the agent debug, the connection was suddenly there. The thing I'd been calling a UX problem in 2016 was the same boundary I was hitting now. I'd been working on the wall since I was twenty-two. The year I'd spent failing to close it had been, in a strange way, the most honest intellectual work I'd ever done.
+Three hours into the agent debug, the connection was suddenly there. The thing I'd been calling a UX problem back then was the same boundary I was hitting now. I'd been working on the wall since I was twenty-two. The years I'd spent failing to close it had been, in a strange way, the most honest intellectual work I'd ever done.
 
 I didn't have the vocabulary for it then. I do now. It was the wall. It has always been the wall.
 
