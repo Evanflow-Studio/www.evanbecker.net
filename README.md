@@ -132,12 +132,55 @@ graph LR
     style Watchtower fill:#9f9,stroke:#333
 ```
 
-| Branch | Deploys To | Image Tag | URL |
-|--------|-----------|-----------|-----|
-| `develop` | Test | `:test` | test.evanbecker.net / api-test.evanbecker.net |
-| `main` | Production | `:latest` | www.evanbecker.net / api.evanbecker.net |
-
 No secrets in CI. The API pulls all secrets from Infisical at startup. Migrations run automatically at container startup.
+
+### Branching Strategy
+
+This repo uses a simple two-branch model. There is **no `release` branch** and **no gitflow-style intermediate branches**.
+
+For deployment internals (image build → registry → Watchtower rotation), see [`infrastructure/README.md`](infrastructure/README.md#deployment).
+
+| Branch | Environment | Deploys To | Image Tag | Workflow |
+|--------|-------------|------------|-----------|----------|
+| `develop` | Test | test.evanbecker.net · api-test.evanbecker.net | `:test` | `.github/workflows/build-and-push-to-test.yml` |
+| `main` | Production | www.evanbecker.net · api.evanbecker.net | `:latest` | `.github/workflows/build-and-push-to-prod.yml` |
+
+**Flow:**
+
+```
+local work → develop (auto-deploys to test) → PR develop → main (auto-deploys to prod)
+```
+
+Day-to-day commits land directly on `develop`. The test environment is where changes get verified end-to-end before promotion. When a batch is ready for production, open a PR from `develop` → `main` and merge it. Watchtower picks up the new images within ~30 seconds and rotates the prod containers.
+
+**Branch protection** (configured via the GitHub API, applies to both `main` and `develop`):
+
+- Deletion: **blocked**
+- Force-push: **blocked**
+- Required reviews: **none** (solo-developer workflow)
+
+GitHub's UI will offer "delete the develop branch" after a `develop` → `main` PR is merged. **Ignore that suggestion.** `develop` is the persistent source of truth for the test environment and is never deleted.
+
+**Feature branches are optional.** For small changes (content edits, typo fixes, low-risk refactors), commit directly to `develop`. For larger or riskier work, branch from `develop`, PR back into `develop`, verify on test, then promote with the `develop` → `main` PR.
+
+To re-apply branch protection if rules ever drift (e.g., after a repo migration):
+
+```bash
+for branch in main develop; do
+  gh api -X PUT repos/Evanflow-Studio/www.evanbecker.net/branches/$branch/protection --input - <<'JSON'
+{
+  "required_status_checks": null,
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "allow_deletions": false,
+  "allow_force_pushes": false,
+  "required_conversation_resolution": false,
+  "lock_branch": false
+}
+JSON
+done
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
