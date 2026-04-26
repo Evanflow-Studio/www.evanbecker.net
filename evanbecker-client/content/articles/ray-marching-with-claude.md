@@ -79,9 +79,6 @@ That single line tiles the entire scene infinitely. The SDF evaluates as if ther
 
 This is where ray marching stops being "a way to draw spheres" and becomes a way to think about geometry. You can describe shapes that would be impossible to mesh: infinite tilings, fractal structures, twisted columns, surfaces displaced by procedural noise. The Sierpinski tetrahedron in the [Unity version](https://github.com/evanjbecker/Raymarch) is recursive: a function that calls itself a fixed number of times, applying scale and folding operations until each layer subdivides into the next.
 
-::ray-march-embed{preset="Vortex" height="h-[400px]"}
-::
-
 The big realization, the one that took a while to land: SDFs are a *language for describing geometry*. The fact that you can render them is downstream of the fact that the math itself is exact. There are no approximations until the very end, when you sample the field. The shape exists with infinite precision until the moment you look at it.
 
 ## The Port
