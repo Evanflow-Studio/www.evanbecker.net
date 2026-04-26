@@ -112,6 +112,23 @@ function printResume() {
       <section class="mt-6">
         <h2 class="resume-section-title">Experience</h2>
 
+        <!-- Evanflow LLC -->
+        <div class="resume-entry">
+          <div class="resume-entry-header">
+            <div>
+              <h3 class="resume-company">Founder &mdash; Evanflow LLC</h3>
+              <p class="resume-location">Milwaukee, WI</p>
+            </div>
+            <span class="resume-dates">2026 &mdash; Present</span>
+          </div>
+          <ul class="resume-bullets">
+            <li>Building Zeroset, a browser-native SDF/CSG modeling tool for 3D-printing makers, targeting the gap between TinkerCAD/OpenSCAD and Fusion 360/nTop</li>
+            <li>Designed the system architecture: command pattern over a scene tree, custom SDF evaluation layer feeding Manifold's LevelSet mesher, content-addressed feature IDs, three-tier deployment (web free, web pro, desktop pro)</li>
+            <li>Built a .NET sidecar exposing the geometry pipeline over SignalR and MessagePack, with an integrated MCP server enabling AI-driven CAD via Claude Desktop</li>
+            <li class="resume-tech">C#, TypeScript, Vue 3, Three.js, Manifold (WASM + .NET), ASP.NET Core, SignalR, MessagePack, Monaco Editor, MCP</li>
+          </ul>
+        </div>
+
         <!-- nvisia -->
         <div class="resume-entry">
           <div class="resume-entry-header">
