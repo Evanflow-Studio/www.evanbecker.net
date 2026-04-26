@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 
 namespace evanbecker_domain.Entities;
 
+[Index(nameof(Auth0Id), IsUnique = true)]
 public class User
 {
     [Key]
@@ -13,7 +15,6 @@ public class User
     [MaxLength(255)]
     public string? Auth0Id { get; set; }
     
-    [MaxLength(255)]
     public string? Avatar { get; set; }
     
     [MaxLength(255)]
@@ -28,7 +29,7 @@ public class User
     public bool IsOwner { get; set; }
     
     public bool IsAdmin { get; set; }
-    
+
     [MaxLength(255)]
     public string? LastName { get; set; }
 }

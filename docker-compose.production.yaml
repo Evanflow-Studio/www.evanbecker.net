@@ -38,6 +38,12 @@ services:
       - INFISICAL_ADDRESS=${INFISICAL_ADDRESS}
       - INFISICAL_PROJECT_ID=${INFISICAL_PROJECT_ID}
       - INFISICAL_ENVIRONMENT=prod
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api-prod.rule=Host(`api.evanbecker.net`)"
@@ -69,6 +75,12 @@ services:
       - INFISICAL_ADDRESS=${INFISICAL_ADDRESS}
       - INFISICAL_PROJECT_ID=${INFISICAL_PROJECT_ID}
       - INFISICAL_ENVIRONMENT=test
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api-test.rule=Host(`api-test.evanbecker.net`)"

@@ -1,0 +1,150 @@
+// === State interfaces ===
+
+export interface MeydaFeatures {
+  rms: number
+  spectralCentroid: number
+  spectralFlatness: number
+  zcr: number
+  spectralRolloff: number
+  mfcc: number[]
+  chroma: number[]
+}
+
+export interface MoodPoint {
+  energy: number   // 0-1: low=calm, high=intense
+  valence: number  // 0-1: low=dark/aggressive, high=bright/happy
+}
+
+export type MoodCategory = 'aggressive' | 'happy' | 'sad' | 'relaxed'
+
+export interface AudioState {
+  bass: number
+  mid: number
+  treble: number
+  amplitude: number
+  isCapturing: boolean
+  youtubeUrl: string
+  // Meyda-derived features
+  brightness: number       // spectralCentroid normalized 0-1
+  percussiveness: number   // zcr normalized 0-1
+  moodEnergy: number       // computed mood energy 0-1
+  moodValence: number      // computed mood valence 0-1
+  // Essentia-derived (when available)
+  bpm: number              // detected BPM (0 if unavailable)
+  moodCategory: MoodCategory | null
+  essentiaReady: boolean
+  isOnBeat: boolean
+  // Track metadata (from YouTube + MusicBrainz)
+  trackTitle: string
+  trackArtist: string
+  trackGenres: string[]
+}
+
+export interface CameraState {
+  posX: number
+  posY: number
+  posZ: number
+  yaw: number
+  pitch: number
+  moveSpeed: number
+  lastInteraction: number
+}
+
+export interface SceneState {
+  index: number
+  palette: number
+  iterations: number
+  lightAngleX: number
+  lightAngleY: number
+}
+
+export interface LatticeState {
+  presetIndex: number
+  geoPreset: number
+  animation: number
+  cellSpacing: number
+  wallThickness: number
+  animOffset: number
+  isCustomized: boolean
+  basePresetName: string
+}
+
+export interface RenderState {
+  quality: number
+  stepsOverride: number // 0 = use quality preset, >0 = manual
+  bloomStrength: number
+  chromaticAmount: number
+  fogDensity: number
+  zoom: number
+}
+
+export interface TimeState {
+  paused: boolean
+  speed: number
+}
+
+export interface CustomPalette {
+  a: [number, number, number]
+  b: [number, number, number]
+  c: [number, number, number]
+  d: [number, number, number]
+}
+
+// === Quality ===
+
+export interface QualityPreset {
+  name: string
+  steps: number
+  threshold: number
+  maxDist: number
+  warpCorrection: number
+  bloom: number
+  chroma: number
+}
+
+// === Scene defaults ===
+
+export interface SceneDefault {
+  pos: [number, number, number]
+  yaw: number
+  pitch: number
+}
+
+// === GL internal state ===
+
+export type UniformCache = Record<string, WebGLUniformLocation | null>
+
+export interface GLResources {
+  gl: WebGL2RenderingContext | null
+  program: WebGLProgram | null
+  postProgram: WebGLProgram | null
+  fbo: WebGLFramebuffer | null
+  fboTexture: WebGLTexture | null
+  fboWidth: number
+  fboHeight: number
+  vao: WebGLVertexArrayObject | null
+  quadBuffer: WebGLBuffer | null
+  mainCache: UniformCache
+  postCache: UniformCache
+}
+
+export interface FrameTiming {
+  animFrameId: number
+  startTime: number
+  frameCount: number
+  lastFpsTime: number
+  accumulatedTime: number
+  lastFrameTime: number
+}
+
+export interface InputTracking {
+  isDragging: boolean
+  lastMouse: { x: number; y: number }
+  keysDown: Set<string>
+  lastPinchDist: number
+}
+
+export interface OrbitTracking {
+  center: [number, number, number] | null
+  angle: number
+}

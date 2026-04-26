@@ -9,7 +9,7 @@
 <br />
 <div align="center">
   <a href="https://www.evanbecker.net">
-    <img src="evanbecker-client/src/images/logos/evanbecker-icon.svg" alt="Logo" width="120" height="120">
+    <img src="evanbecker-client/assets/images/logos/evanbecker-icon.svg" alt="Logo" width="120" height="120">
   </a>
 
   <h3 align="center">www.evanbecker.net</h3>
@@ -32,14 +32,14 @@
 
 ## About
 
-This is the monorepo powering [evanbecker.net](https://www.evanbecker.net) — a personal site with blog articles (written in MDX), an authenticated commenting system, a contact form, newsletter signup, and a projects showcase. The frontend is a Next.js application and the backend is a .NET API backed by PostgreSQL.
+This is the monorepo powering [evanbecker.net](https://www.evanbecker.net) — a personal site with blog articles (written in Markdown), an authenticated commenting system, a contact form, newsletter signup, and a projects showcase. The frontend is a Nuxt 3 application and the backend is a .NET API backed by PostgreSQL.
 
 The entire stack is self-hosted on a Proxmox VE homelab with isolated LXC containers, Cloudflare Tunnel for zero-open-port ingress, and Infisical for secrets management.
 
 ## Built With
 
-* [![Next][Next.js]][Next-url]
-* [![React][React.js]][React-url]
+* [![Nuxt][Nuxt.js]][Nuxt-url]
+* [![Vue][Vue.js]][Vue-url]
 * [![TypeScript][TypeScript]][TypeScript-url]
 * [![TailwindCSS][TailwindCSS]][TailwindCSS-url]
 * [![Dotnet][Dotnet]][Dotnet-url]
@@ -60,7 +60,7 @@ The entire stack is self-hosted on a Proxmox VE homelab with isolated LXC contai
 ```mermaid
 graph LR
     User((User)) -->|browser| CF[Cloudflare Edge<br/>TLS + CDN]
-    CF -->|www / test| Client[Next.js<br/>Frontend]
+    CF -->|www / test| Client[Nuxt 3<br/>Frontend]
     CF -->|api / api-test| API[.NET API]
     Client -->|fetch| API
     API -->|read/write| DB[(PostgreSQL)]
@@ -78,8 +78,8 @@ graph TB
         Traefik[Traefik<br/>Reverse Proxy]
         APIProd[API Prod<br/>.NET 10]
         APITest[API Test<br/>.NET 10]
-        ClientProd[Client Prod<br/>Next.js 15]
-        ClientTest[Client Test<br/>Next.js 15]
+        ClientProd[Client Prod<br/>Nuxt 3]
+        ClientTest[Client Test<br/>Nuxt 3]
         Kuma[Uptime Kuma<br/>Monitoring]
         Watchtower[Watchtower<br/>Auto-deploy]
         CFD109[cloudflared<br/>Tunnel]
@@ -148,45 +148,20 @@ No secrets in CI. The API pulls all secrets from Infisical at startup. Migration
 ```
 www.evanbecker.net/
 │
-├── evanbecker-client/              # Next.js frontend
-│   ├── src/
-│   │   ├── app/                    # Pages (App Router)
-│   │   │   └── articles/           # MDX blog articles
-│   │   ├── components/             # Shared React components
-│   │   ├── hooks/                  # Custom React hooks
-│   │   └── images/                 # Static assets
-│   ├── Dockerfile
-│   └── package.json
-│
-├── evanbecker-api/                 # .NET backend
-│   ├── evanbecker-api/             # API project
-│   │   ├── Controllers/            # REST endpoints
-│   │   ├── Services/               # Business logic
-│   │   ├── Configuration/          # Auth0, Infisical config
-│   │   ├── Dto/                    # Data transfer objects
-│   │   └── Program.cs              # Startup & DI
-│   └── evanbecker-domain/          # Data layer
-│       ├── Entities/               # EF Core models
-│       ├── Migrations/             # Database migrations
-│       └── ApplicationContext.cs   # DbContext
-│
-├── infrastructure/                 # Homelab infrastructure
-│   ├── README.md                   # Infrastructure overview
-│   ├── adr/                        # Architecture Decision Records
-│   ├── database-lxc-setup.md       # LXC 105/106 — PostgreSQL
-│   ├── infisical-lxc-setup.md      # LXC 107 — Secrets management
-│   ├── ci-lxc-setup.md             # LXC 108 — CI/CD
-│   ├── website-lxc-setup.md        # LXC 109 — App stack
-│   └── scripts/                    # One-shot LXC install scripts
-│
+├── evanbecker-client/              # Nuxt 3 frontend → see evanbecker-client/README.md
+├── evanbecker-api/                 # .NET backend   → see evanbecker-api/README.md
+├── infrastructure/                 # Homelab infra  → see infrastructure/README.md
 ├── .github/workflows/              # CI/CD pipelines
-│   ├── build-and-push-to-prod.yml  # main → prod (:latest)
-│   ├── build-and-push-to-test.yml  # develop → test (:test)
-│   └── dotnet-pull_request.yml     # PR build validation
-│
 ├── docker-compose.yaml             # Local development
 └── docker-compose.production.yaml  # Production (LXC 109)
 ```
+
+Each sub-project has its own README with detailed structure, setup, and configuration:
+
+- **[`evanbecker-client/README.md`](evanbecker-client/README.md)** — Frontend development, demos, environment variables
+- **[`evanbecker-api/README.md`](evanbecker-api/README.md)** — API endpoints, secrets architecture, database setup
+- **[`infrastructure/README.md`](infrastructure/README.md)** — LXC containers, deployment, security
+- **[`evanbecker-client/composables/raymarcher/README.md`](evanbecker-client/composables/raymarcher/README.md)** — Ray marcher architecture, audio pipeline, jam sessions
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -200,44 +175,51 @@ www.evanbecker.net/
 - [Node.js 20+](https://nodejs.org/) (for frontend-only dev)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (for API-only dev)
 
-### Quick Start (Full Stack)
+### Quick Start (Recommended)
 
-1. **Clone the repo:**
-   ```bash
-   git clone https://github.com/Evanflow-Studio/www.evanbecker.net.git
-   cd www.evanbecker.net
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   cp evanbecker-client/.env.example evanbecker-client/.env.local
-   ```
-   Fill in your Auth0 credentials, database credentials, and API URLs.
-
-3. **Start all services:**
-   ```bash
-   docker compose up --build
-   ```
-
-4. **Open in your browser:**
-   - Frontend: [http://localhost:3000](http://localhost:3000)
-   - API + Swagger: [http://localhost:5002/swagger](http://localhost:5002/swagger)
-   - Traefik Dashboard: [http://localhost:6969](http://localhost:6969)
-
-### Frontend Only
+Start PostgreSQL, then run the frontend and API natively for hot-reload:
 
 ```bash
+# 1. Clone the repo
+git clone https://github.com/Evanflow-Studio/www.evanbecker.net.git
+cd www.evanbecker.net
+
+# 2. Start just the database
+docker compose up -d
+
+# 3. Run the API (in one terminal)
+cd evanbecker-api/evanbecker-api
+dotnet run
+
+# 4. Run the frontend (in another terminal)
 cd evanbecker-client
 npm install
 npm run dev
 ```
 
-### API Only
+- **Frontend:** [http://localhost:3000](http://localhost:3000)
+- **API + Swagger:** [http://localhost:5002/swagger](http://localhost:5002/swagger)
+- **PostgreSQL:** `localhost:5432` (user: `EvanBecker`, password: `P@55W0RD123`, db: `evanbecker-db`)
+
+The database credentials are hardcoded in `docker-compose.yaml` and match `appsettings.Development.json`. No `.env` file needed for the database.
+
+For API secrets (Auth0, Spotify, etc.), use .NET User Secrets — see [`evanbecker-api/README.md`](evanbecker-api/README.md#local-development-secrets) for setup.
+
+### Full Stack in Docker (Optional)
+
+Runs everything in containers — useful for testing the production-like setup:
 
 ```bash
-cd evanbecker-api/evanbecker-api
-dotnet run
+docker compose --profile fullstack up --build
+```
+
+### Database Migrations
+
+Migrations auto-apply when the API runs in Docker (`/app` working directory). For local development, apply manually:
+
+```bash
+cd evanbecker-api/evanbecker-domain
+dotnet ef database update --startup-project ../evanbecker-api
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -246,33 +228,11 @@ dotnet run
 
 ## API Reference
 
-Base path: `/api/v1/`
-
-| Endpoint | Method | Auth | Description |
-|---|---|---|---|
-| `comment/{targetLocation}` | GET | No | Get comments for a page |
-| `comment/{targetLocation}` | POST | Required | Post a new comment |
-| `comment/{targetLocation}/reply/{commentId}` | POST | Required | Reply to a comment |
-| `comment/{id}` | DELETE | Required | Soft-delete a comment |
-| `contact` | POST | No | Submit a contact message |
-| `newsletter` | POST | No | Subscribe to newsletter |
-| `user` | GET | Required | Get authenticated user info |
-
-Full interactive docs available via Swagger at `/swagger` on any running API instance.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
----
+See [`evanbecker-api/README.md`](evanbecker-api/README.md) for full endpoint documentation, secrets architecture, and database setup. Interactive Swagger docs available at `/swagger` on any running API instance.
 
 ## Deployment
 
-See [`infrastructure/README.md`](infrastructure/README.md) for full deployment documentation including:
-- LXC container inventory and setup guides
-- Branch strategy and CI/CD pipeline details
-- Secrets management (Infisical)
-- Monitoring (Uptime Kuma)
-- Network security and firewall configuration
-- Architecture Decision Records
+See [`infrastructure/README.md`](infrastructure/README.md) for full deployment documentation including LXC container setup, CI/CD pipeline, secrets management, monitoring, and security.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -280,12 +240,15 @@ See [`infrastructure/README.md`](infrastructure/README.md) for full deployment d
 
 ## Features
 
-- **Blog** — MDX-powered articles with syntax-highlighted code blocks and GitHub-flavored markdown
-- **Commenting System** — Auth0-authenticated comments with nested replies on articles
-- **Contact Form** — Submissions stored in PostgreSQL
-- **Newsletter** — Email subscription signup
+- **Blog** — Markdown-powered articles with syntax-highlighted code blocks via Nuxt Content
+- **Commenting System** — Auth0-authenticated real-time comments via SignalR with nested replies
+- **Contact Form** — Submissions stored in PostgreSQL with SMTP2Go email notifications
+- **Newsletter** — Email subscription with duplicate detection and SMTP2Go notifications
+- **Ray Marcher** — GPU-powered fractal visualizer with 4 scenes, cosine palettes, and post-FX ([docs](evanbecker-client/composables/raymarcher/README.md))
+- **Audio-Reactive Visualizer** — YouTube playback + tab audio capture → Meyda/Essentia analysis → real-time visual parameter mapping
+- **Jam Sessions** — Multiplayer shared visualizer via SignalR with host authority, ready-up flow, and playback sync
 - **Projects Showcase** — Portfolio of work
-- **Dark/Light Mode** — Theme toggle via next-themes
+- **Dark/Light Mode** — Theme toggle via @nuxtjs/color-mode
 - **RSS Feed** — Auto-generated at `/feed.xml`
 - **Responsive Design** — Tailwind CSS with mobile-first approach
 - **Self-Hosted Infrastructure** — No cloud dependencies beyond DNS and auth
@@ -316,10 +279,10 @@ Project Link: [https://github.com/Evanflow-Studio/www.evanbecker.net](https://gi
 [linkedin-url]: https://www.linkedin.com/in/evanbeckerdotnet/
 
 <!-- Tech badges -->
-[Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
-[Next-url]: https://nextjs.org/
-[React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB
-[React-url]: https://reactjs.org/
+[Nuxt.js]: https://img.shields.io/badge/Nuxt-00DC82?style=for-the-badge&logo=nuxtdotjs&logoColor=white
+[Nuxt-url]: https://nuxt.com/
+[Vue.js]: https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white
+[Vue-url]: https://vuejs.org/
 [TypeScript]: https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white
 [TypeScript-url]: https://www.typescriptlang.org/
 [TailwindCSS]: https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white

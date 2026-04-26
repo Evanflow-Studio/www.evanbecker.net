@@ -1,0 +1,36 @@
+<script setup lang="ts">
+import { useRayMarcherStore } from '~/stores/raymarcher'
+
+const store = useRayMarcherStore()
+
+const emit = defineEmits<{
+  screenshot: []
+  fullscreen: []
+}>()
+</script>
+
+<template>
+  <div class="flex flex-col gap-2">
+    <div class="flex flex-wrap items-end gap-3">
+      <DemoToggle label="Pause" :model-value="store.time.paused" @update:model-value="store.time.paused = $event" />
+      <DemoSlider label="Speed" :model-value="store.time.speed" :min="0.1" :max="3" :step="0.1" width="w-20" :show-value="true"
+        @update:model-value="store.time.speed = $event" />
+      <DemoSlider label="Move Speed" :model-value="store.camera.moveSpeed" :min="0.01" :max="0.15" :step="0.005" width="w-20" :show-value="true"
+        @update:model-value="store.camera.moveSpeed = $event" />
+
+      <!-- Actions -->
+      <div class="flex flex-col gap-1">
+        <label class="text-[10px] font-medium uppercase tracking-wider text-slate-400">Actions</label>
+        <div class="flex gap-1">
+          <button class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            title="Screenshot (P)" @click="emit('screenshot')">Screenshot</button>
+          <button class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            title="Copy share URL" @click="store.exportToUrl()">Share</button>
+          <button class="h-7 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            title="Fullscreen" @click="emit('fullscreen')">Fullscreen</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>

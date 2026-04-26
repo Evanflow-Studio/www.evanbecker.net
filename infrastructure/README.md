@@ -46,19 +46,40 @@ All defined in [`docker-compose.production.yaml`](../docker-compose.production.y
 
 ### Compose Sync
 
-A cron job on LXC 109 runs every 2 minutes to sync infrastructure changes:
+A cron job on LXC 109 runs every 2 minutes to sync infrastructure changes (compose file, new services, label changes, etc.) without SSH.
+
+**Install the sync script:**
 
 ```bash
-# /opt/docker/sync.sh — checks for compose file updates
+pct exec 109 -- bash -c 'cat > /opt/docker/sync.sh << '\''SCRIPT'\''
+#!/bin/bash
 cd /opt/app
 git fetch origin develop --quiet
-if [ LOCAL != REMOTE ]; then
+LOCAL=$(git rev-parse HEAD)
+REMOTE=$(git rev-parse origin/develop)
+if [ "$LOCAL" != "$REMOTE" ]; then
+    echo "$(date): Changes detected, updating..."
     git reset --hard origin/develop
+    docker compose -f docker-compose.production.yaml --env-file /opt/docker/.env pull --quiet
     docker compose -f docker-compose.production.yaml --env-file /opt/docker/.env up -d --remove-orphans
+else
+    echo "$(date): No changes."
 fi
+SCRIPT
+chmod +x /opt/docker/sync.sh'
 ```
 
-This means changes to `docker-compose.production.yaml` (adding services, changing labels, etc.) auto-deploy without SSH.
+**Add the cron (every 2 minutes):**
+
+```bash
+pct exec 109 -- bash -c "(crontab -l 2>/dev/null; echo '*/2 * * * * /opt/docker/sync.sh >> /var/log/compose-sync.log 2>&1') | crontab -"
+```
+
+**Check the log:**
+
+```bash
+pct exec 109 -- tail -20 /var/log/compose-sync.log
+```
 
 ### File Locations on LXC 109
 

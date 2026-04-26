@@ -1,17 +1,21 @@
 using evanbecker_api.Configuration;
 using evanbecker_api.Extensions;
+using evanbecker_api.Hubs;
 using evanbecker_api.Services;
 using evanbecker_domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Configuration.AddJsonFile("./secrets/appsettings.Secrets.json", optional: true, reloadOnChange: true);
+// In Development, secrets come from .NET User Secrets (dotnet user-secrets).
+// In Production/Test, secrets come from Infisical via SecretsConfigurationProvider.
 builder.Configuration.AddEnvironmentVariables();
-builder.Configuration.AddInfisical();
+builder.Configuration.AddSecrets();
 
 var environmentName = builder.Environment.EnvironmentName;
 Console.WriteLine($"Starting API with Environment: {environmentName}");
@@ -24,15 +28,27 @@ var auth0Settings = new Auth0Configuration();
 auth0Section.Bind(auth0Settings);
 builder.Services.Configure<Auth0Configuration>(auth0Section);
 
-var gitHubSection = builder.Configuration.GetSection("GitHub");
-var gitHubSettings = new GitHubConfiguration();
-gitHubSection.Bind(gitHubSettings);
-builder.Services.Configure<GitHubConfiguration>(gitHubSection);
-
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddEndpointsApiExplorer(); 
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddHttpClient<IEmailService, EmailService>();
+
+builder.Services.Configure<RecaptchaSettings>(builder.Configuration.GetSection("Recaptcha"));
+builder.Services.AddHttpClient<IRecaptchaService, RecaptchaService>();
+
+builder.Services.Configure<YouTubeConfiguration>(builder.Configuration.GetSection("YouTube"));
+builder.Services.AddHttpClient<IYouTubeService, YouTubeService>();
+
+builder.Services.AddSingleton<ISessionManager, SessionManager>();
+builder.Services.AddHostedService<SessionCleanupService>();
+
+builder.Services.AddMemoryCache();
+
+builder.Services.AddSignalR();
+builder.Services.AddHealthChecks();
+
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o =>
 {
     o.SwaggerDoc("v1", new OpenApiInfo
@@ -44,14 +60,23 @@ builder.Services.AddSwaggerGen(o =>
                       $"'api-{environmentName}.evanbecker.net' environment."
     });
 
-    o.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    o.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Paste your Auth0 JWT token"
+        Type = SecuritySchemeType.OAuth2,
+        Flows = new OpenApiOAuthFlows
+        {
+            AuthorizationCode = new OpenApiOAuthFlow
+            {
+                AuthorizationUrl = new Uri($"https://{auth0Settings.Domain}/authorize"),
+                TokenUrl         = new Uri($"https://{auth0Settings.Domain}/oauth/token"),
+                Scopes = new Dictionary<string, string>
+                {
+                    { "openid", "OpenID Connect" },
+                    { "profile", "User profile" },
+                    { "email", "Email address" }
+                }
+            }
+        }
     });
 
     o.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -62,21 +87,26 @@ builder.Services.AddSwaggerGen(o =>
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    Id = "oauth2"
                 }
             },
-            Array.Empty<string>()
+            new[] { "openid", "profile", "email" }
         }
     });
 });
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("cors", builder =>
+    options.AddPolicy("cors", policy =>
     {
-        builder.AllowAnyHeader();
-        builder.AllowAnyMethod();
-        builder.AllowAnyOrigin();
+        policy.WithOrigins(
+                "https://www.evanbecker.net",
+                "https://evanbecker.net",
+                "https://test.evanbecker.net",
+                "http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -88,25 +118,51 @@ builder.Services.AddAuthentication(options =>
 {
     options.Authority = $"https://{auth0Settings.Domain}/";
     options.Audience = auth0Settings.Audience;
+
+    // SignalR sends the JWT as a query parameter for WebSocket connections
+    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/session"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 var app = builder.Build();
 
-app.Use((context, next) =>
-{
-    context.Response.Headers["Access-Control-Allow-Origin"] = "*";
-    return next.Invoke();
-});
-
 app.UseSwagger();
-app.UseSwaggerUI();
-
-app.UseCors();
+app.UseSwaggerUI(o =>
+{
+    o.OAuthClientId(auth0Settings.ClientId);
+    o.OAuthAdditionalQueryStringParams(new Dictionary<string, string>
+    {
+        { "audience", auth0Settings.Audience ?? "" }
+    });
+    o.OAuthUsePkce();
+});
 
 app.UseCors("cors");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<CommentHub>("/hubs/comments").RequireCors("cors");
+app.MapHub<SessionHub>("/hubs/session").RequireCors("cors");
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy]   = StatusCodes.Status200OK,
+        [HealthStatus.Degraded]  = StatusCodes.Status200OK,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
+    }
+});
 
 await app.UseLocalDockerMigrationsAsync(environmentName);
 
