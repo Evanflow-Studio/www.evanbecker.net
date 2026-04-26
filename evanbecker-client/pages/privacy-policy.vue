@@ -12,8 +12,9 @@ useHead({ title: 'Privacy Policy - Evan Becker' })
         Privacy Policy
       </h1>
       <p class="mt-4 text-base text-slate-600 dark:text-slate-400">
-        This is a personal site. I run it. I don't sell anything, run ads, or
-        track you across the web. The bits below cover what does happen.
+        This is my personal site, operated by Evanflow LLC. I don't sell
+        anything, run ads, or track you across the web. The bits below cover
+        what does happen.
       </p>
     </header>
 

@@ -109,6 +109,12 @@ const socialLinks = [
             consulting on clean architecture, data strategy, security, and coding principles.
           </p>
           <p>
+            Outside of client work, I run Evanflow LLC, the company behind my own software products.
+            I'm currently building Zeroset, a browser-native modeling tool for 3D printing makers
+            that brings SDF lattice operations and code-as-source-of-truth design to a market that
+            has had to choose between toy editors and enterprise software.
+          </p>
+          <p>
             I tend to prefer object-oriented languages, with C# in the .NET ecosystem being my primary focus.
             My approach to software design is influenced by established architectural and engineering principles,
             particularly those championed by

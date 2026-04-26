@@ -52,7 +52,7 @@ const socialLinks = [
       </div>
 
       <p class="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
-        &copy; {{ new Date().getFullYear() }} Evan Becker. All rights reserved.
+        &copy; {{ new Date().getFullYear() }} Evanflow LLC. All rights reserved.
         <span v-if="config.public.appVersion !== 'dev'" class="ml-2 text-slate-500/50">
           v{{ config.public.appVersion }}
         </span>
