@@ -80,19 +80,19 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0B1120]">
+  <div class="min-h-screen bg-slate-50 dark:bg-[#0B1120]">
     <div class="mx-auto max-w-2xl px-4 pb-20 pt-28 sm:px-6">
       <!-- Loading -->
       <div v-if="isLoading" class="flex items-center justify-center py-20">
-        <div class="h-8 w-8 animate-spin rounded-full border-2 border-slate-600 border-t-[#2D95FC]" />
+        <div class="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-[#0C65E5] dark:border-slate-600 dark:border-t-[#2D95FC]" />
       </div>
 
       <!-- Not authenticated -->
-      <div v-else-if="!isAuthenticated" class="rounded-xl border border-slate-700/50 bg-slate-900/50 p-8 text-center">
-        <h1 class="text-2xl font-bold text-white mb-3">Account</h1>
-        <p class="text-slate-400 mb-6">Sign in to manage your account.</p>
+      <div v-else-if="!isAuthenticated" class="rounded-xl border border-slate-200 bg-white/60 p-8 text-center dark:border-slate-700/50 dark:bg-slate-900/50">
+        <h1 class="text-2xl font-bold text-slate-900 mb-3 dark:text-white">Account</h1>
+        <p class="text-slate-600 mb-6 dark:text-slate-400">Sign in to manage your account.</p>
         <button
-          class="rounded-lg bg-[#2D95FC] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2D95FC]/80"
+          class="rounded-lg bg-[#0C65E5] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2D95FC] dark:bg-[#2D95FC] dark:hover:bg-[#2D95FC]/80"
           @click="loginWithRedirect?.()"
         >
           Sign In
@@ -101,12 +101,12 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
 
       <!-- Authenticated -->
       <div v-else class="space-y-6">
-        <h1 class="text-2xl font-bold text-white">Account</h1>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Account</h1>
 
         <!-- Profile card -->
-        <div class="rounded-xl border border-slate-700/50 bg-slate-900/50 p-6">
+        <div class="rounded-xl border border-slate-200 bg-white/60 p-6 dark:border-slate-700/50 dark:bg-slate-900/50">
           <div class="mb-5 flex items-center justify-between">
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Profile</h2>
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Profile</h2>
             <Transition
               enter-active-class="transition duration-300"
               enter-from-class="opacity-0 translate-y-1"
@@ -115,8 +115,8 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
               leave-from-class="opacity-100"
               leave-to-class="opacity-0"
             >
-              <span v-if="profileSaved" class="text-xs font-medium text-green-400">Saved!</span>
-              <span v-else-if="profileSaveError" class="text-xs font-medium text-red-400">Session expired — sign in again to save.</span>
+              <span v-if="profileSaved" class="text-xs font-medium text-green-600 dark:text-green-400">Saved!</span>
+              <span v-else-if="profileSaveError" class="text-xs font-medium text-red-600 dark:text-red-400">Session expired. Sign in again to save.</span>
             </Transition>
           </div>
 
@@ -126,16 +126,16 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
             <button
               v-if="profileSaveError"
               @click="loginWithRedirect?.()"
-              class="mt-4 text-xs font-medium text-[#2D95FC] hover:underline"
+              class="mt-4 text-xs font-medium text-[#0C65E5] hover:underline dark:text-[#2D95FC]"
             >
               Sign in again
             </button>
           </div>
-          <div v-else-if="profileLoadFailed" class="py-6 text-sm text-slate-400">
-            Couldn't load your profile — your session may have expired.
+          <div v-else-if="profileLoadFailed" class="py-6 text-sm text-slate-600 dark:text-slate-400">
+            Couldn't load your profile. Your session may have expired.
             <button
               @click="loginWithRedirect?.()"
-              class="ml-1 font-medium text-[#2D95FC] hover:underline"
+              class="ml-1 font-medium text-[#0C65E5] hover:underline dark:text-[#2D95FC]"
             >
               Sign in again
             </button>
@@ -146,8 +146,8 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
         </div>
 
         <!-- Labs — experimental features, only functional while signed in -->
-        <div class="rounded-xl border border-slate-700/50 bg-slate-900/50 p-6">
-          <h2 class="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-400">Labs</h2>
+        <div class="rounded-xl border border-slate-200 bg-white/60 p-6 dark:border-slate-700/50 dark:bg-slate-900/50">
+          <h2 class="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Labs</h2>
           <p class="mb-5 text-xs text-slate-500">
             Experimental features. Buggy, browser-specific, and not guaranteed to stick around.
           </p>
@@ -156,13 +156,13 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
             <input
               type="checkbox"
               v-model="experiments.rayMarcherLab"
-              class="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-600 bg-slate-800 text-[#2D95FC] focus:ring-[#2D95FC] focus:ring-offset-0"
+              class="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 bg-white text-[#0C65E5] focus:ring-[#0C65E5] focus:ring-offset-0 dark:border-slate-600 dark:bg-slate-800 dark:text-[#2D95FC] dark:focus:ring-[#2D95FC]"
             />
             <span>
-              <span class="block text-sm font-medium text-slate-200">Ray marcher: audio visualizer &amp; sessions</span>
+              <span class="block text-sm font-medium text-slate-800 dark:text-slate-200">Ray marcher: audio visualizer &amp; sessions</span>
               <span class="block text-xs text-slate-500">
                 Adds a music player, mic/tab audio capture, and multiplayer rooms to
-                <NuxtLink to="/sandbox/raymarcher" class="text-[#2D95FC] hover:underline">/sandbox/raymarcher</NuxtLink>.
+                <NuxtLink to="/sandbox/raymarcher" class="text-[#0C65E5] hover:underline dark:text-[#2D95FC]">/sandbox/raymarcher</NuxtLink>.
                 Chrome/Edge only; expect glitches.
               </span>
             </span>

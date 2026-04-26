@@ -5,6 +5,16 @@
 @tailwind utilities;
 
 @layer base {
+  /* Safety net: clip any horizontal overflow at the page level. `clip` is
+     the modern alternative to `overflow-x: hidden` — it prevents accidental
+     side-scroll without breaking sticky positioning on descendants the way
+     `hidden` would. Helps on mobile where a single misbehaving child
+     (long inline string, decorative absolute element, etc.) can otherwise
+     extend the body and create a phantom right-hand gutter. */
+  html, body {
+    overflow-x: clip;
+  }
+
   body {
     @apply bg-slate-50 text-slate-700 antialiased dark:bg-[#0B1120] dark:text-slate-300;
   }

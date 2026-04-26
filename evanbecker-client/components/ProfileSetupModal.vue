@@ -54,12 +54,12 @@ function tryClose() {
         />
 
         <!-- Modal -->
-        <div class="relative w-full max-w-md rounded-2xl border border-slate-700/50 bg-[#0F172A] p-6 shadow-2xl">
+        <div class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700/50 dark:bg-[#0F172A]">
           <!-- Close button (only shown when firstName is filled) -->
           <button
             v-if="canClose"
             type="button"
-            class="absolute right-4 top-4 text-slate-500 transition hover:text-slate-300"
+            class="absolute right-4 top-4 text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
             @click="tryClose"
           >
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -68,10 +68,10 @@ function tryClose() {
           </button>
 
           <div class="mb-5">
-            <h2 class="text-lg font-semibold text-white">Complete your profile</h2>
-            <p class="mt-1 text-sm text-slate-400">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Complete your profile</h2>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Add your name so others can recognise you in comments.
-              <span class="text-red-400">A first name is required to continue.</span>
+              <span class="text-red-600 dark:text-red-400">A first name is required to continue.</span>
             </p>
           </div>
 

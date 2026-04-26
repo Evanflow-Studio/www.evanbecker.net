@@ -59,11 +59,11 @@ function submit() {
           v-if="avatarPreview"
           :src="avatarPreview"
           alt="Avatar"
-          class="h-16 w-16 rounded-full object-cover border-2 border-slate-700"
+          class="h-16 w-16 rounded-full object-cover border-2 border-slate-300 dark:border-slate-700"
         />
         <div
           v-else
-          class="flex h-16 w-16 items-center justify-center rounded-full bg-[#0C65E5] text-lg font-bold text-white border-2 border-slate-700"
+          class="flex h-16 w-16 items-center justify-center rounded-full bg-[#0C65E5] text-lg font-bold text-white border-2 border-slate-300 dark:border-slate-700"
         >
           {{ initials() }}
         </div>
@@ -79,7 +79,7 @@ function submit() {
         />
         <button
           type="button"
-          class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white"
+          class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
           @click="fileInput?.click()"
         >
           Upload photo
@@ -87,7 +87,7 @@ function submit() {
         <button
           v-if="avatarPreview"
           type="button"
-          class="text-left text-xs text-slate-500 transition hover:text-red-400"
+          class="text-left text-xs text-slate-500 transition hover:text-red-600 dark:hover:text-red-400"
           @click="resetAvatar"
         >
           Reset to initials
@@ -98,24 +98,24 @@ function submit() {
     <!-- Name fields -->
     <div class="grid grid-cols-2 gap-3">
       <div>
-        <label class="mb-1.5 block text-xs font-medium text-slate-400">
-          First name <span class="text-red-400">*</span>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">
+          First name <span class="text-red-600 dark:text-red-400">*</span>
         </label>
         <input
           v-model="firstName"
           type="text"
           required
           placeholder="First name"
-          class="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-[#0C65E5] focus:outline-none focus:ring-1 focus:ring-[#0C65E5]"
+          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-[#0C65E5] focus:outline-none focus:ring-1 focus:ring-[#0C65E5] dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
         />
       </div>
       <div>
-        <label class="mb-1.5 block text-xs font-medium text-slate-400">Last name</label>
+        <label class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">Last name</label>
         <input
           v-model="lastName"
           type="text"
           placeholder="Last name"
-          class="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-[#0C65E5] focus:outline-none focus:ring-1 focus:ring-[#0C65E5]"
+          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-[#0C65E5] focus:outline-none focus:ring-1 focus:ring-[#0C65E5] dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
         />
       </div>
     </div>

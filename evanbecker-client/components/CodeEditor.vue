@@ -78,7 +78,7 @@ function highlightLine(line: string, language: string): string {
   // Handle full-line comments first (// for C#, # for yaml)
   const commentMatch = line.match(/^(\s*)(\/\/.*)$/) || line.match(/^(\s*)(#.*)$/)
   if (commentMatch) {
-    return commentMatch[1] + '<span class="text-slate-500">' + esc(commentMatch[2]) + '</span>'
+    return commentMatch[1] + '<span class="text-slate-400 dark:text-slate-500">' + esc(commentMatch[2]) + '</span>'
   }
 
   const tokens: string[] = []
@@ -88,13 +88,13 @@ function highlightLine(line: string, language: string): string {
   while ((m = re.exec(line)) !== null) {
     if (m[1]) {
       // String literal
-      tokens.push('<span class="text-emerald-400">' + esc(m[1]) + '</span>')
+      tokens.push('<span class="text-emerald-700 dark:text-emerald-400">' + esc(m[1]) + '</span>')
     } else if (m[2]) {
       // Word — classify it
       tokens.push(classifyWord(m[2], language))
     } else if (m[3]) {
       // Number
-      tokens.push('<span class="text-amber-300">' + esc(m[3]) + '</span>')
+      tokens.push('<span class="text-amber-700 dark:text-amber-300">' + esc(m[3]) + '</span>')
     } else {
       tokens.push(esc(m[4]))
     }
@@ -126,25 +126,25 @@ const ATTRS = new Set([
 ])
 
 function classifyWord(word: string, _lang: string): string {
-  if (KEYWORDS.has(word)) return '<span class="text-[#41A5F7]">' + word + '</span>'
-  if (TYPES.has(word)) return '<span class="text-emerald-300">' + word + '</span>'
-  if (ATTRS.has(word)) return '<span class="text-[#2D95FC]">' + word + '</span>'
+  if (KEYWORDS.has(word)) return '<span class="text-[#0C65E5] dark:text-[#41A5F7]">' + word + '</span>'
+  if (TYPES.has(word)) return '<span class="text-emerald-700 dark:text-emerald-300">' + word + '</span>'
+  if (ATTRS.has(word)) return '<span class="text-[#2D95FC] dark:text-[#2D95FC]">' + word + '</span>'
   return esc(word)
 }
 </script>
 
 <template>
   <div class="relative max-w-2xl">
-    <!-- Glow effect -->
-    <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-[#0C65E5]/20 via-[#2D95FC]/10 to-[#41A5F7]/20 opacity-60 blur-xl" />
+    <!-- Glow effect — softer in light mode, stronger in dark -->
+    <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-[#0C65E5]/15 via-[#2D95FC]/10 to-[#41A5F7]/15 opacity-60 blur-xl dark:from-[#0C65E5]/20 dark:via-[#2D95FC]/10 dark:to-[#41A5F7]/20" />
 
-    <div class="relative rounded-2xl bg-slate-900 ring-1 ring-slate-700/50 dark:bg-[#0B1120] dark:ring-slate-800">
+    <div class="relative rounded-2xl bg-white ring-1 ring-slate-200 dark:bg-[#0B1120] dark:ring-slate-800">
       <!-- Title bar -->
       <div class="flex items-center gap-2 px-4 pt-4">
         <div class="flex gap-1.5">
-          <div class="h-3 w-3 rounded-full bg-slate-700/50" />
-          <div class="h-3 w-3 rounded-full bg-slate-700/50" />
-          <div class="h-3 w-3 rounded-full bg-slate-700/50" />
+          <div class="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-700/50" />
+          <div class="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-700/50" />
+          <div class="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-700/50" />
         </div>
       </div>
 
@@ -157,8 +157,8 @@ function classifyWord(word: string, _lang: string): string {
           :class="[
             'rounded-full px-3 py-1 transition',
             activeTab.name === tab.name
-              ? 'bg-[#2D95FC]/20 font-medium text-[#41A5F7] ring-1 ring-[#2D95FC]/30'
-              : 'text-slate-500 hover:text-slate-300',
+              ? 'bg-[#0C65E5]/10 font-medium text-[#0C65E5] ring-1 ring-[#0C65E5]/30 dark:bg-[#2D95FC]/20 dark:text-[#41A5F7] dark:ring-[#2D95FC]/30'
+              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300',
           ]"
         >
           {{ tab.name }}
@@ -167,10 +167,10 @@ function classifyWord(word: string, _lang: string): string {
 
       <!-- Code -->
       <div class="mt-4 flex items-start overflow-x-auto px-4 pb-6 text-sm">
-        <div class="select-none border-r border-slate-700/30 pr-4 font-mono text-slate-600" aria-hidden="true">
+        <div class="select-none border-r border-slate-200 pr-4 font-mono text-slate-400 dark:border-slate-700/30 dark:text-slate-600" aria-hidden="true">
           <div v-for="num in lineNumbers(activeTab.code)" :key="num">{{ num }}</div>
         </div>
-        <pre class="flex-1 overflow-x-auto pl-4 font-mono"><code class="text-slate-300" v-html="highlightCode(activeTab.code, activeTab.language)"></code></pre>
+        <pre class="flex-1 overflow-x-auto pl-4 font-mono"><code class="text-slate-700 dark:text-slate-300" v-html="highlightCode(activeTab.code, activeTab.language)"></code></pre>
       </div>
     </div>
   </div>
