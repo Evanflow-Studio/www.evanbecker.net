@@ -47,6 +47,12 @@ export default {
                 textDecorationColor: '#2D95FC',
               },
             },
+            // The typography plugin's default styling renders visible backticks
+            // around inline <code> via ::before/::after pseudo-elements. We want
+            // inline code to be styled (monospace, color) but NOT decorated with
+            // literal backtick characters in the rendered output.
+            'code::before': { content: 'none' },
+            'code::after': { content: 'none' },
           },
         },
         invert: {
