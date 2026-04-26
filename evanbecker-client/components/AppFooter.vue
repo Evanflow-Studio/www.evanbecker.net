@@ -2,8 +2,7 @@
 const config = useRuntimeConfig()
 
 const navLinks = [
-  { name: 'Legal', href: '/privacy-policy' },
-  { name: 'Projects', href: '/projects' },
+  { name: 'Privacy', href: '/privacy-policy' },
 ]
 
 const socialLinks = [
