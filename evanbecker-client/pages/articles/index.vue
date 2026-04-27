@@ -1,7 +1,11 @@
 <script setup lang="ts">
-useHead({
+useSeoMeta({
   title: 'Articles - Evan Becker',
-  meta: [{ name: 'description', content: 'All of my long-form thoughts on programming, leadership, product design, and more.' }],
+  description: 'All of my long-form thoughts on programming, leadership, product design, and more.',
+  ogTitle: 'Articles - Evan Becker',
+  ogDescription: 'All of my long-form thoughts on programming, leadership, product design, and more.',
+  twitterTitle: 'Articles - Evan Becker',
+  twitterDescription: 'All of my long-form thoughts on programming, leadership, product design, and more.',
 })
 </script>
 
@@ -14,7 +18,8 @@ useHead({
       All of my long-form thoughts captured as I attempt to understand the universe, collected in chronological order and organized by subject matter.
     </p>
 
-    <ContentList path="/articles" :query="{ sort: [{ date: -1 }] }" v-slot="{ list }">
+    <ContentList path="/articles" :query="{ sort: [{ date: -1 }] }">
+      <template #default="{ list }">
       <div class="mt-16 space-y-12 border-l border-slate-200 pl-6 dark:border-slate-700">
         <article v-for="article in list" :key="article._path" class="relative">
           <!-- Timeline dot -->
@@ -54,6 +59,10 @@ useHead({
           </NuxtLink>
         </article>
       </div>
+      </template>
+      <template #not-found>
+        <p class="mt-16 text-slate-500 dark:text-slate-400">No articles yet.</p>
+      </template>
     </ContentList>
   </div>
 </template>

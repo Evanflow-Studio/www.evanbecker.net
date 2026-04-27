@@ -7,8 +7,16 @@ import {
 
 const config = useRuntimeConfig()
 
-useHead({
+useSeoMeta({
   title: 'Contact - Evan Becker',
+  description: 'Get in touch — email, contact form, or social. I respond to most messages within a day or two.',
+  ogTitle: 'Contact - Evan Becker',
+  ogDescription: 'Get in touch — email, contact form, or social. I respond to most messages within a day or two.',
+  twitterTitle: 'Contact - Evan Becker',
+  twitterDescription: 'Get in touch — email, contact form, or social.',
+})
+
+useHead({
   script: config.public.recaptchaSiteKey
     ? [{ src: `https://www.google.com/recaptcha/api.js?render=${config.public.recaptchaSiteKey}`, async: true }]
     : [],

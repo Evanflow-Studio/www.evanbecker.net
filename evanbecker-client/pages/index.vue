@@ -1,5 +1,12 @@
 <script setup lang="ts">
-useHead({ title: 'Evan Becker - Software Architect & Writer' })
+useSeoMeta({
+  title: 'Evan Becker - Software Architect & Writer',
+  description: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics. Self-hosted on a Proxmox homelab.',
+  ogTitle: 'Evan Becker - Software Architect & Writer',
+  ogDescription: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics. Self-hosted on a Proxmox homelab.',
+  twitterTitle: 'Evan Becker - Software Architect & Writer',
+  twitterDescription: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics.',
+})
 
 const { data: articles } = await useAsyncData('article-count', () =>
   queryContent('articles').only(['_path']).find()
@@ -93,7 +100,8 @@ const articleCount = computed(() => articles.value?.length ?? 0)
         </NuxtLink>
       </div>
 
-      <ContentList path="/articles" :query="{ limit: 3, sort: [{ date: -1 }] }" v-slot="{ list }">
+      <ContentList path="/articles" :query="{ limit: 3, sort: [{ date: -1 }] }">
+        <template #default="{ list }">
         <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           <article
             v-for="article in list"
@@ -124,6 +132,10 @@ const articleCount = computed(() => articles.value?.length ?? 0)
             </div>
           </article>
         </div>
+        </template>
+        <template #not-found>
+          <p class="mt-8 text-sm text-slate-500 dark:text-slate-400">No articles yet.</p>
+        </template>
       </ContentList>
     </section>
   </div>

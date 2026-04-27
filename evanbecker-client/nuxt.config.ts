@@ -7,7 +7,18 @@ export default defineNuxtConfig({
     '@nuxt/content',
     '@nuxtjs/tailwindcss',
     '@nuxtjs/color-mode',
+    '@nuxtjs/sitemap',
   ],
+
+  site: {
+    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.evanbecker.net',
+    name: 'Evan Becker',
+  },
+
+  sitemap: {
+    sources: ['/api/__sitemap__/urls'],
+    exclude: ['/account', '/thank-you-message'],
+  },
 
   components: [
     { path: '~/components', pathPrefix: false },
