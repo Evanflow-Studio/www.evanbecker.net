@@ -44,6 +44,7 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Software architect, writer, and builder of things.' },
       ],
       link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'alternate', type: 'application/rss+xml', title: 'RSS', href: '/feed.xml' },
       ],
     },
