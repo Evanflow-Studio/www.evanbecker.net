@@ -12,11 +12,27 @@ if (!article.value) {
   throw createError({ statusCode: 404, statusMessage: 'Article not found' })
 }
 
-useHead({
-  title: `${article.value.title} - Evan Becker`,
-  meta: [
-    { name: 'description', content: article.value.description || '' },
-  ],
+const config = useRuntimeConfig()
+const articleTitle = `${article.value.title} - Evan Becker`
+const articleDescription = article.value.description || ''
+const articleImage = article.value.image
+  ? `${config.public.siteUrl.replace(/\/$/, '')}${article.value.image}`
+  : `${config.public.siteUrl.replace(/\/$/, '')}/og-image.png`
+
+useSeoMeta({
+  title: articleTitle,
+  description: articleDescription,
+  ogType: 'article',
+  ogTitle: articleTitle,
+  ogDescription: articleDescription,
+  ogImage: articleImage,
+  twitterCard: 'summary_large_image',
+  twitterTitle: articleTitle,
+  twitterDescription: articleDescription,
+  twitterImage: articleImage,
+  articlePublishedTime: article.value.date,
+  articleAuthor: ['Evan Becker'],
+  articleTag: article.value.tags,
 })
 </script>
 
