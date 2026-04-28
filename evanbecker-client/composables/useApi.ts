@@ -9,8 +9,29 @@ export function useApi() {
   // is entirely eliminated there; on the client it runs in component setup context.
   let getTokenFn: (() => Promise<string>) | null = null
   if (import.meta.client) {
-    const { getAccessTokenSilently } = useAuth0()
-    getTokenFn = getAccessTokenSilently
+    const { getAccessTokenSilently, loginWithRedirect } = useAuth0()
+    getTokenFn = async () => {
+      try {
+        return await getAccessTokenSilently()
+      } catch (e: any) {
+        // The local refresh token is gone, expired, or has been rotation-revoked.
+        // The Auth0 tenant SSO session cookie typically lives longer than the
+        // refresh token, so try a silent round-trip with prompt=none to recover
+        // transparently. If the SSO session is alive the user comes back
+        // re-authenticated without seeing a sign-in screen. If it's also dead,
+        // Auth0 redirects back with an error and this throw propagates so the
+        // caller can show "sign in again". appState.target preserves the user's
+        // location for a future onRedirectCallback to consume.
+        const recoverable = ['login_required', 'consent_required', 'missing_refresh_token', 'invalid_grant']
+        if (recoverable.includes(e?.error)) {
+          await loginWithRedirect({
+            authorizationParams: { prompt: 'none' },
+            appState: { target: window.location.pathname + window.location.search },
+          })
+        }
+        throw e
+      }
+    }
   }
 
   async function fetchWithAuth(path: string, options: RequestInit = {}) {
