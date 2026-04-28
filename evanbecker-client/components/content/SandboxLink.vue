@@ -7,12 +7,16 @@ const props = withDefaults(defineProps<{
   label: 'Open in Sandbox',
   description: '',
 })
+
+const isExternal = computed(() => /^https?:\/\//i.test(props.to))
 </script>
 
 <template>
   <div class="not-prose my-4">
     <NuxtLink
       :to="to"
+      :target="isExternal ? '_blank' : undefined"
+      :rel="isExternal ? 'noopener noreferrer' : undefined"
       class="flex items-center gap-3 rounded-xl border border-slate-300 bg-slate-100 px-4 py-3 transition-colors hover:border-[#0C65E5]/50 hover:bg-slate-50 group dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-[#2D95FC]/50 dark:hover:bg-slate-800/80"
     >
       <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0C65E5]/20 text-[#0C65E5] group-hover:bg-[#0C65E5]/30 transition-colors dark:text-[#2D95FC]">
