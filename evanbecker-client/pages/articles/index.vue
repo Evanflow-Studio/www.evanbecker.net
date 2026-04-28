@@ -30,7 +30,7 @@ useSeoMeta({
             :datetime="article.date"
             class="text-sm font-medium text-slate-400 dark:text-slate-500"
           >
-            {{ new Date(article.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}
+            {{ formatArticleDate(article.date) }}
           </time>
 
           <h2 class="mt-2 text-xl font-semibold text-slate-800 dark:text-slate-100">
