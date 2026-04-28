@@ -24,9 +24,17 @@ export function useApi() {
         // location for a future onRedirectCallback to consume.
         const recoverable = ['login_required', 'consent_required', 'missing_refresh_token', 'invalid_grant']
         if (recoverable.includes(e?.error)) {
+          const target = window.location.pathname + window.location.search
+          // sessionStorage is the recovery channel for the SSO-also-dead case.
+          // appState.target is what auth0-vue uses on success; sessionStorage is
+          // a backup the auth0 plugin reads in the failure path where auth0-vue
+          // would otherwise redirect to errorPath || '/' and lose the location.
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('auth0_recovery_target', target)
+          }
           await loginWithRedirect({
             authorizationParams: { prompt: 'none' },
-            appState: { target: window.location.pathname + window.location.search },
+            appState: { target },
           })
         }
         throw e
