@@ -113,7 +113,7 @@ const articleCount = computed(() => articles.value?.length ?? 0)
               :datetime="article.date"
               class="text-xs font-medium text-slate-500 dark:text-slate-500"
             >
-              {{ new Date(article.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}
+              {{ formatArticleDate(article.date) }}
             </time>
             <h3 class="mt-2 text-lg font-semibold text-slate-800 group-hover:text-[#0C65E5] dark:text-slate-100 dark:group-hover:text-[#2D95FC]">
               <NuxtLink :to="article._path">{{ article.title }}</NuxtLink>
