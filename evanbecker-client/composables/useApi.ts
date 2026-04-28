@@ -9,8 +9,37 @@ export function useApi() {
   // is entirely eliminated there; on the client it runs in component setup context.
   let getTokenFn: (() => Promise<string>) | null = null
   if (import.meta.client) {
-    const { getAccessTokenSilently } = useAuth0()
-    getTokenFn = getAccessTokenSilently
+    const { getAccessTokenSilently, loginWithRedirect } = useAuth0()
+    getTokenFn = async () => {
+      try {
+        return await getAccessTokenSilently()
+      } catch (e: any) {
+        // The local refresh token is gone, expired, or has been rotation-revoked.
+        // The Auth0 tenant SSO session cookie typically lives longer than the
+        // refresh token, so try a silent round-trip with prompt=none to recover
+        // transparently. If the SSO session is alive the user comes back
+        // re-authenticated without seeing a sign-in screen. If it's also dead,
+        // Auth0 redirects back with an error and this throw propagates so the
+        // caller can show "sign in again". appState.target preserves the user's
+        // location for a future onRedirectCallback to consume.
+        const recoverable = ['login_required', 'consent_required', 'missing_refresh_token', 'invalid_grant']
+        if (recoverable.includes(e?.error)) {
+          const target = window.location.pathname + window.location.search
+          // sessionStorage is the recovery channel for the SSO-also-dead case.
+          // appState.target is what auth0-vue uses on success; sessionStorage is
+          // a backup the auth0 plugin reads in the failure path where auth0-vue
+          // would otherwise redirect to errorPath || '/' and lose the location.
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('auth0_recovery_target', target)
+          }
+          await loginWithRedirect({
+            authorizationParams: { prompt: 'none' },
+            appState: { target },
+          })
+        }
+        throw e
+      }
+    }
   }
 
   async function fetchWithAuth(path: string, options: RequestInit = {}) {
