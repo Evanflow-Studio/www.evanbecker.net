@@ -74,5 +74,5 @@ What we used to call science fiction is now a $20-a-month subscription, or $200 
 
 That's what makes this period interesting. Liam plus a community-developed prompt scaffold plus a model with the field's literature in its weights plus four expert mathematicians is an arrangement that didn't exist eighteen months ago, and it produced a proof of a long-standing Erdős conjecture in late April. Take the loop apart in any direction and the proof goes away. I know which part of the loop will get the credit. I want to write down, before that calcifies, that the rest of the loop is what made it.
 
-::sandbox-link{to="https://chatgpt.com/share/69dd1c83-b164-8385-bf2e-8533e9baba9c" label="Read the full ChatGPT conversation" description="Liam's prompt and the 80 minutes of reasoning behind the #1196 proof"}
+::link-card{to="https://chatgpt.com/share/69dd1c83-b164-8385-bf2e-8533e9baba9c" label="Read the full ChatGPT conversation" description="Liam's prompt and the 80 minutes of reasoning behind the #1196 proof"}
 ::

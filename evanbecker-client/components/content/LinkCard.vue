@@ -4,7 +4,7 @@ const props = withDefaults(defineProps<{
   label?: string
   description?: string
 }>(), {
-  label: 'Open in Sandbox',
+  label: 'Open Link',
   description: '',
 })
 

@@ -129,5 +129,5 @@ I've been building it. It's called Zeroset. The same SDF math that lights pixels
 
 The ray marcher started as a banner I missed from my old site. It became, somewhere along the way, the thing that pointed me at the work I'm actually doing now. The rendering is a window into the math. The math is the part worth building on.
 
-::sandbox-link{to="/sandbox/raymarcher" label="Try the Ray Marcher" description="Interactive WebGL2 ray marcher with SDF lattices, smooth booleans, and a Sierpinski fractal scene"}
+::link-card{to="/sandbox/raymarcher" label="Try the Ray Marcher" description="Interactive WebGL2 ray marcher with SDF lattices, smooth booleans, and a Sierpinski fractal scene"}
 ::
