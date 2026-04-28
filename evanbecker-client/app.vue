@@ -2,7 +2,7 @@
 const route = useRoute()
 const config = useRuntimeConfig()
 
-const isProduction = config.public.siteUrl === 'https://www.evanbecker.net'
+const isProduction = config.public.indexable
 
 const canonicalUrl = computed(() => {
   const base = config.public.siteUrl.replace(/\/$/, '')

@@ -1,7 +1,7 @@
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig()
   const siteUrl = config.public.siteUrl || ''
-  const isProduction = siteUrl === 'https://www.evanbecker.net'
+  const isProduction = config.public.indexable
 
   setResponseHeader(event, 'content-type', 'text/plain')
 
