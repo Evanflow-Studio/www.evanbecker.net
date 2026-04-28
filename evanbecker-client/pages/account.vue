@@ -43,7 +43,7 @@ const profileLoadFailed = ref(false)
 watchEffect(async () => {
   if (!isLoading.value && isAuthenticated.value && !currentUser.value && !profileLoadFailed.value) {
     try {
-      currentUser.value = await fetchWithAuth('user')
+      currentUser.value = await fetchWithAuth('user', { recover: true })
     } catch {
       profileLoadFailed.value = true
     }
