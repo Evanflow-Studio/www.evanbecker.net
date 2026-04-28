@@ -8,7 +8,7 @@ tags:
   - philosophy
 ---
 
-On a weekend in late April, I went looking for the actual prompt that had reportedly produced a one-shot proof of an open Erdős conjecture. The story in Scientific American, and across the AI commentary internet over the prior week, was that a 23-year-old amateur named Liam Price had typed an open conjecture into ChatGPT and gotten back a proof in a single 80-minute prompt, since verified by Jared Lichtman and Terence Tao. Thomas Bloom, who curates the Erdős Problems site, posted the listing for [#1196](https://www.erdosproblems.com/1196) with a note calling it "perhaps the first Book proof from AI."
+On a weekend in late April, I went looking for the actual prompt that had reportedly produced a one-shot proof of an open Erdős conjecture. The story in [Scientific American](https://www.scientificamerican.com/article/amateur-armed-with-chatgpt-vibe-maths-a-60-year-old-problem/), and across the AI commentary internet over the prior week, was that a 23-year-old amateur named Liam Price had typed an open conjecture into ChatGPT and gotten back a proof in a single 80-minute prompt, since verified by Jared Lichtman and Terence Tao. Thomas Bloom, who curates the Erdős Problems site, posted the listing for [#1196](https://www.erdosproblems.com/1196) with a note calling it "perhaps the first Book proof from AI."
 
 If that telling is accurate, it sounds like AGI arrived in April. I went looking because something about the framing didn't sit right, and what I found is that the story is real but the framing is misleading. The gap between those two things is the thing worth understanding.
 
