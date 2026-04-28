@@ -1,10 +1,10 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Evan Becker - Software Architect & Writer',
+  title: 'Evan Becker - Software Architect, Writer, & Builder',
   description: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics. Self-hosted on a Proxmox homelab.',
-  ogTitle: 'Evan Becker - Software Architect & Writer',
+  ogTitle: 'Evan Becker - Software Architect, Writer, & Builder',
   ogDescription: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics. Self-hosted on a Proxmox homelab.',
-  twitterTitle: 'Evan Becker - Software Architect & Writer',
+  twitterTitle: 'Evan Becker - Software Architect, Writer, & Builder',
   twitterDescription: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics.',
 })
 
