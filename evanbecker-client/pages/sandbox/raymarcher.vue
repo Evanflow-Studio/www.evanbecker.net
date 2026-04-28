@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-useHead({ title: 'Ray Marcher - Sandbox - Evan Becker', meta: [{ name: 'robots', content: 'noindex' }] })
+useSeoMeta({
+  title: 'Ray Marcher - Sandbox - Evan Becker',
+  description: 'WebGL2 ray marcher with infinite lattice, Mandelbulb fractal, animated CSG, and Menger Sponge — cosine palettes and fresnel lighting.',
+  ogTitle: 'Ray Marcher - Sandbox - Evan Becker',
+  ogDescription: 'WebGL2 ray marcher with infinite lattice, Mandelbulb fractal, animated CSG, and Menger Sponge.',
+  robots: 'noindex',
+})
 
 const rayMarchRef = ref<any>(null)
 const experiments = useExperiments()

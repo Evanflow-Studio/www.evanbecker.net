@@ -155,6 +155,7 @@ const navLinks = [
   { href: '/about-me', label: 'About Me' },
   { href: '/contact', label: 'Contact' },
   { href: '/articles', label: 'Blog' },
+  { href: '/sandbox', label: 'Sandbox' },
 ]
 </script>
 

@@ -5,7 +5,14 @@ import mitutoyoLogo from '~/assets/images/logos/mitutoyorda_logo.jpg'
 import stack41Logo from '~/assets/images/logos/Stack41.png'
 import uwmLogo from '~/assets/images/logos/uwm_logo.jpg'
 
-useHead({ title: 'About Me - Evan Becker' })
+useSeoMeta({
+  title: 'About Me - Evan Becker',
+  description: 'Senior Technical Architect with a decade of experience designing software for energy, manufacturing, and chemicals — plus background, contact links, and the tech I work in.',
+  ogTitle: 'About Me - Evan Becker',
+  ogDescription: 'Senior Technical Architect with a decade of experience designing software for energy, manufacturing, and chemicals.',
+  twitterTitle: 'About Me - Evan Becker',
+  twitterDescription: 'Senior Technical Architect with a decade of experience designing software for energy, manufacturing, and chemicals.',
+})
 
 const resume = [
   {

@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-useHead({ title: 'Homelab Viewer - Sandbox - Evan Becker', meta: [{ name: 'robots', content: 'noindex' }] })
+useSeoMeta({
+  title: 'Homelab Viewer - Sandbox - Evan Becker',
+  description: 'Interactive 3D topology of the Proxmox homelab — LXC containers, connections, and live status from Uptime Kuma.',
+  ogTitle: 'Homelab Viewer - Sandbox - Evan Becker',
+  ogDescription: 'Interactive 3D topology of the Proxmox homelab — LXC containers, connections, and live status.',
+  robots: 'noindex',
+})
 
 const homelabRef = ref<any>(null)
 </script>
