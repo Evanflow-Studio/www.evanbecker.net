@@ -155,6 +155,7 @@ const navLinks = [
   { href: '/about-me', label: 'About Me' },
   { href: '/contact', label: 'Contact' },
   { href: '/articles', label: 'Blog' },
+  { href: '/sandbox', label: 'Sandbox' },
 ]
 </script>
 
@@ -238,11 +239,11 @@ const navLinks = [
               </Menu>
             </template>
 
-            <!-- Sign In button -->
+            <!-- Sign In button (desktop only — mobile users sign in via the popover menu) -->
             <button
               v-else-if="auth0Available && !isAuthenticated"
               @click="loginWithRedirect?.()"
-              class="rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC]"
+              class="hidden whitespace-nowrap rounded-lg bg-[#0C65E5] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#2D95FC] md:block"
             >
               Sign In
             </button>

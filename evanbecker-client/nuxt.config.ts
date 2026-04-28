@@ -1,3 +1,5 @@
+const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
 export default defineNuxtConfig({
   compatibilityDate: '2024-12-01',
   devtools: { enabled: false },
@@ -7,7 +9,24 @@ export default defineNuxtConfig({
     '@nuxt/content',
     '@nuxtjs/tailwindcss',
     '@nuxtjs/color-mode',
+    '@nuxtjs/sitemap',
   ],
+
+  site: {
+    url: siteUrl,
+    name: 'Evan Becker',
+  },
+
+  sitemap: {
+    sources: ['/api/__sitemap__/urls'],
+    exclude: [
+      '/account',
+      '/thank-you-message',
+      '/resume',
+      '/sandbox',
+      '/sandbox/**',
+    ],
+  },
 
   components: [
     { path: '~/components', pathPrefix: false },
@@ -33,6 +52,7 @@ export default defineNuxtConfig({
 
   tailwindcss: {
     configPath: 'tailwind.config.ts',
+    cssPath: '~/assets/css/main.css',
   },
 
   app: {
@@ -61,7 +81,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+      siteUrl,
+      indexable: process.env.NUXT_PUBLIC_INDEXABLE === 'true',
       apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:5002/',
       auth0Domain: process.env.NUXT_PUBLIC_AUTH0_DOMAIN || '',
       auth0ClientId: process.env.NUXT_PUBLIC_AUTH0_CLIENT_ID || '',

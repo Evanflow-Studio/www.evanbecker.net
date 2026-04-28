@@ -1,5 +1,11 @@
 <script setup lang="ts">
-useHead({ title: 'Sandbox - Evan Becker', meta: [{ name: 'robots', content: 'noindex' }] })
+useSeoMeta({
+  title: 'Sandbox - Evan Becker',
+  description: 'Interactive WebGL and 3D demos — ray marching, fractals, homelab topology, and other experiments.',
+  ogTitle: 'Sandbox - Evan Becker',
+  ogDescription: 'Interactive WebGL and 3D demos — ray marching, fractals, homelab topology, and other experiments.',
+  robots: 'noindex',
+})
 
 const demos = [
   {

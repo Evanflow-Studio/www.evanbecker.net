@@ -3,9 +3,12 @@ import { ref } from 'vue'
 
 const mode = ref<'resume' | 'cv'>('resume')
 
-useHead({
-  title: computed(() => mode.value === 'cv' ? 'CV - Evan Becker' : 'Resume - Evan Becker'),
-  meta: [{ name: 'robots', content: 'noindex' }],
+useSeoMeta({
+  title: () => mode.value === 'cv' ? 'CV - Evan Becker' : 'Resume - Evan Becker',
+  description: 'Professional resume and CV — software architecture roles, projects, and core stack.',
+  ogTitle: () => mode.value === 'cv' ? 'CV - Evan Becker' : 'Resume - Evan Becker',
+  ogDescription: 'Professional resume and CV — software architecture roles, projects, and core stack.',
+  robots: 'noindex',
 })
 
 function printResume() {
