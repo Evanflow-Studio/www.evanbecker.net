@@ -92,8 +92,16 @@ useArticleSchema({
       />
     </div>
 
+    <!-- Related articles -->
+    <div class="mt-16 border-t border-slate-200 pt-12 dark:border-slate-700">
+      <RelatedArticles
+        :current-path="route.path"
+        :current-tags="article.tags"
+      />
+    </div>
+
     <!-- Comments -->
-    <div class="mt-16 border-t border-slate-200 dark:border-slate-700">
+    <div class="mt-16 border-t border-slate-200 pt-12 dark:border-slate-700">
       <ClientOnly>
         <CommentSection />
       </ClientOnly>
