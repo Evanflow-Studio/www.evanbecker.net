@@ -28,6 +28,8 @@ useHead({
     ...(isProduction ? [] : [{ name: 'robots', content: 'noindex, nofollow' }]),
   ],
 })
+
+useWebSiteSchema()
 </script>
 
 <template>

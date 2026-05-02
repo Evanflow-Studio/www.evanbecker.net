@@ -18,6 +18,7 @@ const articleDescription = article.value.description || ''
 const articleImage = article.value.image
   ? `${config.public.siteUrl.replace(/\/$/, '')}${article.value.image}`
   : `${config.public.siteUrl.replace(/\/$/, '')}/og-image.png`
+const articleModified = article.value.dateModified || article.value.date
 
 useSeoMeta({
   title: articleTitle,
@@ -31,8 +32,19 @@ useSeoMeta({
   twitterDescription: articleDescription,
   twitterImage: articleImage,
   articlePublishedTime: article.value.date,
+  articleModifiedTime: articleModified,
   articleAuthor: ['Evan Becker'],
   articleTag: article.value.tags,
+})
+
+useArticleSchema({
+  title: article.value.title,
+  description: article.value.description,
+  date: article.value.date,
+  dateModified: article.value.dateModified,
+  image: article.value.image,
+  tags: article.value.tags,
+  path: route.path,
 })
 </script>
 
