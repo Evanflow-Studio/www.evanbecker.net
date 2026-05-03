@@ -2,6 +2,7 @@
 title: 'The Wall'
 description: 'AI engineering keeps running into a boundary that science itself was built to ignore. Where the wall came from, who has hit it before, and what working honestly on the wrong side of it looks like.'
 date: '2026-05-01'
+featured: true
 tags:
   - software
   - ai
