@@ -33,6 +33,7 @@ jobs:
             --build-arg NUXT_PUBLIC_AUTH0_REDIRECT_URI=https://www.evanbecker.net \
             --build-arg NUXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lfb5pksAAAAAHnzNOV1DxBqF_EYU9UPVimOR6WZ \
             --build-arg NUXT_PUBLIC_APP_VERSION=${{ steps.version.outputs.version }} \
+            --build-arg NUXT_PUBLIC_INDEXABLE=true \
             -t ${{ env.REGISTRY }}/evanbecker-client:latest \
             -t ${{ env.REGISTRY }}/evanbecker-client:${{ github.sha }} \
             evanbecker-client
