@@ -19,6 +19,8 @@ const articleImage = article.value.image
   ? `${config.public.siteUrl.replace(/\/$/, '')}${article.value.image}`
   : `${config.public.siteUrl.replace(/\/$/, '')}/og-image.png`
 const articleModified = article.value.dateModified || article.value.date
+const wordCount = articleWordCount(article.value)
+const readingMinutes = articleReadingTime(wordCount)
 
 useSeoMeta({
   title: articleTitle,
@@ -45,6 +47,7 @@ useArticleSchema({
   image: article.value.image,
   tags: article.value.tags,
   path: route.path,
+  wordCount,
 })
 </script>
 
@@ -63,13 +66,15 @@ useArticleSchema({
 
     <!-- Header -->
     <header>
-      <time
-        v-if="article.date"
-        :datetime="article.date"
-        class="text-sm font-medium text-slate-400 dark:text-slate-500"
-      >
-        {{ formatArticleDate(article.date) }}
-      </time>
+      <div class="flex flex-wrap items-center gap-x-2 text-sm font-medium text-slate-400 dark:text-slate-500">
+        <time v-if="article.date" :datetime="article.date">
+          {{ formatArticleDate(article.date) }}
+        </time>
+        <span aria-hidden="true">·</span>
+        <span>by Evan Becker</span>
+        <span aria-hidden="true">·</span>
+        <span>{{ readingMinutes }} min read</span>
+      </div>
       <h1 class="mt-2 font-serif text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl dark:text-slate-50">
         {{ article.title }}
       </h1>

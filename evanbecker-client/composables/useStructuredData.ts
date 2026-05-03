@@ -6,6 +6,7 @@ type ArticleSchemaData = {
   image?: string
   tags?: string[]
   path: string
+  wordCount?: number
 }
 
 function siteRoot(): string {
@@ -82,6 +83,10 @@ export function useArticleSchema(article: ArticleSchemaData) {
   if (article.tags?.length) {
     articleGraph.keywords = article.tags.join(', ')
     articleGraph.articleSection = article.tags[0]
+  }
+
+  if (article.wordCount && article.wordCount > 0) {
+    articleGraph.wordCount = article.wordCount
   }
 
   const breadcrumbs = {

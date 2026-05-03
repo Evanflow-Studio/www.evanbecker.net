@@ -47,13 +47,13 @@ const related = computed(() => {
         class="group rounded-2xl border border-slate-200 p-5 transition hover:border-[#2D95FC] dark:border-slate-700 dark:hover:border-[#2D95FC]"
       >
         <NuxtLink :to="article._path" class="block">
-          <time
-            v-if="article.date"
-            :datetime="article.date"
-            class="text-xs font-medium text-slate-400 dark:text-slate-500"
-          >
-            {{ formatArticleDate(article.date) }}
-          </time>
+          <div class="flex flex-wrap items-center gap-x-2 text-xs font-medium text-slate-400 dark:text-slate-500">
+            <time v-if="article.date" :datetime="article.date">
+              {{ formatArticleDate(article.date) }}
+            </time>
+            <span aria-hidden="true">·</span>
+            <span>{{ articleReadingTime(articleWordCount(article)) }} min read</span>
+          </div>
           <h3 class="mt-2 font-serif text-lg font-semibold text-slate-800 transition group-hover:text-[#0C65E5] dark:text-slate-100 dark:group-hover:text-[#2D95FC]">
             {{ article.title }}
           </h3>
