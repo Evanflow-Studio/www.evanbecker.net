@@ -1,6 +1,6 @@
-// Average adult reading speed for non-technical prose. The Wall comes out
-// to roughly 23 minutes at 225 wpm, which matches a careful read.
-const WORDS_PER_MINUTE = 225
+// 150 wpm matches a careful read of dense longform — closer to actual
+// comprehension speed than the casual-prose default of 225.
+const WORDS_PER_MINUTE = 150
 
 function flattenText(node: unknown): string {
   if (!node) return ''
