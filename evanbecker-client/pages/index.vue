@@ -1,11 +1,11 @@
 <script setup lang="ts">
 useSeoMeta({
   title: 'Evan Becker - Software Architect, Writer, & Builder',
-  description: 'Senior Technical Architect at nvisia. Building Zeroset, a browser-native SDF modeling tool, and writing about AI agents, consciousness, and where the math runs out.',
+  description: 'Senior Technical Architect at nvisia. Building Zeroset, a math-first SDF modeling tool you can drive with AI, and writing about AI agents, consciousness, and where the math runs out.',
   ogTitle: 'Evan Becker - Software Architect, Writer, & Builder',
-  ogDescription: 'Senior Technical Architect at nvisia. Building Zeroset, a browser-native SDF modeling tool, and writing about AI agents, consciousness, and where the math runs out.',
+  ogDescription: 'Senior Technical Architect at nvisia. Building Zeroset, a math-first SDF modeling tool you can drive with AI, and writing about AI agents, consciousness, and where the math runs out.',
   twitterTitle: 'Evan Becker - Software Architect, Writer, & Builder',
-  twitterDescription: 'Senior Technical Architect at nvisia. Building Zeroset, a browser-native SDF modeling tool, and writing about AI agents, consciousness, and where the math runs out.',
+  twitterDescription: 'Senior Technical Architect at nvisia. Building Zeroset, a math-first SDF modeling tool you can drive with AI, and writing about AI agents, consciousness, and where the math runs out.',
 })
 
 const { data: articles } = await useAsyncData('home-articles', () =>
@@ -47,8 +47,8 @@ function readingFor(article: any): number {
             I built coordinate-measuring software at
             <a href="https://www.mitutoyo.com/" class="link-underline">Mitutoyo</a>
             for aerospace-grade tolerances. Outside of client work I'm building Zeroset,
-            a browser-native SDF modeling tool, and writing about AI agents,
-            consciousness, and where the math runs out. This site is self-hosted on a
+            a math-first SDF modeling tool you can drive with AI, and writing about
+            AI agents, consciousness, and where the math runs out. This site is self-hosted on a
             <a href="https://www.proxmox.com/" class="link-underline">Proxmox</a> homelab.
           </p>
 
