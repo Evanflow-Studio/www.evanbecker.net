@@ -1,11 +1,11 @@
 <script setup lang="ts">
 useSeoMeta({
   title: 'Evan Becker - Software Architect, Writer, & Builder',
-  description: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics. Self-hosted on a Proxmox homelab.',
+  description: 'Senior Technical Architect at nvisia. Building Zeroset, a math-first SDF modeling tool you can drive with AI, and writing about AI agents, consciousness, and where the math runs out.',
   ogTitle: 'Evan Becker - Software Architect, Writer, & Builder',
-  ogDescription: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics. Self-hosted on a Proxmox homelab.',
+  ogDescription: 'Senior Technical Architect at nvisia. Building Zeroset, a math-first SDF modeling tool you can drive with AI, and writing about AI agents, consciousness, and where the math runs out.',
   twitterTitle: 'Evan Becker - Software Architect, Writer, & Builder',
-  twitterDescription: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics.',
+  twitterDescription: 'Senior Technical Architect at nvisia. Building Zeroset, a math-first SDF modeling tool you can drive with AI, and writing about AI agents, consciousness, and where the math runs out.',
 })
 
 const { data: articles } = await useAsyncData('home-articles', () =>
@@ -41,10 +41,14 @@ function readingFor(article: any): number {
             Software Architect, Writer, <span class="text-[#0C65E5] dark:text-[#2D95FC]">&amp;</span> Builder
           </p>
           <p class="mt-6 text-lg leading-relaxed text-slate-600 dark:text-slate-400">
-            I design scalable systems and solve complex problems for enterprises across
-            energy, manufacturing, and chemicals. I write about
-            software architecture, game design, physics, and whatever else I'm exploring.
-            This site is self-hosted on a
+            I'm a Senior Technical Architect at
+            <a href="https://www.nvisia.com/" class="link-underline">nvisia</a>,
+            consulting on software architecture across industries. Before consulting,
+            I built coordinate-measuring software at
+            <a href="https://www.mitutoyo.com/" class="link-underline">Mitutoyo</a>
+            for aerospace-grade tolerances. Outside of client work I'm building Zeroset,
+            a math-first SDF modeling tool you can drive with AI, and writing about
+            AI agents, consciousness, and where the math runs out. This site is self-hosted on a
             <a href="https://www.proxmox.com/" class="link-underline">Proxmox</a> homelab.
           </p>
 
