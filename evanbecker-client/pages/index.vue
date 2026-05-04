@@ -1,11 +1,11 @@
 <script setup lang="ts">
 useSeoMeta({
   title: 'Evan Becker - Software Architect, Writer, & Builder',
-  description: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics. Self-hosted on a Proxmox homelab.',
+  description: 'Senior Technical Architect at nvisia. Building Zeroset, a browser-native SDF modeling tool, and writing about AI agents, consciousness, and where the math runs out.',
   ogTitle: 'Evan Becker - Software Architect, Writer, & Builder',
-  ogDescription: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics. Self-hosted on a Proxmox homelab.',
+  ogDescription: 'Senior Technical Architect at nvisia. Building Zeroset, a browser-native SDF modeling tool, and writing about AI agents, consciousness, and where the math runs out.',
   twitterTitle: 'Evan Becker - Software Architect, Writer, & Builder',
-  twitterDescription: 'I design scalable systems for energy, manufacturing, and chemicals — and write about software architecture, game design, and physics.',
+  twitterDescription: 'Senior Technical Architect at nvisia. Building Zeroset, a browser-native SDF modeling tool, and writing about AI agents, consciousness, and where the math runs out.',
 })
 
 const { data: articles } = await useAsyncData('home-articles', () =>
