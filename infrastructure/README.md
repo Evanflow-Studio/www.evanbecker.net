@@ -167,3 +167,16 @@ LXC 107: No DNS after setup. Inbound 8080 only from IP set.
 ```
 
 Firewall IP sets are managed at Datacenter level in Proxmox UI.
+
+### Cloudflare Access (SSO Gate)
+
+Two private admin UIs sit behind Cloudflare Access in addition to their own auth:
+
+| Hostname | Service | IdP | Policy |
+|---|---|---|---|
+| `secrets.evanbecker.net` | Infisical UI | One-time PIN | Allow → Emails → me@evanbecker.net |
+| `monitoring.evanbecker.net` | Uptime Kuma admin | One-time PIN | Allow → Emails → me@evanbecker.net |
+
+Cloudflare's edge enforces the policy before requests reach the tunnel. Internal service-to-service traffic uses LAN IPs (e.g., the API hits Infisical at `http://192.168.0.107:8080`), so Access doesn't affect any code path. The Proxmox web UI and the Postgres LXCs are intentionally not tunneled at all.
+
+For setup steps see [website-lxc-setup.md → Cloudflare Access](website-lxc-setup.md#cloudflare-access-sso-gate-for-private-services).
