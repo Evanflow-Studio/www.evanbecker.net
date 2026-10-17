@@ -8,6 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "lint": "eslint .",
+    "test:unit": "vitest run tests/unit",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

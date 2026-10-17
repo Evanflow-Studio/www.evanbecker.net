@@ -4,9 +4,13 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# PRs from forks run untrusted code; keep them off the self-hosted runner.
+permissions:
+  contents: read
+
 jobs:
   build-and-test-api:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       working-directory: ./evanbecker-api
     steps:
@@ -26,7 +30,7 @@ jobs:
       working-directory: ${{env.working-directory}}
 
   build-and-test-client:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       working-directory: ./evanbecker-client
     steps:
@@ -37,6 +41,9 @@ jobs:
         node-version: 20
     - name: Install dependencies
       run: npm install
+      working-directory: ${{env.working-directory}}
+    - name: Unit tests
+      run: npm run test:unit
       working-directory: ${{env.working-directory}}
     - name: Build
       run: npm run build
