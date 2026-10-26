@@ -122,7 +122,8 @@ services:
 
   # ── Infrastructure ──
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    # Pinned: must be >= 2026.10.2 (eMudhra CA compromise, Oct 2026). Bump deliberately.
+    image: cloudflare/cloudflared:2026.10.4
     container_name: cloudflared
     restart: always
     command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
