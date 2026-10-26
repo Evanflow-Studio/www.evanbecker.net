@@ -48,3 +48,18 @@ jobs:
     - name: Build
       run: npm run build
       working-directory: ${{env.working-directory}}
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Scan this PR's commits for secrets
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      # The official image, pinned; run as the checkout's owner so git trusts the repo.
+      run: |
+        docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1           git /repo --redact --verbose --log-opts="$BASE_SHA..$HEAD_SHA"

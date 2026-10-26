@@ -13,9 +13,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 // In Development, secrets come from .NET User Secrets (dotnet user-secrets).
-// In Production/Test, secrets come from Infisical via SecretsConfigurationProvider.
+// In Production/Test, secrets come from Infisical via SecretsConfigurationProvider,
+// or from Key Vault as Section__Key environment variables (scripts/run-with-keyvault.sh).
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddSecrets();
+
+// EF's design-time tools build this host too; they don't need runtime secrets.
+if (!EF.IsDesignTime)
+    RequiredConfiguration.Validate(builder.Configuration);
 
 var environmentName = builder.Environment.EnvironmentName;
 Console.WriteLine($"Starting API with Environment: {environmentName}");

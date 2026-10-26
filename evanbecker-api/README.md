@@ -108,8 +108,6 @@ dotnet user-secrets set "ConnectionStrings:Database" "Host=localhost;Port=5432;U
 dotnet user-secrets set "Auth0:Domain" "dev-m3uiopcp.us.auth0.com"
 dotnet user-secrets set "Auth0:Audience" "evanbecker.api"
 dotnet user-secrets set "Auth0:ClientId" "YOUR_CLIENT_ID"
-dotnet user-secrets set "Auth0:ClientSecret" "YOUR_CLIENT_SECRET"
-dotnet user-secrets set "Auth0:Url" "https://dev-m3uiopcp.us.auth0.com"
 
 # Optional — YouTube (ray marcher music search)
 dotnet user-secrets set "YouTube:ApiKey" "YOUR_YOUTUBE_DATA_API_KEY"
@@ -126,23 +124,34 @@ User Secrets are stored in `%APPDATA%\Microsoft\UserSecrets\` (Windows) or `~/.m
 
 ### Secrets Reference
 
-All secrets managed via Infisical in production. For local dev, use `dotnet user-secrets`.
+Secrets come from Infisical in production today and move to Azure Key Vault (`ef-ebn-{prd,tst}-eus2-kv`) at the cutover. For local dev, use `dotnet user-secrets`, or run against the test vault with `scripts/run-with-keyvault.sh ef-ebn-tst-eus2-kv` (see below).
 
-| Infisical Key | .NET Config Path | Required | What happens without it |
-|---------------|-----------------|----------|------------------------|
-| `DB_CONNECTION_STRING` | `ConnectionStrings:Database` | **Yes** | API won't start (no database) |
-| `AUTH0_DOMAIN` | `Auth0:Domain` | **Yes** | Auth0 login/JWT validation fails |
-| `AUTH0_AUDIENCE` | `Auth0:Audience` | **Yes** | JWT validation fails |
-| `AUTH0_CLIENT_ID` | `Auth0:ClientId` | **Yes** | Swagger UI OAuth flow breaks |
-| `AUTH0_CLIENT_SECRET` | `Auth0:ClientSecret` | **Yes** | User profile sync fails |
-| `AUTH0_URL` | `Auth0:Url` | **Yes** | Swagger UI OAuth redirect fails |
-| `SMTP2GO_API_KEY` | `Email:ApiKey` | No | Contact form emails won't send |
-| `EMAIL_FROM_ADDRESS` | `Email:FromAddress` | No | Defaults to `noreply@evanbecker.net` |
-| `EMAIL_TO_ADDRESS` | `Email:ToAddress` | No | Contact form emails won't send |
-| `RECAPTCHA_SECRET_KEY` | `Recaptcha:SecretKey` | No | Contact form submits without verification |
-| `YOUTUBE_API_KEY` | `YouTube:ApiKey` | No | YouTube search disabled (file upload still works) |
+At startup the API checks these (`Configuration/RequiredConfiguration.cs`). A missing **required** setting stops it with the setting's name, never its value. Missing optional ones are listed and their features stay off. An empty value or a `<...>` placeholder counts as missing.
 
-**Minimum to run locally:** `DB_CONNECTION_STRING` + Auth0 secrets. Everything else degrades gracefully.
+| Infisical key (today) | Key Vault secret | .NET config path | Required | What happens without it |
+|---|---|---|---|---|
+| `DB_CONNECTION_STRING` | `ConnectionStrings--Database` | `ConnectionStrings:Database` | **Yes** | API won't start |
+| `AUTH0_DOMAIN` | (config, in `appsettings.json`) | `Auth0:Domain` | **Yes** | Auth0 login/JWT validation fails |
+| `AUTH0_AUDIENCE` | (config) | `Auth0:Audience` | **Yes** | JWT validation fails |
+| `AUTH0_CLIENT_ID` | (config, public) | `Auth0:ClientId` | **Yes** | Swagger UI OAuth (PKCE) breaks |
+| `SMTP2GO_API_KEY` | `Email--ApiKey` | `Email:ApiKey` | No | Contact form emails aren't sent |
+| `EMAIL_FROM_ADDRESS` | (config) | `Email:FromAddress` | No | Defaults to `noreply@evanbecker.net` |
+| `EMAIL_TO_ADDRESS` | `Email--ToAddress` (or config) | `Email:ToAddress` | No | Contact form emails aren't sent |
+| `RECAPTCHA_SECRET_KEY` | `Recaptcha--SecretKey` | `Recaptcha:SecretKey` | No | Contact form submissions are rejected (fails closed) |
+| `YOUTUBE_API_KEY` | `YouTube--ApiKey` | `YouTube:ApiKey` | No | YouTube search disabled (file upload still works) |
+
+`AUTH0_CLIENT_SECRET` and `AUTH0_URL` are no longer read: Swagger uses PKCE with the client ID only.
+
+**Minimum to run locally:** the database connection string. Auth0's public settings are in `appsettings.json`.
+
+### Running against Key Vault
+
+```bash
+az login
+scripts/run-with-keyvault.sh ef-ebn-tst-eus2-kv          # runs the API with the vault's secrets
+scripts/run-with-keyvault.sh ef-ebn-tst-eus2-kv -- env | cut -d= -f1   # or any command
+```
+The script lists the vault, turns each `Section--Key` into a `Section__Key` environment variable for the child process only, and writes nothing to disk. It needs Key Vault Secrets User (or Officer) on the vault. A PowerShell version is `scripts/run-with-keyvault.ps1`.
 
 ### Required Environment Variables (Production/Test)
 
