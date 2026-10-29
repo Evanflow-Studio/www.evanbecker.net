@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
 
-# GitHub-hosted (free for this public repo) and GHCR. The images hold no secrets.
+# Our own runner only (Evan, 2026-10-29), pushing to GHCR. The images hold no secrets.
 # LXC 109 pulls from GHCR once its .env sets REGISTRY=ghcr.io/evanflow-studio
 # (evanflow-infra docs/briefs/ebn-keyvault-migration.md, Part 1 step 2).
 permissions:
@@ -16,7 +16,7 @@ env:
 
 jobs:
   build_and_push:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, homelab]
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -58,3 +58,11 @@ jobs:
           docker push ${{ env.REGISTRY }}/evanbecker-api:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/evanbecker-client:latest
           docker push ${{ env.REGISTRY }}/evanbecker-client:${{ github.sha }}
+
+      # Self-hosted runners keep state between jobs: drop the registry login and
+      # old layers so neither the token nor the disk outlives the job.
+      - name: Log out and clean up
+        if: always()
+        run: |
+          docker logout ghcr.io || true
+          docker image prune -f

@@ -4,13 +4,17 @@ on:
   pull_request:
     branches: [ "main" ]
 
-# PRs from forks run untrusted code; keep them off the self-hosted runner.
+# Our own runner only (Evan, 2026-10-29). This repo is public, so every job
+# skips PRs from forks: untrusted code never reaches a machine in the house.
+# Also set Settings → Actions → "Require approval for all outside collaborators".
 permissions:
   contents: read
 
 jobs:
   build-and-test-api:
-    runs-on: ubuntu-latest
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
     env:
       working-directory: ./evanbecker-api
     steps:
@@ -30,7 +34,9 @@ jobs:
       working-directory: ${{env.working-directory}}
 
   build-and-test-client:
-    runs-on: ubuntu-latest
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
     env:
       working-directory: ./evanbecker-client
     steps:
@@ -50,7 +56,9 @@ jobs:
       working-directory: ${{env.working-directory}}
 
   gitleaks:
-    runs-on: ubuntu-latest
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
     steps:
     - uses: actions/checkout@v4
       with:
