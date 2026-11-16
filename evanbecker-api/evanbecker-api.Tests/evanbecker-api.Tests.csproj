@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>evanbecker_api.Tests</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <LangVersion>12</LangVersion>
+  </PropertyGroup>
+
+  <!-- xunit and its runner: Apache-2.0. Microsoft.NET.Test.Sdk: MIT. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\evanbecker-api\evanbecker-api.csproj" />
+  </ItemGroup>
+
+  <!-- The API's real settings files, so the tests check what ships. -->
+  <ItemGroup>
+    <None Include="..\evanbecker-api\appsettings*.json" LinkBase="api-settings" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

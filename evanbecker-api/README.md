@@ -131,16 +131,16 @@ At startup the API checks these (`Configuration/RequiredConfiguration.cs`). A mi
 | Infisical key (today) | Key Vault secret | .NET config path | Required | What happens without it |
 |---|---|---|---|---|
 | `DB_CONNECTION_STRING` | `ConnectionStrings--Database` | `ConnectionStrings:Database` | **Yes** | API won't start |
-| `AUTH0_DOMAIN` | (config, in `appsettings.json`) | `Auth0:Domain` | **Yes** | Auth0 login/JWT validation fails |
-| `AUTH0_AUDIENCE` | (config) | `Auth0:Audience` | **Yes** | JWT validation fails |
-| `AUTH0_CLIENT_ID` | (config, public) | `Auth0:ClientId` | **Yes** | Swagger UI OAuth (PKCE) breaks |
+| (not read) | (config, in `appsettings.{Environment}.json`) | `Auth0:Domain` | **Yes** | Auth0 login/JWT validation fails |
+| (not read) | (config) | `Auth0:Audience` | **Yes** | JWT validation fails |
+| (not read) | (config, public) | `Auth0:ClientId` | **Yes** | Swagger UI OAuth (PKCE) breaks |
 | `SMTP2GO_API_KEY` | `Email--ApiKey` | `Email:ApiKey` | No | Contact form emails aren't sent |
 | `EMAIL_FROM_ADDRESS` | (config) | `Email:FromAddress` | No | Defaults to `noreply@evanbecker.net` |
 | `EMAIL_TO_ADDRESS` | `Email--ToAddress` (or config) | `Email:ToAddress` | No | Contact form emails aren't sent |
 | `RECAPTCHA_SECRET_KEY` | `Recaptcha--SecretKey` | `Recaptcha:SecretKey` | No | Contact form submissions are rejected (fails closed) |
 | `YOUTUBE_API_KEY` | `YouTube--ApiKey` | `YouTube:ApiKey` | No | YouTube search disabled (file upload still works) |
 
-`AUTH0_CLIENT_SECRET` and `AUTH0_URL` are no longer read: Swagger uses PKCE with the client ID only.
+Auth0's domain, audience and client ID are public config, so they live in the appsettings files and `InfisicalSecretsMapper` no longer maps `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` or `AUTH0_CLIENT_ID`: a vault value can't override them. Don't add `Auth0--*` secrets to Key Vault. `AUTH0_CLIENT_SECRET` and `AUTH0_URL` were never read (Swagger uses PKCE with the client ID only) and are no longer mapped either. `evanbecker-api.Tests` checks each environment's resolved Auth0 values.
 
 **Minimum to run locally:** the database connection string. Auth0's public settings are in `appsettings.json`.
 
@@ -168,10 +168,12 @@ The script lists the vault, turns each `Section--Key` into a `Section__Key` envi
 
 | File | Purpose |
 |------|---------|
-| `appsettings.json` | Base config (Auth0 defaults, logging, GitHub org) |
+| `appsettings.json` | Base config: the dev Auth0 tenant (also used by test), logging, email sender |
 | `appsettings.Development.json` | Local dev (localhost DB connection) |
-| `appsettings.Production.json` | Production overrides (minimal — Infisical handles secrets) |
-| `appsettings.Test.json` | Test environment overrides |
+| `appsettings.Production.json` | The prod Auth0 tenant, audience and Swagger client ID |
+| `appsettings.Test.json` | Test's Swagger client ID |
+
+No settings file holds a secret or a `<...>` placeholder; `evanbecker-api.Tests` fails if one comes back. Run the tests with `dotnet test` from `evanbecker-api/`.
 
 ## Database
 

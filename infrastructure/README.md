@@ -108,11 +108,8 @@ The .NET API connects to Infisical at startup via a custom `IConfigurationProvid
 | Infisical Key | .NET Config Path | Purpose |
 |---------------|-----------------|---------|
 | `DB_CONNECTION_STRING` | `ConnectionStrings:Database` | PostgreSQL connection string |
-| `AUTH0_DOMAIN` | `Auth0:Domain` | Auth0 tenant domain |
-| `AUTH0_AUDIENCE` | `Auth0:Audience` | Auth0 API identifier |
-| `AUTH0_CLIENT_ID` | `Auth0:ClientId` | Auth0 client ID |
-| `AUTH0_CLIENT_SECRET` | `Auth0:ClientSecret` | Auth0 client secret |
-| `AUTH0_URL` | `Auth0:Url` | Auth0 base URL |
+
+Auth0's domain, audience and client ID are public config in `appsettings.{Environment}.json`, and the mapper no longer reads them from Infisical. `AUTH0_CLIENT_SECRET` and `AUTH0_URL` were never used and are no longer mapped. The full list is in `evanbecker-api/README.md`.
 
 ### Auth0 Tenants
 
