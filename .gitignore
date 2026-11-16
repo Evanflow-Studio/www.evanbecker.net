@@ -562,9 +562,10 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# AI tools
+# AI tools. The root CLAUDE.md is tracked (the Evanflow org rules load it);
+# private local notes go in CLAUDE.local.md.
 .claude/
-CLAUDE.md
+CLAUDE.local.md
 .cursorrules
 .github/copilot*
 
