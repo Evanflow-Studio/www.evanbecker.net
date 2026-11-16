@@ -21,6 +21,9 @@ this file adds only what's true for this repo. State and open work: `STATUS.md`.
    `<...>` placeholders in any settings file.
 6. **Until the cutover** (evanflow-infra A3): Infisical must stay up, and a new secret goes into both Infisical and
    `ef-ebn-{tst,prd}-eus2-kv`. Portfolio content that mentions Infisical stays as it is; that's Evan's call.
+7. **Migrations are expand/contract.** The API migrates at startup by default (the homelab); the droplet runs
+   `--migrate-only` first and starts the API with `Database__MigrateOnStartup=false`. Every API call in the client
+   goes through `utils/apiBase.ts`, so it carries credentials through Cloudflare Access on test.
 
 ## Checks (run before calling anything done)
 
@@ -29,6 +32,7 @@ this file adds only what's true for this repo. State and open work: `STATUS.md`.
 | API | `dotnet test` in `evanbecker-api/` |
 | Client | `npm run test:unit` and `npm run build` in `evanbecker-client/` |
 | One image, both environments | `docker build -t ebn-client evanbecker-client`, then `scripts/smoke-client-image.sh ebn-client` |
+| Migrations | `docker build -t ebn-api -f evanbecker-api/Dockerfile .`, then `scripts/smoke-api-migrations.sh ebn-api` |
 | Secrets | the PR's gitleaks job (`.gitleaks.toml` allows three exact public values, nothing else) |
 
 ## Map
@@ -37,7 +41,7 @@ this file adds only what's true for this repo. State and open work: `STATUS.md`.
 evanbecker-api/            .NET API (evanbecker-api), EF domain (evanbecker-domain), tests (evanbecker-api.Tests)
 evanbecker-client/         Nuxt 3 client; env/ holds each environment's public runtime config
   content/articles/        Evan's essays: portfolio content, written with the blog-voice skill
-scripts/                   run-with-keyvault.{sh,ps1}, smoke-client-image.sh
+scripts/                   run-with-keyvault.{sh,ps1}, smoke-client-image.sh, smoke-api-migrations.sh
 infrastructure/            the homelab docs and scripts; they leave this repo after the cutover
 .github/workflows/         PR checks, test build (develop), prod promotion (main)
 docker-compose.production.yaml   the homelab's compose (the droplet's lives in evanflow-infra)
