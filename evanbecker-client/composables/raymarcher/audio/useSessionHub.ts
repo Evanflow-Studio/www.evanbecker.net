@@ -66,8 +66,7 @@ const isHost = computed(() => !!myUserId.value && myUserId.value === hostUserId.
 const MAX_CHAT_MESSAGES = 200
 
 export function useSessionHub() {
-  const config = useRuntimeConfig()
-  const baseUrl = (config.public.apiUrl as string)?.replace(/\/$/, '') || ''
+  const baseUrl = useApiBase()
 
   let getTokenFn: (() => Promise<string>) | null = null
   if (import.meta.client) {
@@ -82,6 +81,8 @@ export function useSessionHub() {
     connection = new HubConnectionBuilder()
       .withUrl(`${baseUrl}/hubs/session`, {
         accessTokenFactory: () => getTokenFn!(),
+        // Credentials: Cloudflare Access on test needs its cookie (see utils/apiBase.ts).
+        withCredentials: true,
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
       .configureLogging(LogLevel.Warning)

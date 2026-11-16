@@ -104,6 +104,8 @@ docker run -p 3000:3000 --env-file env/test.env evanbecker-client   # serves as 
 docker run -p 3000:3000 --env-file env/prod.env evanbecker-client   # serves as www.evanbecker.net
 ```
 
+Every API call goes through `useApiBase()` and `apiRequestDefaults` (`utils/apiBase.ts`), which send `credentials: 'include'`: on test the API sits behind Cloudflare Access, which refuses a cross-origin call without its cookie. SignalR hubs connect with `withCredentials: true`. A unit test fails if a call site skips either.
+
 Without the env vars the image serves local-dev defaults and is **not** indexable, so a misconfigured deploy never gets indexed. `scripts/smoke-client-image.sh <image>` runs an image with each env file and checks that every page, `robots.txt`, `sitemap.xml` and `feed.xml` uses that environment's own site URL; the PR checks run it.
 
 ## Environment Variables
@@ -114,7 +116,8 @@ All public config uses `NUXT_PUBLIC_*` prefix, accessed via `useRuntimeConfig().
 |---|---|
 | `NUXT_PUBLIC_SITE_URL` | Base URL of the site: canonical links, Open Graph, `robots.txt`, `sitemap.xml`, `feed.xml` |
 | `NUXT_PUBLIC_INDEXABLE` | `true` only in prod. Anything else serves `noindex` and a `Disallow: /` robots.txt |
-| `NUXT_PUBLIC_API_URL` | API base URL |
+| `NUXT_PUBLIC_API_URL` | API base URL, as the browser reaches it |
+| `NUXT_API_BASE_SERVER` | Server-only, optional: the API's address on the host's own network (`http://ebn-tst-api`), for calls made while rendering on the server, so they don't go out through Cloudflare Access. Never sent to the browser |
 | `NUXT_PUBLIC_AUTH0_DOMAIN` | Auth0 tenant domain |
 | `NUXT_PUBLIC_AUTH0_CLIENT_ID` | Auth0 application ID |
 | `NUXT_PUBLIC_AUTH0_AUDIENCE` | Auth0 API audience |

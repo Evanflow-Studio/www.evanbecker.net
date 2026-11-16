@@ -87,6 +87,9 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // Server-only (NUXT_API_BASE_SERVER): the API's address on the host's own network, for
+    // calls made while rendering on the server. Empty means use the public API URL.
+    apiBaseServer: '',
     public: {
       siteUrl,
       indexable: false,

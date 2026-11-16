@@ -8,7 +8,7 @@ export interface YouTubeSearchResult {
 }
 
 export function useYouTubeSearch() {
-  const config = useRuntimeConfig()
+  const apiBase = useApiBase()
   const results = ref<YouTubeSearchResult[]>([])
   const isSearching = ref(false)
   const searchError = ref('')
@@ -25,10 +25,9 @@ export function useYouTubeSearch() {
     searchError.value = ''
 
     try {
-      const apiUrl = (config.public.apiUrl as string).replace(/\/$/, '')
       const data = await $fetch<YouTubeSearchResult[]>(
-        `${apiUrl}/api/v1/youtube/search`,
-        { params: { q: query, maxResults } }
+        `${apiBase}/api/v1/youtube/search`,
+        { params: { q: query, maxResults }, ...apiRequestDefaults }
       )
       results.value = data
     } catch (err) {

@@ -6,6 +6,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const config = useRuntimeConfig()
+const apiBase = useApiBase()
 
 useSeoMeta({
   title: 'Contact - Evan Becker',
@@ -51,12 +52,11 @@ async function submitContact() {
   errorMsg.value = ''
   try {
     const recaptchaToken = await getRecaptchaToken()
-    const apiBase = config.public.apiUrl?.replace(/\/$/, '') || ''
     const res = await fetch(`${apiBase}/api/v1/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, recaptchaToken }),
-      mode: 'cors',
+      ...apiRequestDefaults,
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))

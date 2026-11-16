@@ -52,7 +52,7 @@ const resume = [
 // Only falls back to initials if the image actually fails to load.
 const logoLoaded = ref<Record<string, boolean | undefined>>({})
 
-const config = useRuntimeConfig()
+const apiBase = useApiBase()
 const newsletterEmail = ref('')
 const newsletterSubmitting = ref(false)
 const newsletterDone = ref(false)
@@ -62,10 +62,10 @@ async function submitNewsletter() {
   newsletterSubmitting.value = true
   newsletterError.value = ''
   try {
-    const apiUrl = (config.public.apiUrl as string).replace(/\/$/, '')
-    await $fetch(`${apiUrl}/api/v1/newsletter`, {
+    await $fetch(`${apiBase}/api/v1/newsletter`, {
       method: 'POST',
       body: { emailAddress: newsletterEmail.value },
+      ...apiRequestDefaults,
     })
     newsletterDone.value = true
   } catch (err: any) {
