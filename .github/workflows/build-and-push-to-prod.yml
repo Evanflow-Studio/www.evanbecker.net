@@ -77,6 +77,7 @@ jobs:
             -t "$REGISTRY/evanbecker-client:$GITHUB_SHA" \
             evanbecker-client
           scripts/smoke-client-image.sh "$REGISTRY/evanbecker-client:$GITHUB_SHA"
+          scripts/smoke-api-migrations.sh "$REGISTRY/evanbecker-api:$GITHUB_SHA"
           docker push "$REGISTRY/evanbecker-api:$GITHUB_SHA"
           docker push "$REGISTRY/evanbecker-client:$GITHUB_SHA"
 

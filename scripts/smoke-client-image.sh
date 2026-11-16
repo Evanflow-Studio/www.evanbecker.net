@@ -2,7 +2,8 @@
 # Proves one client image serves every environment: runs <image> once per env file
 # (evanbecker-client/env/test.env and prod.env by default) and checks that the home page,
 # robots.txt, sitemap.xml and feed.xml each use that environment's own site URL, and that
-# only an indexable environment invites crawlers.
+# only an indexable environment invites crawlers. It also sets NUXT_API_BASE_SERVER, the
+# server-only API address, and checks the browser never sees it.
 #
 #   scripts/smoke-client-image.sh <image> [env-file...]
 #
@@ -37,7 +38,8 @@ for env_file in "$@"; do
   [[ -n "$site_url" ]] || { echo "$env_file sets no NUXT_PUBLIC_SITE_URL" >&2; exit 2; }
 
   container="ebn-smoke-$name-$$"
-  docker run -d --rm --name "$container" --env-file "$env_file" "$image" >/dev/null
+  internal="http://ebn-smoke-internal-api.invalid/"
+  docker run -d --rm --name "$container" --env-file "$env_file" -e NUXT_API_BASE_SERVER="$internal" "$image" >/dev/null
   containers+=("$container")
   fetch() { docker exec "$container" wget -q -O - "http://127.0.0.1:3000$1"; }
 
@@ -54,6 +56,8 @@ for env_file in "$@"; do
 
   grep -qF "<link rel=\"canonical\" href=\"$site_url\"" <<<"$home" && pass "canonical is $site_url" || fail "canonical isn't $site_url"
   grep -qF "siteUrl:\"$site_url\"" <<<"$home" && pass "payload siteUrl is $site_url" || fail "payload siteUrl isn't $site_url"
+  api_url="$(env_value "$env_file" NUXT_PUBLIC_API_URL)"
+  grep -qF "apiUrl:\"$api_url\"" <<<"$home" && pass "payload apiUrl is $api_url" || fail "payload apiUrl isn't $api_url"
 
   locs="$(grep -oE '<loc>[^<]+</loc>' <<<"$sitemap" | sed -E 's#</?loc>##g')"
   if [[ -z "$locs" ]]; then
@@ -69,6 +73,7 @@ for env_file in "$@"; do
   for body in "$home" "$robots" "$sitemap" "$feed"; do
     if grep -qE 'https?://(localhost|127\.0\.0\.1)' <<<"$body"; then fail "a response still names localhost"; break; fi
   done
+  grep -qF "ebn-smoke-internal-api" <<<"$home$robots$sitemap$feed" && fail "the server-only API address reached the browser" || pass "the server-only API address stays on the server"
 
   if [[ "$indexable" == "true" ]]; then
     grep -qF "Sitemap: $site_url/sitemap.xml" <<<"$robots" && pass "robots.txt allows crawling, sitemap $site_url/sitemap.xml" || fail "robots.txt doesn't point at $site_url/sitemap.xml"

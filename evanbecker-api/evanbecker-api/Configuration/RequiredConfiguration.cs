@@ -23,13 +23,23 @@ public static class RequiredConfiguration
         "YouTube:ApiKey",
     ];
 
-    public static void Validate(IConfiguration configuration)
-    {
-        var missingOptional = Optional.Where(key => IsMissing(configuration[key])).ToList();
-        if (missingOptional.Count > 0)
-            Console.WriteLine($"Optional settings not set, so their features are off: {string.Join(", ", missingOptional)}");
+    // --migrate-only applies the migrations and exits, so it needs the database and nothing else.
+    public static readonly string[] RequiredToMigrate =
+    [
+        "ConnectionStrings:Database",
+    ];
 
-        var missingRequired = Required.Where(key => IsMissing(configuration[key])).ToList();
+    public static void Validate(IConfiguration configuration, bool migrateOnly = false)
+    {
+        if (!migrateOnly)
+        {
+            var missingOptional = Optional.Where(key => IsMissing(configuration[key])).ToList();
+            if (missingOptional.Count > 0)
+                Console.WriteLine($"Optional settings not set, so their features are off: {string.Join(", ", missingOptional)}");
+        }
+
+        var required = migrateOnly ? RequiredToMigrate : Required;
+        var missingRequired = required.Where(key => IsMissing(configuration[key])).ToList();
         if (missingRequired.Count > 0)
             throw new InvalidOperationException(
                 $"Required settings are missing: {string.Join(", ", missingRequired)}. " +

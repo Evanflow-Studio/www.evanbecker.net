@@ -177,7 +177,17 @@ No settings file holds a secret or a `<...>` placeholder; `evanbecker-api.Tests`
 
 ## Database
 
-PostgreSQL 18 running in Docker on dedicated LXC containers. Migrations run automatically at startup via `WebApplicationExtensions.UseLocalDockerMigrationsAsync()`.
+PostgreSQL 18 running in Docker on dedicated LXC containers.
+
+### When migrations run
+
+| How the image runs | What happens |
+|---|---|
+| Default (the homelab) | The API applies pending migrations at startup, before it listens (`UseLocalDockerMigrationsAsync`, in containers only) |
+| `--migrate-only` | Applies pending migrations, logs their names and exits: `0` when the database is up to date, `1` when it isn't. Needs only `ConnectionStrings:Database`. This is the deploy's one-shot `migrate` step (evanflow-infra `deploy/apps/ebn`) |
+| `Database__MigrateOnStartup=false` | The API starts without migrating. Set it on the API when the deploy runs `--migrate-only` first |
+
+Migrations must follow expand/contract (evanflow-infra `docs/deployment-strategy.md`, section 3): each one works with both the previous and the next release of the API. `scripts/smoke-api-migrations.sh <api-image>` checks all three modes against a throwaway Postgres 18; the PR checks run it.
 
 ### Adding a Migration
 

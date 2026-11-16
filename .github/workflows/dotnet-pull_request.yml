@@ -83,6 +83,28 @@ jobs:
         docker image rm "$IMAGE" 2>/dev/null || true
         docker image prune -f
 
+  # The API image's migration modes, against a throwaway Postgres 18: --migrate-only (the
+  # deploy's one-shot step), Database__MigrateOnStartup=false, and the default startup migration.
+  api-image:
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
+    env:
+      IMAGE: evanbecker-api-pr:${{ github.event.pull_request.head.sha }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Build the API image
+      run: docker build -t "$IMAGE" -f evanbecker-api/Dockerfile .
+    - name: Check its migration modes
+      run: scripts/smoke-api-migrations.sh "$IMAGE"
+    - name: Clean up
+      if: always()
+      run: |
+        docker image rm "$IMAGE" 2>/dev/null || true
+        docker image prune -f
+
   gitleaks:
     # Public repo: fork PRs never run on our runner.
     if: github.event.pull_request.head.repo.full_name == github.repository

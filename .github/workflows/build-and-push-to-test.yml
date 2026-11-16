@@ -54,9 +54,12 @@ jobs:
             -t "$REGISTRY/evanbecker-client:$GITHUB_SHA" \
             evanbecker-client
 
-      # The same client image must serve test and prod from runtime env alone.
-      - name: Smoke-test the client image with the test and prod env
-        run: scripts/smoke-client-image.sh "$REGISTRY/evanbecker-client:$GITHUB_SHA"
+      # The same client image must serve test and prod from runtime env alone, and the API
+      # image must migrate as the deploy expects (--migrate-only, or at startup by default).
+      - name: Smoke-test the images
+        run: |
+          scripts/smoke-client-image.sh "$REGISTRY/evanbecker-client:$GITHUB_SHA"
+          scripts/smoke-api-migrations.sh "$REGISTRY/evanbecker-api:$GITHUB_SHA"
 
       - name: Push to GHCR and move :test
         run: |

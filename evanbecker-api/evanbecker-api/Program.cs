@@ -9,7 +9,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 
-var builder = WebApplication.CreateBuilder(args);
+// --migrate-only: apply the EF migrations and exit (the deploy's one-shot migrate step).
+var migrateOnly = DatabaseMigrations.IsMigrateOnly(args);
+var builder = WebApplication.CreateBuilder(DatabaseMigrations.HostArguments(args));
 
 builder.Services.AddControllers();
 // In Development, secrets come from .NET User Secrets (dotnet user-secrets).
@@ -20,7 +22,7 @@ builder.Configuration.AddSecrets();
 
 // EF's design-time tools build this host too; they don't need runtime secrets.
 if (!EF.IsDesignTime)
-    RequiredConfiguration.Validate(builder.Configuration);
+    RequiredConfiguration.Validate(builder.Configuration, migrateOnly);
 
 var environmentName = builder.Environment.EnvironmentName;
 Console.WriteLine($"Starting API with Environment: {environmentName}");
@@ -142,6 +144,9 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 
+if (migrateOnly)
+    return await DatabaseMigrations.MigrateOnlyAsync(app.Services);
+
 app.UseSwagger();
 app.UseSwaggerUI(o =>
 {
@@ -169,6 +174,12 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
-await app.UseLocalDockerMigrationsAsync(environmentName);
+// On by default, as the homelab deploy expects. A deploy that runs --migrate-only first sets
+// Database__MigrateOnStartup=false.
+if (DatabaseMigrations.MigrateOnStartup(app.Configuration))
+    await app.UseLocalDockerMigrationsAsync(environmentName);
+else
+    Console.WriteLine("Database:MigrateOnStartup is false: not migrating at startup.");
 
 app.Run();
+return 0;
