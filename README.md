@@ -142,8 +142,10 @@ For deployment internals (image build → registry → Watchtower rotation), see
 
 | Branch | Environment | Deploys To | Image Tag | Workflow |
 |--------|-------------|------------|-----------|----------|
-| `develop` | Test | test.evanbecker.net · api-test.evanbecker.net | `:test` | `.github/workflows/build-and-push-to-test.yml` |
-| `main` | Production | www.evanbecker.net · api.evanbecker.net | `:latest` | `.github/workflows/build-and-push-to-prod.yml` |
+| `develop` | Test | test.evanbecker.net · api-test.evanbecker.net | `:<sha>`, moves `:test` | `.github/workflows/build-and-push-to-test.yml` |
+| `main` | Production | www.evanbecker.net · api.evanbecker.net | moves `:prod` to the image test ran | `.github/workflows/build-and-push-to-prod.yml` |
+
+Images are built **once per commit** on our own runner and pushed to GHCR (`ghcr.io/evanflow-studio/evanbecker-api` and `evanbecker-client`). A merge to `main` promotes the image test already ran instead of rebuilding it, and the same client image serves test and prod because its public config is read at runtime (`evanbecker-client/env/*.env`). Until the website host switches its registry to GHCR, a merge builds and promotes images there but doesn't redeploy the homelab.
 
 **Flow:**
 

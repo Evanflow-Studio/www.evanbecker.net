@@ -31,15 +31,15 @@ All defined in [`docker-compose.production.yaml`](../docker-compose.production.y
 
 ### Branch Strategy
 
-Two branches: `develop` → test (`:test` tag), `main` → prod (`:latest` tag). Both protected against deletion and force-push. No `release` branch, no gitflow.
+Two branches: `develop` → test (`:test` tag), `main` → prod (`:latest` on the local registry, `:prod` on GHCR). Both protected against deletion and force-push. No `release` branch, no gitflow.
 
 For the full branching strategy, workflow, protection rules, and re-apply commands, see the root [`README.md` → Branching Strategy](../README.md#branching-strategy).
 
 ### How It Works
 
 1. Developer pushes to `develop` or `main`
-2. Self-hosted runner (LXC 108) builds Docker images and pushes to local registry
-3. Watchtower (LXC 109) detects new image within 30s, pulls and restarts the container
+2. The self-hosted runner (LXC 108) builds each image once per commit and pushes it to GHCR as `:<sha>`, moving `:test`. A push to `main` moves `:prod` to the image test ran, without rebuilding
+3. Watchtower (LXC 109) detects a new image within 30s, pulls it and restarts the container. LXC 109 still pulls from the local registry, so it gets new images only once its `/opt/docker/.env` sets `REGISTRY=ghcr.io/evanflow-studio` and `PROD_TAG=prod` (and the GHCR packages are public)
 4. The .NET API pulls its own secrets from Infisical at startup — no secrets in CI or compose files
 5. EF Core migrations run automatically at container startup
 

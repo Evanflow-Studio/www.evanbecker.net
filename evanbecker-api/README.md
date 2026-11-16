@@ -195,9 +195,11 @@ dotnet ef database update
 
 ## Deployment
 
-The API is containerized and deployed via GitHub Actions → self-hosted runner → local Docker registry → Watchtower auto-pull on LXC 109.
+The API is containerized and built by GitHub Actions on our own runner, once per commit, into `ghcr.io/evanflow-studio/evanbecker-api:<sha>`.
 
-- **`develop` branch** → `api-test.evanbecker.net` (image tag `:test`)
-- **`main` branch** → `api.evanbecker.net` (image tag `:latest`)
+- **`develop` branch** → `api-test.evanbecker.net` (moves `:test`)
+- **`main` branch** → `api.evanbecker.net` (moves `:prod` to the image test ran; prod on the droplet runs the digest pinned in evanflow-infra)
+
+The homelab (LXC 109) still pulls from its local registry until its `.env` switches to GHCR.
 
 No secrets in CI — all secrets are pulled from Infisical at container startup.

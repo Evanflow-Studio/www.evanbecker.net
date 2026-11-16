@@ -1,68 +1,120 @@
-name: Build & Deploy Prod
+name: Promote to Prod
 
 on:
   push:
     branches: [ "main" ]
 
-# Our own runner only (Evan, 2026-10-29), pushing to GHCR. The images hold no secrets.
-# LXC 109 pulls from GHCR once its .env sets REGISTRY=ghcr.io/evanflow-studio
-# (evanflow-infra docs/briefs/ebn-keyvault-migration.md, Part 1 step 2).
+# Build once, promote: a push to main moves the :prod pointer to the image that test already
+# ran, without rebuilding it. That image is the develop commit merged into main (or main itself
+# after a fast-forward), used only when its tree is identical to main's. If no such image exists,
+# for example a hotfix made on main, this builds main once and says so in the summary.
+# Prod on the droplet runs the digest pinned in evanflow-infra (deploy/releases/ebn/prod.yaml);
+# :prod is the pointer for everything else. Our own runner only (Evan, 2026-10-29).
 permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: images-main
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io/evanflow-studio
+  SOURCE: https://github.com/${{ github.repository }}
 
 jobs:
-  build_and_push:
+  promote:
     runs-on: [self-hosted, linux, homelab]
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
         with:
+          # This commit and its parents, to find the develop commit it merged.
+          fetch-depth: 2
           persist-credentials: false
-
-      - name: Generate version
-        id: version
-        run: echo "version=$(date +%Y.%m.%d)-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
       - name: Log in to GHCR
         env:
           GH_TOKEN: ${{ github.token }}
         run: echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build images
+      - name: Find the image test ran
+        id: source
         run: |
+          candidates="$GITHUB_SHA"
+          if git rev-parse -q --verify "$GITHUB_SHA^2" >/dev/null; then
+            candidates="$candidates $(git rev-parse "$GITHUB_SHA^2")"
+          fi
+          for sha in $candidates; do
+            if ! git diff --quiet "$sha" "$GITHUB_SHA"; then
+              echo "$sha: tree differs from main, skipping"
+              continue
+            fi
+            if docker buildx imagetools inspect "$REGISTRY/evanbecker-api:$sha" >/dev/null 2>&1 &&
+               docker buildx imagetools inspect "$REGISTRY/evanbecker-client:$sha" >/dev/null 2>&1; then
+              echo "Promoting the images built for $sha"
+              echo "sha=$sha" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "$sha: no images on GHCR"
+          done
+          echo "No tested image matches main's tree; building main once."
+          echo "sha=" >> "$GITHUB_OUTPUT"
+
+      - name: Build main (no tested image matches)
+        if: steps.source.outputs.sha == ''
+        run: |
+          version="$(date +%Y.%m.%d)-${GITHUB_SHA::7}"
           docker build \
-            -t ${{ env.REGISTRY }}/evanbecker-api:latest \
-            -t ${{ env.REGISTRY }}/evanbecker-api:${{ github.sha }} \
+            --label "org.opencontainers.image.source=$SOURCE" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            -t "$REGISTRY/evanbecker-api:$GITHUB_SHA" \
             -f evanbecker-api/Dockerfile .
           docker build \
-            --build-arg NUXT_PUBLIC_SITE_URL=https://www.evanbecker.net \
-            --build-arg NUXT_PUBLIC_API_URL=https://api.evanbecker.net \
-            --build-arg NUXT_PUBLIC_AUTH0_DOMAIN=evanbecker.us.auth0.com \
-            --build-arg NUXT_PUBLIC_AUTH0_CLIENT_ID=JOV7J3Qv3XzFD3xyQjDEW03PtaU8bpqc \
-            --build-arg NUXT_PUBLIC_AUTH0_AUDIENCE=api.evanbecker.net \
-            --build-arg NUXT_PUBLIC_AUTH0_REDIRECT_URI=https://www.evanbecker.net \
-            --build-arg NUXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lfb5pksAAAAAHnzNOV1DxBqF_EYU9UPVimOR6WZ \
-            --build-arg NUXT_PUBLIC_APP_VERSION=${{ steps.version.outputs.version }} \
-            --build-arg NUXT_PUBLIC_INDEXABLE=true \
-            -t ${{ env.REGISTRY }}/evanbecker-client:latest \
-            -t ${{ env.REGISTRY }}/evanbecker-client:${{ github.sha }} \
+            --build-arg NUXT_PUBLIC_APP_VERSION="$version" \
+            --label "org.opencontainers.image.source=$SOURCE" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            -t "$REGISTRY/evanbecker-client:$GITHUB_SHA" \
             evanbecker-client
+          scripts/smoke-client-image.sh "$REGISTRY/evanbecker-client:$GITHUB_SHA"
+          docker push "$REGISTRY/evanbecker-api:$GITHUB_SHA"
+          docker push "$REGISTRY/evanbecker-client:$GITHUB_SHA"
 
-      - name: Push to GHCR
+      # A registry-side copy: :prod (and :<main sha>) get the exact manifest test ran.
+      - name: Move :prod
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha || github.sha }}
+          BUILT_ON_MAIN: ${{ steps.source.outputs.sha == '' }}
         run: |
-          docker push ${{ env.REGISTRY }}/evanbecker-api:latest
-          docker push ${{ env.REGISTRY }}/evanbecker-api:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/evanbecker-client:latest
-          docker push ${{ env.REGISTRY }}/evanbecker-client:${{ github.sha }}
+          {
+            echo "### Prod images for \`${GITHUB_SHA}\`"
+            echo
+            if [ "$BUILT_ON_MAIN" = "true" ]; then
+              echo "> Built on main: no image from test matched this tree, so test never ran these."
+            else
+              echo "Promoted unchanged from \`${SOURCE_SHA}\`, the commit test ran."
+            fi
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          for image in evanbecker-api evanbecker-client; do
+            src="$REGISTRY/$image:$SOURCE_SHA"
+            docker buildx imagetools create -t "$REGISTRY/$image:prod" -t "$REGISTRY/$image:$GITHUB_SHA" "$src"
+            want=$(docker buildx imagetools inspect "$src" --format '{{json .Manifest.Digest}}' | tr -d '"')
+            got=$(docker buildx imagetools inspect "$REGISTRY/$image:prod" --format '{{json .Manifest.Digest}}' | tr -d '"')
+            if [ "$want" != "$got" ]; then
+              echo "::error::$image:prod is $got, expected $want"
+              exit 1
+            fi
+            echo "- \`$REGISTRY/$image@$want\` (\`:prod\`, \`:$SOURCE_SHA\`, \`:$GITHUB_SHA\`)" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       # Self-hosted runners keep state between jobs: drop the registry login and
-      # old layers so neither the token nor the disk outlives the job.
+      # any images this job built.
       - name: Log out and clean up
         if: always()
         run: |
           docker logout ghcr.io || true
+          for image in evanbecker-api evanbecker-client; do
+            docker image rm "$REGISTRY/$image:$GITHUB_SHA" 2>/dev/null || true
+          done
           docker image prune -f
