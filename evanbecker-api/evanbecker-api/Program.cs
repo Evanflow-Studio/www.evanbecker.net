@@ -1,6 +1,5 @@
 using evanbecker_api.Configuration;
 using evanbecker_api.Extensions;
-using evanbecker_api.Hubs;
 using evanbecker_api.Services;
 using evanbecker_domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -35,7 +34,6 @@ var auth0Settings = new Auth0Configuration();
 auth0Section.Bind(auth0Settings);
 builder.Services.Configure<Auth0Configuration>(auth0Section);
 
-builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<INewsletterList, EfNewsletterList>();
 builder.Services.AddRateLimiter(RateLimits.Configure);
@@ -46,7 +44,6 @@ builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.Configure<RecaptchaSettings>(builder.Configuration.GetSection("Recaptcha"));
 builder.Services.AddHttpClient<IRecaptchaService, RecaptchaService>();
 
-builder.Services.AddSignalR();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -142,7 +139,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
-app.MapHub<CommentHub>("/hubs/comments").RequireCors("cors");
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResultStatusCodes =

@@ -104,12 +104,5 @@ useArticleSchema({
         :current-tags="article.tags"
       />
     </div>
-
-    <!-- Comments -->
-    <div class="mt-16 border-t border-slate-200 pt-12 dark:border-slate-700">
-      <ClientOnly>
-        <CommentSection />
-      </ClientOnly>
-    </div>
   </article>
 </template>

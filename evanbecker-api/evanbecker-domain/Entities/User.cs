@@ -20,6 +20,7 @@ public class User
     [MaxLength(255)]
     public string? FirstName { get; set; }
     
+    // Unused since comments left the site; kept with the comment entities (see CommentBase).
     [JsonIgnore] 
     public IEnumerable<Comment>? CreatedComments { get; set; }
     

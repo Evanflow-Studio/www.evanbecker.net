@@ -1,13 +1,12 @@
 # evanbecker-api
 
-REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles comments, contact form submissions, newsletter subscriptions, user management, and real-time comments via SignalR.
+REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles contact form submissions, newsletter subscriptions and user accounts.
 
 ## Tech Stack
 
 - **.NET 10** / ASP.NET Core
 - **Entity Framework Core** with PostgreSQL 18
 - **Auth0** JWT Bearer authentication
-- **SignalR** for real-time comments
 - **SMTP2Go** for email notifications (contact form, newsletter)
 - **Infisical** for secrets management (via `SecretsConfigurationProvider`)
 
@@ -16,15 +15,15 @@ REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles commen
 ```
 evanbecker-api/
 ├── evanbecker-api/              # API project
-│   ├── Controllers/             # REST endpoints (Comment, Contact, Newsletter, User)
+│   ├── Controllers/             # REST endpoints (Contact, Newsletter, User)
 │   ├── Configuration/           # Secrets provider, Auth0/GitHub config models
-│   ├── Services/                # Business logic (Comments, Users, Email, Recaptcha)
+│   ├── Services/                # Business logic (Users, Newsletter, Email, Recaptcha)
 │   ├── Dto/                     # Data transfer objects
 │   ├── Extensions/              # WebApplicationExtensions (auto-migrations)
 │   └── Program.cs               # App startup & DI
 │
 └── evanbecker-domain/           # EF Core data layer
-    ├── Entities/                # Comment, User, ContactMessage, NewsLetterEntry, Reply
+    ├── Entities/                # User, ContactMessage, NewsLetterEntry; Comment and Reply are unused, kept for their tables
     ├── Migrations/              # Database migrations
     └── ApplicationContext.cs    # DbContext
 ```
@@ -35,10 +34,6 @@ All under `/api/v1/`:
 
 | Endpoint | Method | Auth | Purpose |
 |----------|--------|------|---------|
-| `comment/{targetLocation}` | GET | No | Fetch page comments |
-| `comment/{targetLocation}` | POST | Required | Create comment |
-| `comment/{targetLocation}/reply/{commentId}` | POST | Required | Reply to comment |
-| `comment/{id}` | DELETE | Required | Soft-delete comment |
 | `contact` | POST | No | Submit contact form (with reCAPTCHA) |
 | `newsletter` | POST | No | Subscribe to newsletter |
 | `user` | GET | Required | Get authenticated user info |

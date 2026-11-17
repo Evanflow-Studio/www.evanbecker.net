@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  ChatBubbleLeftRightIcon,
   EnvelopeIcon,
   ComputerDesktopIcon,
 } from '@heroicons/vue/24/outline'
@@ -55,12 +54,6 @@ async function submitContact() {
 }
 
 const contactOptions = [
-  {
-    icon: ChatBubbleLeftRightIcon,
-    title: 'Leave Comment',
-    description: 'Register and login using Auth0. Once logged in, you can leave comments on my blog posts.',
-    cta: { label: 'Blog', href: '/articles' },
-  },
   {
     icon: EnvelopeIcon,
     title: 'Send Email',

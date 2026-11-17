@@ -11,6 +11,7 @@ public class ApplicationContext : DbContext
     public ApplicationContext(DbContextOptions<ApplicationContext> options)
         : base(options) { }
 
+    // Unused since comments left the site; kept until a migration drops the tables (see CommentBase).
     public DbSet<Comment> Comments { get; set; }
     public DbSet<Reply> Replies { get; set; }
     public DbSet<User> Users { get; set; }

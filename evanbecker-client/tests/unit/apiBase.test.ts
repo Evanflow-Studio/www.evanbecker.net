@@ -27,7 +27,7 @@ describe('apiRequestDefaults', () => {
   })
 })
 
-// Every API call and hub connection must carry credentials, or Access on test refuses it.
+// Every API call must carry credentials, or Access on test refuses it.
 describe('every call site', () => {
   // The source text of every app file, read by Vite at test time.
   const sources = import.meta.glob<string>(
@@ -52,10 +52,10 @@ describe('every call site', () => {
     expect(missing).toEqual([])
   })
 
-  it('opens every SignalR hub with credentials', () => {
-    const hubs = files.filter((f) => f.text.includes('/hubs/'))
-    expect(hubs.length).toBeGreaterThan(0)
-    const missing = hubs.filter((f) => !f.text.includes('withCredentials: true')).map((f) => f.name)
-    expect(missing).toEqual([])
+  // The API serves no SignalR hub since comments left the site. A hub that comes back must connect with
+  // withCredentials: true, or Access on test refuses it: bring that check back with it.
+  it('opens no SignalR hub, since the API serves none', () => {
+    const hubs = files.filter((f) => f.text.includes('/hubs/') || f.text.includes('@microsoft/signalr'))
+    expect(hubs.map((f) => f.name)).toEqual([])
   })
 })
