@@ -60,7 +60,7 @@ cd evanbecker-api/evanbecker-api
 dotnet run
 ```
 
-The connection string in `appsettings.Development.json` points to `localhost:5432` with credentials matching `docker-compose.yaml` (user: `EvanBecker`, password: `P@55W0RD123`, db: `evanbecker-db`). No `.env` file needed.
+The connection string in `appsettings.Development.json` points to `localhost:5432` with the user and database from `docker-compose.yaml` (user: `EvanBecker`, db: `evanbecker-db`) and no password. Set `POSTGRES_PASSWORD` in the root `.env` (copy `.env.example`) for the container, and the same value as `PGPASSWORD` for the API, which Npgsql reads when the connection string has no password. Or set the whole connection string with user secrets, below.
 
 ### Full Stack in Docker
 
@@ -99,7 +99,7 @@ cd evanbecker-api/evanbecker-api
 dotnet user-secrets init  # only needed once
 
 # Required — database
-dotnet user-secrets set "ConnectionStrings:Database" "Host=localhost;Port=5432;Username=EvanBecker;Password=P@55W0RD123;Database=evanbecker-db"
+dotnet user-secrets set "ConnectionStrings:Database" "Host=localhost;Port=5432;Username=EvanBecker;Password=$POSTGRES_PASSWORD;Database=evanbecker-db"
 
 # Required — Auth0
 dotnet user-secrets set "Auth0:Domain" "dev-m3uiopcp.us.auth0.com"

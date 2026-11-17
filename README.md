@@ -244,7 +244,7 @@ npm run dev
 
 - **Frontend:** [http://localhost:3000](http://localhost:3000)
 - **API + Swagger:** [http://localhost:5002/swagger](http://localhost:5002/swagger)
-- **PostgreSQL:** `localhost:5432` (user: `EvanBecker`, password: `P@55W0RD123`, db: `evanbecker-db`)
+- **PostgreSQL:** `localhost:5432` (user: `EvanBecker`, db: `evanbecker-db`; the password is `POSTGRES_PASSWORD` from your `.env`, which the API reads as `PGPASSWORD`)
 
 The database credentials are hardcoded in `docker-compose.yaml` and match `appsettings.Development.json`. No `.env` file needed for the database.
 
