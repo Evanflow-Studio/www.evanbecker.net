@@ -32,4 +32,5 @@ The move to DigitalOcean is the org goal `org.goal.website-on-digitalocean`.
 | `ebn.hosting.migrate-default` | behaviour | With the switch unset, the API migrates at startup, as the homelab expects | `DatabaseMigrationsTests.Migrates_on_startup_by_default` |
 | `ebn.hosting.migrate-fails-quietly` | behaviour | `--migrate-only` exits 1 when the database is unreachable, without printing the connection string | `DatabaseMigrationsTests.Migrate_only_exits_1_when_the_database_is_unreachable_without_printing_the_connection_string`, `DatabaseMigrationsTests.Migrate_only_still_needs_the_database` |
 | `ebn.hosting.expand-contract` | architecture | Every migration is expand/contract, so the running version keeps working while the next one migrates | none |
+| `ebn.hosting.docs` | docs | The READMEs say where and how the site runs today, and a change to hosting updates them in the same pull request | none |
 | `ebn.hosting.health` | behaviour | The API answers `/health`, which deploys and the smoke script wait on | `scripts/smoke-api-migrations.sh` |

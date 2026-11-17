@@ -21,5 +21,6 @@ The pages every visitor passes through, and the policy page that says what the s
 | `ebn.pages.footer` | behaviour | The footer links the privacy policy and Evan's GitHub, GitLab and LinkedIn | none |
 | `ebn.pages.themes` | look | The site has a light and a dark theme, switched from the header, and the choice is remembered on the next visit | none |
 | `ebn.pages.not-found` | behaviour | A path that matches no page shows the site's own "Page not found" page | none |
+| `ebn.pages.resume` | behaviour | `/resume` is a printable résumé with a CV mode; nothing on the site links to it, and it asks search engines not to index it | none |
 | `ebn.pages.privacy` | docs | `/privacy-policy` says accurately what the site stores, where that data lives, which third parties see it, and how to have it deleted; it changes the day the data moves, so it names DigitalOcean's managed Postgres once the cutover moves visitor data off the homelab | none |
 | `ebn.pages.no-tracking` | policy | The site runs no analytics, tag managers or third-party tracking scripts | none |
