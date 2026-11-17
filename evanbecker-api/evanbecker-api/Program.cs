@@ -37,6 +37,8 @@ builder.Services.Configure<Auth0Configuration>(auth0Section);
 
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<INewsletterList, EfNewsletterList>();
+builder.Services.AddRateLimiter(RateLimits.Configure);
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddHttpClient<IEmailService, EmailService>();
@@ -138,6 +140,7 @@ app.UseSwaggerUI(o =>
 app.UseCors("cors");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 app.MapHub<CommentHub>("/hubs/comments").RequireCors("cors");
 app.MapHealthChecks("/health", new HealthCheckOptions
