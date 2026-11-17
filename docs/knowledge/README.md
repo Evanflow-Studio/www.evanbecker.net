@@ -26,7 +26,7 @@ sections 2 to 5). Current state isn't written here. It's observed from the code,
 
 Test names are written as `Class.Method` for the API's xunit tests, `file › describe › it` for the client's vitest
 tests, a script's path for the smoke scripts, and `workflow › job` for a CI job. Everything here is `draft` until Evan
-agrees it.
+agrees it, except [comments.md](comments.md), which is `superseded`: kept as it was, never deleted.
 
 **Ideas stay out.** Possible features and candidate bugs are in [ideas.md](ideas.md). They link to these pages but
 never drive a decision.
@@ -36,9 +36,9 @@ never drive a decision.
 | [pages.md](pages.md) | Pages, navigation and the privacy policy |
 | [articles.md](articles.md) | The blog and its articles |
 | [account.md](account.md) | Sign-in, the profile and the Notifications preference |
-| [comments.md](comments.md) | Comments on articles |
+| [comments.md](comments.md) | Comments on articles, superseded on 2026-11-17: the site has none |
 | [contact.md](contact.md) | Contact mail, reCAPTCHA and the newsletter sign-up |
 | [sandbox.md](sandbox.md) | The ray marcher and the homelab demo |
 | [seo.md](seo.md) | Canonical URLs, indexing, the sitemap and the feed |
 | [hosting.md](hosting.md) | Images, environments, secrets and migrations |
-| [security.md](security.md) | The public repo's security policy |
+| [security.md](security.md) | The public repo's security policy, and no personal data out of the API |

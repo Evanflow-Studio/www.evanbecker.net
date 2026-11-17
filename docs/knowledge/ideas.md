@@ -20,8 +20,8 @@ written as a statement with a check.
 | `ebn.idea.newsletter-sending` | Send the newsletter to account holders who opted in, with an unsubscribe link in every email | `ebn.account.notifications`, `ebn.account.no-sending-yet` |
 | `ebn.idea.consent-record` | Record when each user opted in or out, so the site can show when consent was given | `ebn.account.notifications` |
 | `ebn.idea.one-list` | Decide how the account opt-in and the About Me sign-up list relate: one list, or two with one unsubscribe | `ebn.account.notifications`, `ebn.contact.newsletter` |
-| `ebn.idea.live-deletes` | Remove a deleted comment from every open page without a reload, the way new comments arrive | `ebn.comments.live`, `ebn.comments.delete` |
-| `ebn.idea.e2e-journeys` | End-to-end tests for the main journeys: sign in and edit the profile, comment and reply, send the contact form | `ebn.account.profile`, `ebn.comments.post`, `ebn.contact.mail` |
+| `ebn.idea.live-deletes` | Remove a deleted comment from every open page without a reload, the way new comments arrive. Moot since comments left the site (11-17) | `ebn.comments.live`, `ebn.comments.delete` |
+| `ebn.idea.e2e-journeys` | End-to-end tests for the main journeys: sign in and edit the profile, send the contact form, sign up for the newsletter | `ebn.account.profile`, `ebn.contact.mail`, `ebn.contact.newsletter` |
 | `ebn.idea.local-without-auth0` | Let the client run locally without Auth0 settings; today every page fails because the API helper reads Auth0 unguarded | `ebn.account.sign-in` |
 | `ebn.idea.typecheck-lint` | Get `nuxi typecheck` to zero errors and add a linter, so both can become checks in CI | `ebn.security.api-url` |
 | `ebn.idea.homelab-demo` | Redraw the homelab demo for the new layout, where the homelab serves nothing and the site runs on the droplet | `ebn.sandbox.homelab-status`, `ebn.hosting.homelab-serves-nothing` |

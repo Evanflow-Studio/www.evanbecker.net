@@ -12,7 +12,8 @@ read: public
 links: [ebn.comments, ebn.seo]
 ---
 
-The blog: Evan's essays in `evanbecker-client/content/articles/`.
+The blog: Evan's essays in `evanbecker-client/content/articles/`. The checks marked with ‡ are on the branch
+`fix/public-api-exposures`, which isn't merged yet.
 
 | Key | Kind | Statement | Check |
 |---|---|---|---|
@@ -21,8 +22,8 @@ The blog: Evan's essays in `evanbecker-client/content/articles/`.
 | `ebn.articles.drafts` | behaviour | An article marked as a draft never appears on the articles list | none |
 | `ebn.articles.page` | behaviour | Each article's page shows its title, date, reading time and tags | none |
 | `ebn.articles.related` | behaviour | Each article's page lists related articles that share its tags | none |
-| `ebn.articles.comments` | behaviour | Each article's page ends with its comment section | none |
 | `ebn.articles.diagrams` | look | Mermaid diagrams in an article render in both themes | none |
 | `ebn.articles.feed` | behaviour | `/feed.xml` is an RSS feed of the articles, linking the environment's own site URL, and every page advertises it | `scripts/smoke-client-image.sh` |
 | `ebn.articles.voice` | policy | Articles are Evan's essays: agents draft them with the blog-voice skill, and nothing is published without Evan's review | none |
+| `ebn.articles.no-comments` | decision | The site has no comments: an article's page ends with its related articles, and the API serves no comment endpoint or hub. Comments posted before keep their rows until Evan agrees to drop the tables (Evan, 11-17) | `apiBase.test.ts › every call site › opens no SignalR hub, since the API serves none` ‡, `ModelSnapshotTests.The_model_matches_the_last_migration` ‡ |
 | `ebn.articles.record` | decision | A published article stays as the record of what was true when it was written; a changed view gets a dated note, and old infrastructure it mentions (like Infisical) stays as written | none |
