@@ -5,7 +5,7 @@ Rewritten, never appended. Under 60 lines. Last rewrite: 2026-11-17.
 ## Now
 PR #60 (the app side of the DigitalOcean move) is merged into `develop`. The droplet's test host runs it,
 not public yet. The homelab still serves prod and test, unchanged, until the cutover.
-Branch `account/notifications`, for a PR into `develop`: two account-page follow-ups from Evan (11-17).
+Branch `account/notifications-and-names`, for a PR into `develop`: two account-page follow-ups from Evan (11-17).
 
 ## On the branch (not pushed)
 - A Notifications card where Labs was: one opt-in, "Email me newsletters and updates", off by default,
@@ -33,7 +33,7 @@ Branch `account/notifications`, for a PR into `develop`: two account-page follow
   login, comments, contact mail and reCAPTCHA. Waits for the vault (infra P1) and its values.
 
 ## Needs Evan
-1. Go-ahead to push `account/notifications` and open its PR into `develop`.
+1. Go-ahead to push `account/notifications-and-names` and open its PR into `develop`.
 2. Whether tests may use EF Core's in-memory provider (new test-only package, MIT). Not added.
 3. The public comments endpoint returns each author's email, Auth0 ID and admin flags. Proposed: a
    small PR that shows authors only their name and avatar, before the cutover.
