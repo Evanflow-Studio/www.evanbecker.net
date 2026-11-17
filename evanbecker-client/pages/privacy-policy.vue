@@ -6,7 +6,7 @@ useHead({ title: 'Privacy Policy - Evan Becker' })
   <div class="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
     <header>
       <p class="text-sm font-medium text-slate-400 dark:text-slate-500">
-        Last updated: April 2026
+        Last updated: November 2026
       </p>
       <h1 class="mt-2 font-serif text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl dark:text-slate-50">
         Privacy Policy
@@ -29,18 +29,13 @@ useHead({ title: 'Privacy Policy - Evan Becker' })
           and the message itself. Used to reply to you.
         </li>
         <li>
-          <strong>Comments.</strong> If you sign in to comment on a blog post,
-          I store your comment text along with the name and avatar from your
-          identity provider. Comments are public.
-        </li>
-        <li>
           <strong>Newsletter.</strong> Just your email address, if you sign up.
           Unsubscribe at any time.
         </li>
         <li>
           <strong>Account profile.</strong> If you sign in, I store the first
-          name, last name, and avatar associated with your account so the site
-          can show them next to your comments.
+          name, last name, email, and avatar associated with your account so
+          the site can show them in its header and on your account page.
         </li>
       </ul>
 
@@ -78,7 +73,7 @@ useHead({ title: 'Privacy Policy - Evan Becker' })
 
       <h2>Where the data lives</h2>
       <p>
-        Comments, newsletter emails, and contact-form messages are stored on
+        Account profiles, newsletter emails, and contact-form messages are stored on
         a server I run myself in a Proxmox homelab. The server isn't shared
         with anyone, and the data isn't synced to any cloud provider.
       </p>
@@ -86,9 +81,11 @@ useHead({ title: 'Privacy Policy - Evan Becker' })
       <h2>Retention</h2>
       <p>
         Contact-form messages stick around as long as I find them useful for
-        following up. Newsletter emails stay until you unsubscribe. Comments
-        and account profile data stay until you ask me to delete them, or
-        until I shut the site down.
+        following up. Newsletter emails stay until you unsubscribe. Account
+        profile data stays until you ask me to delete it, or until I shut the
+        site down. The site no longer has comments: the ones posted before
+        November 2026 aren't shown anywhere, and they're kept until I delete
+        them, or sooner if you ask.
       </p>
 
       <h2>Your rights</h2>
