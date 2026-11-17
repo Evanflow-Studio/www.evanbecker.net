@@ -39,12 +39,13 @@ public class UserService(ApplicationContext context) : IUserService
         if (authId == null) return (null, false);
 
         var user = await context.Users.FirstOrDefaultAsync(x => x.Auth0Id == authId);
+        var firstName = FirstNameOrNull(dto.FirstName);
 
         if (user != null)
         {
             // Backfill any fields that were null when the row was first created
             var dirty = false;
-            if (user.FirstName == null && dto.FirstName != null) { user.FirstName = dto.FirstName; dirty = true; }
+            if (user.FirstName == null && firstName != null) { user.FirstName = firstName; dirty = true; }
             if (user.LastName  == null && dto.LastName  != null) { user.LastName  = dto.LastName;  dirty = true; }
             if (user.Email     == null && dto.Email     != null) { user.Email     = dto.Email;     dirty = true; }
             if (dirty) await context.SaveChangesAsync();
@@ -54,7 +55,7 @@ public class UserService(ApplicationContext context) : IUserService
         var newUser = new User
         {
             Auth0Id   = authId,
-            FirstName = dto.FirstName,
+            FirstName = firstName,
             LastName  = dto.LastName,
             Email     = dto.Email,
             IsAdmin   = false,
@@ -74,11 +75,25 @@ public class UserService(ApplicationContext context) : IUserService
         var user = await context.Users.FirstOrDefaultAsync(x => x.Auth0Id == authId);
         if (user == null) return null;
 
-        if (dto.FirstName != null) user.FirstName = dto.FirstName;
-        if (dto.LastName  != null) user.LastName  = dto.LastName;
-        if (dto.Avatar    != null) user.Avatar    = dto.Avatar == "" ? null : dto.Avatar;
+        ApplyUpdate(user, dto);
 
         await context.SaveChangesAsync();
         return user;
     }
+
+    /// <summary>Applies a profile PATCH to the user's row. A null field stays as it is.</summary>
+    public static void ApplyUpdate(User user, UpdateUserDto dto)
+    {
+        if (dto.FirstName != null) user.FirstName = dto.FirstName;
+        if (dto.LastName  != null) user.LastName  = dto.LastName;
+        if (dto.Avatar    != null) user.Avatar    = dto.Avatar == "" ? null : dto.Avatar;
+        if (dto.NewsletterOptIn is { } optIn) user.NewsletterOptIn = optIn;
+    }
+
+    /// <summary>
+    /// Auth0 sets a profile's name to its email address when the sign-up gave no name, and the client
+    /// used to send that as the first name. An email is never a first name: the user fills it in instead.
+    /// </summary>
+    public static string? FirstNameOrNull(string? firstName) =>
+        string.IsNullOrWhiteSpace(firstName) || firstName.Contains('@') ? null : firstName.Trim();
 }

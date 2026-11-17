@@ -16,7 +16,7 @@ public class UserController(IUserService userService) : ControllerBase
     {
         var user = await userService.GetUserAsync(User);
         if (user == null) return NotFound();
-        return Ok(user);
+        return Ok(CurrentUserDto.From(user));
     }
 
     /// <summary>
@@ -29,16 +29,17 @@ public class UserController(IUserService userService) : ControllerBase
     {
         var (user, isNew) = await userService.SyncUserAsync(User, dto);
         if (user == null) return Unauthorized();
-        return isNew ? Created(string.Empty, user) : Ok(user);
+        var body = CurrentUserDto.From(user);
+        return isNew ? Created(string.Empty, body) : Ok(body);
     }
 
-    /// <summary>Update the current user's profile (name, avatar).</summary>
+    /// <summary>Update the current user's profile (name, avatar) and settings (newsletter opt-in).</summary>
     [HttpPatch]
     [Authorize]
     public async Task<IActionResult> UpdateUserAsync([FromBody] UpdateUserDto dto)
     {
         var user = await userService.UpdateUserAsync(User, dto);
         if (user == null) return NotFound();
-        return Ok(user);
+        return Ok(CurrentUserDto.From(user));
     }
 }

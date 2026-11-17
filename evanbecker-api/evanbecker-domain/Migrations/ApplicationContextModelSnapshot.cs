@@ -180,6 +180,9 @@ namespace evanbeckerdomain.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<bool>("NewsletterOptIn")
+                        .HasColumnType("boolean");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Auth0Id")
