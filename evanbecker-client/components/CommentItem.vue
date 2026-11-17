@@ -13,6 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   updated: []
+  replied: [commentId: string, reply: any]
 }>()
 
 const { fetchWithAuth } = useApi()
@@ -21,13 +22,11 @@ const replyText = ref('')
 const posting = ref(false)
 const localComment = ref(props.comment)
 
+// Authors come without any account details, so the API says which comments the reader may delete.
+// A comment that arrived by broadcast is marked for no one; admins and the owner may delete it anyway.
 const canModerate = computed(() => {
   if (!props.currentUser) return false
-  return (
-    props.currentUser.id === localComment.value?.author?.id ||
-    props.currentUser.isAdmin ||
-    props.currentUser.isOwner
-  )
+  return !!localComment.value?.canDelete || props.currentUser.isAdmin || props.currentUser.isOwner
 })
 
 async function deleteComment() {
@@ -44,14 +43,15 @@ async function addReply() {
   const replyToId = props.isChild ? props.parentComment?.id : localComment.value.id
   posting.value = true
   try {
-    await fetchWithAuth(`comment/${props.targetLocation}/reply/${replyToId}`, {
+    const reply = await fetchWithAuth(`comment/${props.targetLocation}/reply/${replyToId}`, {
       method: 'POST',
       body: JSON.stringify({ commentText: replyText.value }),
     })
     replyText.value = ''
     showReply.value = false
-    // SignalR broadcasts the reply back; CommentSection's onNewReply adds it.
-    // For child replies the parent hub event is still keyed by parentComment.id.
+    // SignalR broadcasts the reply too, marked for no one; this response marks it as ours to delete.
+    // CommentSection's onNewReply merges the two. Child replies are keyed by parentComment.id.
+    emit('replied', replyToId, reply)
   } catch (e) {
     console.error('Failed to reply:', e)
   } finally {
@@ -82,7 +82,7 @@ function initials(author: any) {
     <article
       :class="[
         'rounded-xl p-4 text-base',
-        localComment.author.isAdmin || localComment.author.isOwner
+        localComment.byOwner
           ? 'bg-blue-50 dark:bg-[#0C65E5]/10'
           : 'bg-slate-100 dark:bg-[#1E293B]',
       ]"
@@ -184,6 +184,7 @@ function initials(author: any) {
         :parent-comment="localComment"
         is-child
         @updated="$emit('updated')"
+        @replied="(commentId: string, reply: any) => $emit('replied', commentId, reply)"
       />
     </div>
   </div>

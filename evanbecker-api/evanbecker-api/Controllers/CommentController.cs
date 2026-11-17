@@ -15,11 +15,16 @@ public class CommentController(
     IHubContext<CommentHub> commentHub)
     : ControllerBase
 {
+    /// <summary>
+    /// Anyone may read comments. Authors appear by name and avatar only (<see cref="CommentPayloads"/>). A signed-in
+    /// reader's token, when sent, decides which comments come back marked as theirs to delete.
+    /// </summary>
     [HttpGet("{targetLocation}")]
     public async Task<IActionResult> GetCommentsAsync(string targetLocation)
     {
         var comments = await commentService.GetCommentsAsync(targetLocation);
-        return Ok(comments);
+        var reader = User.Identity?.IsAuthenticated == true ? await userService.GetUserAsync(User) : null;
+        return Ok(comments.Select(comment => CommentPayloads.Comment(comment, reader)).ToList());
     }
 
     [HttpPost("{targetLocation}")]
@@ -29,8 +34,9 @@ public class CommentController(
         var user = await userService.GetUserAsync(User);
         if (user == null) return Unauthorized();
         var newComment = await commentService.AddCommentAsync(user, targetLocation, addCommentText.CommentText);
-        await commentHub.Clients.Group(targetLocation).SendAsync("NewComment", newComment);
-        return Ok(newComment);
+        // Every reader of the page gets the broadcast, so it's made for no one in particular.
+        await commentHub.Clients.Group(targetLocation).SendAsync("NewComment", CommentPayloads.Comment(newComment, reader: null));
+        return Ok(CommentPayloads.Comment(newComment, user));
     }
 
     [HttpPost("{targetLocation}/reply/{commentId:guid}")]
@@ -41,8 +47,8 @@ public class CommentController(
         if (user == null) return Unauthorized();
         var newReply = await commentService.AddReplyAsync(user, commentId, targetLocation, addCommentText.CommentText);
         if (newReply == null) return NotFound();
-        await commentHub.Clients.Group(targetLocation).SendAsync("NewReply", commentId.ToString(), newReply);
-        return Ok(newReply);
+        await commentHub.Clients.Group(targetLocation).SendAsync("NewReply", commentId.ToString(), CommentPayloads.Reply(newReply, reader: null));
+        return Ok(CommentPayloads.Reply(newReply, user));
     }
 
     [HttpDelete("{id:guid}")]
@@ -53,6 +59,6 @@ public class CommentController(
         if (user == null) return Unauthorized();
         var deleted = await commentService.DeleteCommentAsync(user, id);
         if (deleted == null) return NotFound();
-        return Ok(deleted);
+        return Ok(CommentPayloads.Item(deleted, user));
     }
 }

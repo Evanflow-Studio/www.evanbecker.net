@@ -16,24 +16,40 @@ const targetLocation = computed(() => {
 
 const hub = useCommentHub(targetLocation.value)
 
+// A comment can arrive twice: as the hub's broadcast (marked for no one) and as our own POST's response
+// (marked as ours to delete). Keep one copy, and keep the mark.
 function onNewComment(comment: any) {
-  if (comments.value?.some((c) => c.id === comment.id)) return
+  const existing = comments.value?.find((c) => c.id === comment.id)
+  if (existing) {
+    if (comment.canDelete) existing.canDelete = true
+    return
+  }
   comments.value = [...(comments.value || []), comment]
 }
 
 function onNewReply(commentId: string, reply: any) {
   const parent = comments.value?.find((c) => c.id === commentId)
   if (!parent) return
-  if (parent.replies?.some((r: any) => r.id === reply.id)) return
+  const existing = parent.replies?.find((r: any) => r.id === reply.id)
+  if (existing) {
+    if (reply.canDelete) existing.canDelete = true
+    return
+  }
   parent.replies = [...(parent.replies || []), reply]
 }
 
+// Comments load for everyone without a token. Once a signed-in reader is known, they load again with the
+// token, so the API can mark which ones the reader may delete. The latest load wins.
+let loadSequence = 0
 async function loadComments() {
+  const sequence = ++loadSequence
   try {
-    comments.value = await fetchPublic(`comment/${targetLocation.value}`)
+    const path = `comment/${targetLocation.value}`
+    const loaded = currentUser.value ? await fetchWithAuth(path) : await fetchPublic(path)
+    if (sequence === loadSequence) comments.value = loaded
   } catch (e) {
     console.error('Failed to load comments:', e)
-    comments.value = []
+    if (sequence === loadSequence && !comments.value) comments.value = []
   }
 }
 
@@ -49,13 +65,13 @@ async function addComment() {
   if (!commentText.value.trim() || posting.value) return
   posting.value = true
   try {
-    await fetchWithAuth(`comment/${targetLocation.value}`, {
+    const created = await fetchWithAuth(`comment/${targetLocation.value}`, {
       method: 'POST',
       body: JSON.stringify({ commentText: commentText.value }),
     })
     commentText.value = ''
-    // SignalR broadcasts the new comment back to all clients including us;
-    // onNewComment handles deduplication.
+    // SignalR broadcasts the new comment to every reader, us included; onNewComment keeps one copy.
+    onNewComment(created)
   } catch (e) {
     console.error('Failed to post comment:', e)
   } finally {
@@ -64,8 +80,10 @@ async function addComment() {
 }
 
 onMounted(async () => {
-  loadUser()
   loadComments()
+  loadUser().then(() => {
+    if (currentUser.value) loadComments()
+  })
   try {
     await hub.start(onNewComment, onNewReply)
   } catch (e) {
@@ -115,6 +133,7 @@ onUnmounted(async () => {
           :current-user="currentUser"
           :target-location="targetLocation"
           @updated="loadComments"
+          @replied="onNewReply"
         />
       </div>
 
