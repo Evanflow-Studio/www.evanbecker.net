@@ -1,7 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { apiRequestDefaults, resolveApiBase } from '../../utils/apiBase'
 
 describe('resolveApiBase', () => {
@@ -32,25 +29,16 @@ describe('apiRequestDefaults', () => {
 
 // Every API call and hub connection must carry credentials, or Access on test refuses it.
 describe('every call site', () => {
-  const root = fileURLToPath(new URL('../..', import.meta.url))
-  const dirs = ['components', 'composables', 'layouts', 'pages', 'plugins', 'stores', 'utils']
+  // The source text of every app file, read by Vite at test time.
+  const sources = import.meta.glob<string>(
+    ['../../{components,composables,layouts,pages,plugins,stores,utils}/**/*.{vue,ts}', '../../app.vue'],
+    { query: '?raw', import: 'default', eager: true },
+  )
+  const files = Object.entries(sources).map(([path, text]) => ({ name: path.replace(/^\.\.\/\.\.\//, ''), text }))
 
-  function sources(dir: string): string[] {
-    let entries: string[]
-    try {
-      entries = readdirSync(dir)
-    } catch {
-      return []
-    }
-    return entries.flatMap((name) => {
-      const path = join(dir, name)
-      if (statSync(path).isDirectory()) return sources(path)
-      return /\.(vue|ts)$/.test(name) ? [path] : []
-    })
-  }
-
-  const files = [...dirs.flatMap((d) => sources(join(root, d))), join(root, 'app.vue')]
-    .map((path) => ({ name: relative(root, path).replace(/\\/g, '/'), text: readFileSync(path, 'utf8') }))
+  it('reads every app source file', () => {
+    expect(files.map((f) => f.name)).toEqual(expect.arrayContaining(['app.vue', 'composables/useApi.ts']))
+  })
 
   it('reads the public API URL only through useApiBase', () => {
     const readers = files.filter((f) => f.text.includes('public.apiUrl')).map((f) => f.name)
