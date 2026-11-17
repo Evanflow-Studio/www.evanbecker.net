@@ -41,7 +41,7 @@ So the disclosures sent me somewhere I hadn't planned to look: the other end of 
 
 In May I wrote that a compromise of the website's container had a small blast radius by design. It could reach the production database on a port filtered to my own network, and that was the worst it got.
 
-That was true as far as it went. A tunnel carries every request faithfully to whatever sits behind it. If the API has a bug, the tunnel delivers the exploit into my house as reliably as it delivers a page view. Cloudflare's WAF stands in front, and the ACME write-up is a reminder that it has edges. Behind the website's container sat a home network with my desktop on it, a NAS, the house's automation, and a CI runner that built pull requests from this public repo with the host's Docker socket mounted, which makes it root on the machine it runs on. I'd drawn the blast radius around one container, and it reached the whole house.
+That was true as far as it went. A tunnel carries every request faithfully to whatever sits behind it. If the API has a bug, the tunnel delivers the exploit into my house as reliably as it delivers a page view. Cloudflare's WAF stands in front, and the ACME write-up is a reminder that it has edges. Behind the website's container sat a home network with my desktop on it, a NAS, the house's automation and the machines that build my code. I'd drawn the blast radius around one container, and it reached the whole house.
 
 Then there was how much I'd handed to one company. Cloudflare held my DNS, my certificates, the tunnels into the house, and the login in front of every admin page. Each of those was a reasonable choice. Together they meant one provider's bad week was my bad week, with my home network at the end of it.
 
