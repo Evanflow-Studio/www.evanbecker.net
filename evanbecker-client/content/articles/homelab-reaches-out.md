@@ -55,6 +55,6 @@ After that, RAM is the real limit. The guests planned for the first two tiers ta
 
 The workstation and the laptop are still where things get built. The homelab supports them: it runs the CI, holds the index, does the embeddings and stores the files. What changes is how much of the support can happen without me. The plan is that an agent who needs to know whether a page is stale, or which asset fits a scene, asks the homelab, and the homelab has already done the slow part.
 
-How the agents use it is its own story, and I'm still running those experiments.
+How the agents use it is [its own story](/articles/virtual-backlog).
 
 The website used a fifth of one core on this machine. The next things it runs will use all sixteen threads and both cards, and none of them will be reachable from outside my house. I trust the server more with that job than I did when it was answering the door.
