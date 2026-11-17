@@ -7,6 +7,8 @@ tags:
   - software
 ---
 
+*Update, 17 November 2026: I no longer recommend this setup. The site moved back to a DigitalOcean droplet, and the homelab doesn't serve anything to the internet anymore. [Nothing at Home Answers the Door](/articles/off-the-homelab) covers why, and what I'd do instead. The rest of this post stays as the record of how it ran.*
+
 For most of the time evanbecker.net has been online, it lived on a DigitalOcean droplet. I have nothing bad to say about DigitalOcean. They're who I'd send a friend to today if a friend wanted a managed VPS, and I was a paying customer for a couple of years without a single outage I could blame on them. The droplet was a good droplet.
 
 It was also a droplet I didn't need. Sitting four feet from my desk, an i5-12600K Proxmox host I'd built for an unrelated project was idle most of the day. The droplet, doing even less than that, sat at about 4% CPU. Two machines doing nearly the same amount of nothing, in different buildings, on different bills.
@@ -163,21 +165,16 @@ Risk: lower than the cloud setup it replaced. The droplet had port 443 open to t
 
 The "if my home internet drops, the site goes down" part is the bit I'm currently working on smoothing over. Cloudflare's free tier includes Always Online, which keeps a static cached copy of public pages at the edge and serves it when the origin can't be reached. Set it up, configure cache rules for the routes you want preserved, and when the tunnel goes silent the public site stays up from cache while the dynamic stuff (anything that hits the API or the database) is temporarily unavailable. I get an Uptime Kuma alert, the article pages keep serving, search engines don't see a 5xx, and I have a real window to actually fix things instead of racing the SEO penalty. Not in production yet, but close. The fact that it's free is, again, suspicious.
 
-## What This Looks Like If You Don't Have a Homelab
+## What I'd Recommend Now
 
-The setup I just described scales down further than you might think. You don't need an i5-12600K. You don't need Proxmox. You don't even need LXCs.
+*Revised 17 November 2026. This section used to recommend running a site like this on hardware you already own, behind a tunnel, instead of paying for a droplet.*
 
-If all you want to do is host a static site or one or two small services, you need:
+The networking in this post holds up. A tunnel, with Access in front of anything private, on a machine with no open ports is still how I'd set up a site. The machine is what I'd change.
 
-1. A Linux box. Anything. A Raspberry Pi 4 has more than enough horsepower for a static site, a small API, and a cloudflared sidecar. An old laptop with a busted screen works. A mini PC for $150 is overkill.
-2. Docker.
-3. A Cloudflare account and a domain.
-4. The four-line cloudflared service in your Compose file.
+Put the part that faces the internet on a cheap cloud server with nothing else on it, and run `cloudflared` there. If that server is ever compromised, you lose a rented box, and nothing on it leads into your house. A tunnel into a homelab carries every request, exploits included, onto your home network.
 
-Skip the LXCs. Just run Docker Compose on the host. Skip the multi-tunnel setup until you have more than one service. Skip the firewall hardening if your machine isn't running anything else interesting. Start with one tunnel, one hostname, one container. The setup that grew into my five-LXC Proxmox stack started as one Compose file with three services on a single Ubuntu install.
+What I didn't expect, after moving everything off the cloud, was how much more I'd touch the infrastructure. When the box was a DigitalOcean rental, I treated it like a hotel room. Don't customize, don't get attached, log in only when something's broken. Once it was mine, I added services casually. A status page. Uptime monitoring. A test environment that cost nothing because it was just another set of containers on the same box. The friction of "is this worth a new $5/mo line item" was gone, and a lot of small useful things got built that wouldn't have been otherwise.
 
-The thing the cloud actually sells, and the thing it's worth paying for sometimes, is uptime guarantees and network engineering you don't want to do yourself. For a personal site, a side project, an internal tool, a status page, a hobby app, a Discord bot, the uptime guarantee mostly comes from the fact that nobody notices if you go down for an hour at 3 AM on a Tuesday. For everything in that category, hardware you already own plus a Cloudflare Tunnel is a better answer than a $5/mo droplet.
+That part is still worth having, and the machine at home can keep it. Give it the compute: builds, batch jobs, models. When it needs work from the site, it should reach out and ask for it, with a worker that polls an API on the cloud server, so nothing at home ever accepts a connection.
 
-What I didn't expect, after moving everything off the cloud, was how much more I'd touch the infrastructure. When the box was a DigitalOcean rental, I treated it like a hotel room. Don't customize, don't get attached, log in only when something's broken. Now that it's mine, I add services casually. A status page. Uptime monitoring. A test environment that costs nothing because it's just another set of containers on the same box. The friction of "is this worth a new $5/mo line item" is gone, and a lot of small useful things end up getting built that wouldn't have been otherwise.
-
-If you've got a machine sitting idle and a domain you bought once, you've already paid for most of this. The rest is a weekend and a cloudflared container.
+If you've got a machine sitting idle, put it to work. Just don't ask it to answer the door.
