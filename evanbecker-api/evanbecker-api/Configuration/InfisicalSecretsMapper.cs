@@ -16,7 +16,6 @@ public class InfisicalSecretsMapper : ISecretsMapper
         ["EMAIL_FROM_ADDRESS"] = "Email:FromAddress",
         ["EMAIL_TO_ADDRESS"] = "Email:ToAddress",
         ["RECAPTCHA_SECRET_KEY"] = "Recaptcha:SecretKey",
-        ["YOUTUBE_API_KEY"] = "YouTube:ApiKey",
     };
 
     public string? MapKey(string secretKey)

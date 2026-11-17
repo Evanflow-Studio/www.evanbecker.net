@@ -10,7 +10,6 @@ public class InfisicalSecretsMapperTests
     [InlineData("DB_CONNECTION_STRING", "ConnectionStrings:Database")]
     [InlineData("SMTP2GO_API_KEY", "Email:ApiKey")]
     [InlineData("RECAPTCHA_SECRET_KEY", "Recaptcha:SecretKey")]
-    [InlineData("YOUTUBE_API_KEY", "YouTube:ApiKey")]
     [InlineData("Section__Key", "Section:Key")]
     public void Maps_secrets_to_their_settings(string secret, string setting)
     {

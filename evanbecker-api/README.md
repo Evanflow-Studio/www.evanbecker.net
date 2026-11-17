@@ -1,15 +1,14 @@
 # evanbecker-api
 
-REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles comments, contact form submissions, newsletter subscriptions, user management, YouTube search proxy, and real-time features via SignalR.
+REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles comments, contact form submissions, newsletter subscriptions, user management, and real-time comments via SignalR.
 
 ## Tech Stack
 
 - **.NET 10** / ASP.NET Core
 - **Entity Framework Core** with PostgreSQL 18
 - **Auth0** JWT Bearer authentication
-- **SignalR** for real-time comments and multiplayer jam sessions
+- **SignalR** for real-time comments
 - **SMTP2Go** for email notifications (contact form, newsletter)
-- **YouTube Data API v3** for search (proxied to keep key server-side)
 - **Infisical** for secrets management (via `SecretsConfigurationProvider`)
 
 ## Project Structure
@@ -17,9 +16,9 @@ REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles commen
 ```
 evanbecker-api/
 ├── evanbecker-api/              # API project
-│   ├── Controllers/             # REST endpoints (Comment, Contact, Newsletter, User, YouTube)
+│   ├── Controllers/             # REST endpoints (Comment, Contact, Newsletter, User)
 │   ├── Configuration/           # Secrets provider, Auth0/GitHub config models
-│   ├── Services/                # Business logic (Comments, Users, Email, Recaptcha, YouTube)
+│   ├── Services/                # Business logic (Comments, Users, Email, Recaptcha)
 │   ├── Dto/                     # Data transfer objects
 │   ├── Extensions/              # WebApplicationExtensions (auto-migrations)
 │   └── Program.cs               # App startup & DI
@@ -45,8 +44,6 @@ All under `/api/v1/`:
 | `user` | GET | Required | Get authenticated user info |
 | `user` | POST | Required | Sync/upsert user from Auth0 |
 | `user` | PATCH | Required | Update profile (name, avatar) |
-| `youtube/search?q={query}` | GET | No | Search YouTube catalog (proxied) |
-| `youtube/video/{videoId}` | GET | No | Get video metadata (cached 24h) |
 
 Swagger docs available at `/swagger` on any running instance.
 
@@ -109,9 +106,6 @@ dotnet user-secrets set "Auth0:Domain" "dev-m3uiopcp.us.auth0.com"
 dotnet user-secrets set "Auth0:Audience" "evanbecker.api"
 dotnet user-secrets set "Auth0:ClientId" "YOUR_CLIENT_ID"
 
-# Optional — YouTube (ray marcher music search)
-dotnet user-secrets set "YouTube:ApiKey" "YOUR_YOUTUBE_DATA_API_KEY"
-
 # Optional — reCAPTCHA (contact form)
 dotnet user-secrets set "Recaptcha:SecretKey" "YOUR_RECAPTCHA_SECRET"
 
@@ -130,7 +124,7 @@ At startup the API checks these (`Configuration/RequiredConfiguration.cs`). A mi
 
 | Infisical key (today) | Key Vault secret | .NET config path | Required | What happens without it |
 |---|---|---|---|---|
-| `DB_CONNECTION_STRING` | `ConnectionStrings--Database` | `ConnectionStrings:Database` | **Yes** | API won't start |
+| `DB_CONNECTION_STRING` | `ConnectionStrings--Database` (written by evanflow-infra's pipeline) | `ConnectionStrings:Database` | **Yes** | API won't start |
 | (not read) | (config, in `appsettings.{Environment}.json`) | `Auth0:Domain` | **Yes** | Auth0 login/JWT validation fails |
 | (not read) | (config) | `Auth0:Audience` | **Yes** | JWT validation fails |
 | (not read) | (config, public) | `Auth0:ClientId` | **Yes** | Swagger UI OAuth (PKCE) breaks |
@@ -138,9 +132,10 @@ At startup the API checks these (`Configuration/RequiredConfiguration.cs`). A mi
 | `EMAIL_FROM_ADDRESS` | (config) | `Email:FromAddress` | No | Defaults to `noreply@evanbecker.net` |
 | `EMAIL_TO_ADDRESS` | `Email--ToAddress` (or config) | `Email:ToAddress` | No | Contact form emails aren't sent |
 | `RECAPTCHA_SECRET_KEY` | `Recaptcha--SecretKey` | `Recaptcha:SecretKey` | No | Contact form submissions are rejected (fails closed) |
-| `YOUTUBE_API_KEY` | `YouTube--ApiKey` | `YouTube:ApiKey` | No | YouTube search disabled (file upload still works) |
 
 Auth0's domain, audience and client ID are public config, so they live in the appsettings files and `InfisicalSecretsMapper` no longer maps `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` or `AUTH0_CLIENT_ID`: a vault value can't override them. Don't add `Auth0--*` secrets to Key Vault. `AUTH0_CLIENT_SECRET` and `AUTH0_URL` were never read (Swagger uses PKCE with the client ID only) and are no longer mapped either. `evanbecker-api.Tests` checks each environment's resolved Auth0 values.
+
+The YouTube search proxy is gone (it served the ray marcher's audio visualizer, which was removed), so `YOUTUBE_API_KEY` is no longer read and there is no `YouTube--ApiKey` secret. The secrets Key Vault holds for the API are `Email--ApiKey`, `Email--ToAddress` and `Recaptcha--SecretKey`; evanflow-infra's pipeline writes `ConnectionStrings--Database`.
 
 **Minimum to run locally:** the database connection string. Auth0's public settings are in `appsettings.json`.
 

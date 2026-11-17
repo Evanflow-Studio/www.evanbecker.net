@@ -44,14 +44,6 @@ builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.Configure<RecaptchaSettings>(builder.Configuration.GetSection("Recaptcha"));
 builder.Services.AddHttpClient<IRecaptchaService, RecaptchaService>();
 
-builder.Services.Configure<YouTubeConfiguration>(builder.Configuration.GetSection("YouTube"));
-builder.Services.AddHttpClient<IYouTubeService, YouTubeService>();
-
-builder.Services.AddSingleton<ISessionManager, SessionManager>();
-builder.Services.AddHostedService<SessionCleanupService>();
-
-builder.Services.AddMemoryCache();
-
 builder.Services.AddSignalR();
 builder.Services.AddHealthChecks();
 
@@ -125,21 +117,6 @@ builder.Services.AddAuthentication(options =>
 {
     options.Authority = $"https://{auth0Settings.Domain}/";
     options.Audience = auth0Settings.Audience;
-
-    // SignalR sends the JWT as a query parameter for WebSocket connections
-    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            var accessToken = context.Request.Query["access_token"];
-            var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/session"))
-            {
-                context.Token = accessToken;
-            }
-            return Task.CompletedTask;
-        }
-    };
 });
 
 var app = builder.Build();
@@ -163,7 +140,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<CommentHub>("/hubs/comments").RequireCors("cors");
-app.MapHub<SessionHub>("/hubs/session").RequireCors("cors");
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResultStatusCodes =

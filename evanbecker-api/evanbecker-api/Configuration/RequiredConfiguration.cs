@@ -20,7 +20,6 @@ public static class RequiredConfiguration
         "Email:ApiKey",
         "Email:ToAddress",
         "Recaptcha:SecretKey",
-        "YouTube:ApiKey",
     ];
 
     // --migrate-only applies the migrations and exits, so it needs the database and nothing else.

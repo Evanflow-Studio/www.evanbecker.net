@@ -15,7 +15,6 @@ export const MAIN_UNIFORM_NAMES = [
   'u_animOffset', 'u_maxSteps', 'u_hitThreshold',
   'u_maxDist', 'u_warpCorrection', 'u_fogDensity', 'u_zoom',
   'u_paletteA', 'u_paletteB', 'u_paletteC', 'u_paletteD',
-  'u_bass', 'u_mid', 'u_treble', 'u_amplitude',
 ]
 
 export const FAST_UNIFORM_NAMES = [
@@ -113,9 +112,8 @@ export async function compileShaders(
 
   // Don't force high-performance GPU — it causes context loss on some devices
   // when the discrete GPU isn't available or the driver fails to switch.
-  // preserveDrawingBuffer MUST be true — getDisplayMedia (tab capture) reads the
-  // canvas at compositor time. With false, the buffer is cleared after compositing,
-  // causing black frames when tab capture is active.
+  // preserveDrawingBuffer stays true, as it was. Tab audio capture, which needed it,
+  // has been removed; turning it off would be a separate change to the renderer.
   const gl = canvas.getContext('webgl2', {
     antialias: false,
     powerPreference: 'default',
