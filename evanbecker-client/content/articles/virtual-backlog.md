@@ -137,7 +137,7 @@ I tried six requests and scored each from 0 to 1.
 | "add a newsletter opt-in to the account page" | 0.00 |
 | "make video games autonomously with agents" | 0.00 |
 
-The first four landed on rulings and docs that exist. The two zeros are the most useful numbers in the table. Neither this website nor the game studio has a desired-state tree yet, so there's nowhere for those requests to land. The newsletter opt-in was a real request, built the same day, by an agent that had to work out from scratch what this site is. Low confidence says we don't know this area, and whoever takes the work should expect to find things out.
+The first four landed on rulings and docs that exist. The two zeros are the most useful numbers in the table. That night, neither this website nor the game studio had a desired-state tree, so there was nowhere for those requests to land. The newsletter opt-in was a real request, built the same day, by an agent that had to work out from scratch what this site is. Low confidence says we don't know this area, and whoever takes the work should expect to find things out.
 
 That changes what an agent should do with a request. With a high score it can lean on what's written: the ruling exists, the docs say how, and the work is mostly following them. With a low score, the first job is finding out, by reading the code and asking, and often the first real piece of work is writing the missing part of the tree, so the next request in that area lands somewhere.
 
@@ -155,6 +155,10 @@ That's the backlog I'm after. Nobody maintains the list of work. It's generated 
 
 The licensing key is the small version of the whole idea. The request got easier to act on because a decision was written into a tree, and the backlog's view of it changed without anyone touching the backlog.
 
+Later the same night, the website made the point about itself. An agent wrote the site's desired state as 80 statements, and the bench ran again. "Add a newsletter opt-in to the account page" went from 0.00 to 0.66, and landed on one statement: "Saving the profile never changes the newsletter opt-in." That statement is in the gap at that commit, so the request became a work item without anyone writing a story for it.
+
+The rerun was honest about the site, too. Across its 13 named checks and 45 tests, the right test came first 69% of the time and always within the top five. Coverage came to 52.5%, but tests alone accounted for 18.8%. Adding the endpoints and pages took it to 31.2%, and the README, CLAUDE.md and STATUS.md carried the rest, so half the picture rests on documents, and a document only claims. 47 of 152 things in the current state matched no statement, one of them `/resume`, a live page nobody had thought to write down. And the geometry turned up a stale doc on its own. The README's line "The entire stack is self-hosted on a Proxmox VE homelab" sat nearest the statement that the homelab serves nothing, which says the opposite. The contradiction filter had been noise. This one took a person reading the nearest neighbour.
+
 Once the backlog is computed, the architect stops maintaining it, and the job moves somewhere else.
 
 A big part of an architect's work has always been keeping a list honest. Grooming the backlog, merging the duplicates, noticing the story that contradicts last quarter's decision, explaining why the odd module exists. Every one of those showed up in the measurements: duplicates as a ranking, contradictions as a failed filter, unexplained code as a pile of helpers waiting for a reason. None of them is solved, and none of them is solved by maintaining a better list. Each one gets better when the trees get better. A decision written down raises a request's confidence. A ranked characteristic explains code that would otherwise look like a bug. A statement with a named check becomes evidence instead of a hope.
@@ -169,6 +173,6 @@ The next passes are clear enough:
 - Bring in a language model as a judge, but only for the statements sitting near the threshold, where the vectors can't decide.
 - Use CI results as the true current state. A test that passed on main is evidence; a test that merely exists isn't.
 - Try a bigger local model, which the homelab I wrote about in [A Homelab That Only Reaches Out](/articles/homelab-reaches-out) is being set up to run.
-- Write the website's tree and the game studio's tree, so their requests have somewhere to land.
+- Write the game studio's tree, so its requests have somewhere to land, the way the website's now do.
 
 The first number that night said the picture was finished. The honest one, once the threshold allowed for the best-of-eight-thousand problem, was 85.7%, with 678 statements in the gap and a clear list of what the method can't see. I trust that picture more than the clean one. It's grainy, and the grain is in the right places, and every decision I write down from here makes it a little less grainy without anyone touching a list.
