@@ -205,6 +205,6 @@ The API is containerized and built by GitHub Actions on our own runner, once per
 - **`develop` branch** → `api-test.evanbecker.net` (moves `:test`)
 - **`main` branch** → `api.evanbecker.net` (moves `:prod` to the image test ran; prod on the droplet runs the digest pinned in evanflow-infra)
 
-The homelab (LXC 109) still pulls from its local registry until its `.env` switches to GHCR.
+The homelab (LXC 109) pulls from its local registry, which CI no longer pushes to, so it keeps the images it runs today until the cutover.
 
 No secrets in CI — all secrets are pulled from Infisical at container startup.

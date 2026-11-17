@@ -39,7 +39,7 @@ For the full branching strategy, workflow, protection rules, and re-apply comman
 
 1. Developer pushes to `develop` or `main`
 2. The self-hosted runner (LXC 108) builds each image once per commit and pushes it to GHCR as `:<sha>`, moving `:test`. A push to `main` moves `:prod` to the image test ran, without rebuilding
-3. Watchtower (LXC 109) detects a new image within 30s, pulls it and restarts the container. LXC 109 still pulls from the local registry, so it gets new images only once its `/opt/docker/.env` sets `REGISTRY=ghcr.io/evanflow-studio` and `PROD_TAG=prod` (and the GHCR packages are public)
+3. Watchtower (LXC 109) detects a new image within 30s, pulls it and restarts the container. It watches the local registry, which CI no longer pushes to, so the homelab keeps the images it runs today until the cutover
 4. The .NET API pulls its own secrets from Infisical at startup — no secrets in CI or compose files
 5. EF Core migrations run automatically at container startup
 

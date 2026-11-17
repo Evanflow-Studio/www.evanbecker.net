@@ -7,12 +7,6 @@
 #
 # Required .env vars: REGISTRY, TUNNEL_TOKEN, INFISICAL_CLIENT_ID,
 #   INFISICAL_CLIENT_SECRET, INFISICAL_ADDRESS, INFISICAL_PROJECT_ID
-# Optional: PROD_TAG (default latest, the local registry's prod tag).
-#
-# The clients read their public config at runtime from evanbecker-client/env/*.env, so
-# one image serves test and prod. Switching this host to GHCR is a .env change only:
-# REGISTRY=ghcr.io/evanflow-studio and PROD_TAG=prod (CI moves :test and :prod there),
-# once the GHCR packages are public.
 
 services:
   # ── Reverse Proxy ──
@@ -33,7 +27,7 @@ services:
 
   # ── Production ──
   api-prod:
-    image: ${REGISTRY}/evanbecker-api:${PROD_TAG:-latest}
+    image: ${REGISTRY}/evanbecker-api:latest
     container_name: evanbecker-api-prod
     restart: always
     environment:
@@ -58,11 +52,9 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   client-prod:
-    image: ${REGISTRY}/evanbecker-client:${PROD_TAG:-latest}
+    image: ${REGISTRY}/evanbecker-client:latest
     container_name: evanbecker-client-prod
     restart: always
-    env_file:
-      - evanbecker-client/env/prod.env
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.client-prod.rule=Host(`www.evanbecker.net`) || Host(`evanbecker.net`)"
@@ -100,8 +92,6 @@ services:
     image: ${REGISTRY}/evanbecker-client:test
     container_name: evanbecker-client-test
     restart: always
-    env_file:
-      - evanbecker-client/env/test.env
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.client-test.rule=Host(`test.evanbecker.net`)"
