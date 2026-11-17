@@ -31,15 +31,15 @@ All defined in [`docker-compose.production.yaml`](../docker-compose.production.y
 
 ### Branch Strategy
 
-Two branches: `develop` → test (`:test` tag), `main` → prod (`:latest` tag). Both protected against deletion and force-push. No `release` branch, no gitflow.
+Two branches: `develop` → test (`:test` tag), `main` → prod (`:latest` on the local registry, `:prod` on GHCR). Both protected against deletion and force-push. No `release` branch, no gitflow.
 
 For the full branching strategy, workflow, protection rules, and re-apply commands, see the root [`README.md` → Branching Strategy](../README.md#branching-strategy).
 
 ### How It Works
 
 1. Developer pushes to `develop` or `main`
-2. Self-hosted runner (LXC 108) builds Docker images and pushes to local registry
-3. Watchtower (LXC 109) detects new image within 30s, pulls and restarts the container
+2. The self-hosted runner (LXC 108) builds each image once per commit and pushes it to GHCR as `:<sha>`, moving `:test`. A push to `main` moves `:prod` to the image test ran, without rebuilding
+3. Watchtower (LXC 109) detects a new image within 30s, pulls it and restarts the container. It watches the local registry, which CI no longer pushes to, so the homelab keeps the images it runs today until the cutover
 4. The .NET API pulls its own secrets from Infisical at startup — no secrets in CI or compose files
 5. EF Core migrations run automatically at container startup
 
@@ -108,11 +108,8 @@ The .NET API connects to Infisical at startup via a custom `IConfigurationProvid
 | Infisical Key | .NET Config Path | Purpose |
 |---------------|-----------------|---------|
 | `DB_CONNECTION_STRING` | `ConnectionStrings:Database` | PostgreSQL connection string |
-| `AUTH0_DOMAIN` | `Auth0:Domain` | Auth0 tenant domain |
-| `AUTH0_AUDIENCE` | `Auth0:Audience` | Auth0 API identifier |
-| `AUTH0_CLIENT_ID` | `Auth0:ClientId` | Auth0 client ID |
-| `AUTH0_CLIENT_SECRET` | `Auth0:ClientSecret` | Auth0 client secret |
-| `AUTH0_URL` | `Auth0:Url` | Auth0 base URL |
+
+Auth0's domain, audience and client ID are public config in `appsettings.{Environment}.json`, and the mapper no longer reads them from Infisical. `AUTH0_CLIENT_SECRET` and `AUTH0_URL` were never used and are no longer mapped. The full list is in `evanbecker-api/README.md`.
 
 ### Auth0 Tenants
 

@@ -6,12 +6,6 @@ import { QUALITY_NAMES, GEO_PRESET_NAMES, ANIMATION_NAMES } from '~/utils/shader
 const store = useRayMarcherStore()
 const presetNames = LATTICE_PRESETS.map(p => p.name)
 
-const props = defineProps<{
-  /** When true, the experimental Audio tab is exposed. Mirrors the lab gate
-   *  in RayMarchDemo — driven by isAuthenticated + experiments.rayMarcherLab. */
-  labMode?: boolean
-}>()
-
 const emit = defineEmits<{
   screenshot: []
   fullscreen: []
@@ -19,19 +13,13 @@ const emit = defineEmits<{
 
 
 const showAdvanced = ref(false)
-const activeTags = ref(new Set(props.labMode
-  ? ['scene', 'color', 'fx', 'audio', 'tools']
-  : ['scene', 'color', 'fx', 'tools']))
-const tags = computed(() => {
-  const base = [
-    { id: 'scene', label: 'Scene' },
-    { id: 'color', label: 'Color' },
-    { id: 'fx', label: 'FX' },
-  ]
-  if (props.labMode) base.push({ id: 'audio', label: 'Audio' })
-  base.push({ id: 'tools', label: 'Tools' })
-  return base
-})
+const activeTags = ref(new Set(['scene', 'color', 'fx', 'tools']))
+const tags = [
+  { id: 'scene', label: 'Scene' },
+  { id: 'color', label: 'Color' },
+  { id: 'fx', label: 'FX' },
+  { id: 'tools', label: 'Tools' },
+]
 
 function toggleTag(id: string) {
   if (activeTags.value.has(id)) {
@@ -132,9 +120,7 @@ const presetDisplayName = computed(() => {
       <ColorTab v-if="activeTags.has('color')" />
       <div v-if="activeTags.has('color') && activeTags.has('fx')" class="border-t border-slate-700/30" />
       <FxTab v-if="activeTags.has('fx')" />
-      <div v-if="activeTags.has('fx') && activeTags.has('audio')" class="border-t border-slate-700/30" />
-      <AudioTab v-if="activeTags.has('audio')" />
-      <div v-if="activeTags.has('audio') && activeTags.has('tools')" class="border-t border-slate-700/30" />
+      <div v-if="activeTags.has('fx') && activeTags.has('tools')" class="border-t border-slate-700/30" />
       <ToolsTab v-if="activeTags.has('tools')" @screenshot="emit('screenshot')" @fullscreen="emit('fullscreen')" />
     </div>
   </FloatingPanel>

@@ -1,0 +1,14 @@
+# Keep local state out of the image build: a developer's .env must never be baked in,
+# and node_modules/.nuxt/.output are rebuilt inside the image.
+node_modules
+.nuxt
+.output
+.data
+.nitro
+.cache
+.env
+.env.*
+env
+tests
+test-results
+playwright-report

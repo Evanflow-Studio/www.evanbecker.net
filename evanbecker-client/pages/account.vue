@@ -3,7 +3,6 @@ definePageMeta({ ssr: false })
 useHead({ title: 'Account - Evan Becker' })
 
 const currentUser = useCurrentUser()
-const experiments = useExperiments()
 const { fetchWithAuth } = useApi()
 
 // Auth0 state — same pattern as AppHeader
@@ -143,30 +142,6 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
           <div v-else class="flex items-center justify-center py-8">
             <LoadingSpinner size="md" />
           </div>
-        </div>
-
-        <!-- Labs — experimental features, only functional while signed in -->
-        <div class="rounded-xl border border-slate-200 bg-white/60 p-6 dark:border-slate-700/50 dark:bg-slate-900/50">
-          <h2 class="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Labs</h2>
-          <p class="mb-5 text-xs text-slate-500">
-            Experimental features. Buggy, browser-specific, and not guaranteed to stick around.
-          </p>
-
-          <label class="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              v-model="experiments.rayMarcherLab"
-              class="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 bg-white text-[#0C65E5] focus:ring-[#0C65E5] focus:ring-offset-0 dark:border-slate-600 dark:bg-slate-800 dark:text-[#2D95FC] dark:focus:ring-[#2D95FC]"
-            />
-            <span>
-              <span class="block text-sm font-medium text-slate-800 dark:text-slate-200">Ray marcher: audio visualizer &amp; sessions</span>
-              <span class="block text-xs text-slate-500">
-                Adds a music player, mic/tab audio capture, and multiplayer rooms to
-                <NuxtLink to="/sandbox/raymarcher" class="text-[#0C65E5] hover:underline dark:text-[#2D95FC]">/sandbox/raymarcher</NuxtLink>.
-                Chrome/Edge only; expect glitches.
-              </span>
-            </span>
-          </label>
         </div>
 
       </div>

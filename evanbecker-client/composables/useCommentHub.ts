@@ -5,8 +5,7 @@ import {
 } from '@microsoft/signalr'
 
 export function useCommentHub(targetLocation: string) {
-  const config = useRuntimeConfig()
-  const baseUrl = (config.public.apiUrl as string)?.replace(/\/$/, '') || ''
+  const baseUrl = useApiBase()
 
   let connection: HubConnection | null = null
 
@@ -15,7 +14,8 @@ export function useCommentHub(targetLocation: string) {
     onNewReply: (commentId: string, reply: any) => void,
   ) {
     connection = new HubConnectionBuilder()
-      .withUrl(`${baseUrl}/hubs/comments`)
+      // Credentials: Cloudflare Access on test needs its cookie (see utils/apiBase.ts).
+      .withUrl(`${baseUrl}/hubs/comments`, { withCredentials: true })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build()

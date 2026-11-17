@@ -10,7 +10,7 @@ import {
   MenuItem,
 } from '@headlessui/vue'
 
-const config = useRuntimeConfig()
+const apiBase = useApiBase()
 const currentUser = useCurrentUser()
 const needsProfileSetup = useNeedsProfileSetup()
 const isScrolled = ref(false)
@@ -40,9 +40,8 @@ async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
     return
   }
   try {
-    const baseUrl = config.public.apiUrl?.replace(/\/$/, '') || ''
     const nameParts = (auth0User?.name || '').split(' ')
-    const res = await fetch(`${baseUrl}/api/v1/user`, {
+    const res = await fetch(`${apiBase}/api/v1/user`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,7 +52,7 @@ async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
         lastName: nameParts.slice(1).join(' ') || null,
         email: auth0User?.email || null,
       }),
-      mode: 'cors',
+      ...apiRequestDefaults,
     })
     if (res.ok) {
       currentUser.value = await res.json()

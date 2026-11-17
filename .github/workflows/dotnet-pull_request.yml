@@ -2,15 +2,27 @@ name: Build and Test
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
+
+# Our own runner only (Evan, 2026-10-29). This repo is public, so every job skips PRs from
+# forks: untrusted code never reaches a machine in the house. This guard lives in the
+# workflow file, which a fork's PR can edit, so it only holds together with the repo setting
+# Settings → Actions → "Require approval for all outside collaborators": never approve a
+# fork's run.
+permissions:
+  contents: read
 
 jobs:
   build-and-test-api:
-    runs-on: self-hosted
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
     env:
       working-directory: ./evanbecker-api
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
@@ -26,11 +38,15 @@ jobs:
       working-directory: ${{env.working-directory}}
 
   build-and-test-client:
-    runs-on: self-hosted
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
     env:
       working-directory: ./evanbecker-client
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -38,6 +54,77 @@ jobs:
     - name: Install dependencies
       run: npm install
       working-directory: ${{env.working-directory}}
+    - name: Unit tests
+      run: npm run test:unit
+      working-directory: ${{env.working-directory}}
     - name: Build
       run: npm run build
       working-directory: ${{env.working-directory}}
+
+  # One client image must serve test and prod: build it once (no push) and run it with each
+  # environment's runtime env.
+  client-image:
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
+    env:
+      IMAGE: evanbecker-client-pr:${{ github.event.pull_request.head.sha }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Build the client image
+      run: docker build --build-arg "NUXT_PUBLIC_APP_VERSION=pr-${GITHUB_SHA::7}" -t "$IMAGE" evanbecker-client
+    - name: Run it as test and as prod
+      run: scripts/smoke-client-image.sh "$IMAGE"
+    - name: Clean up
+      if: always()
+      run: |
+        docker image rm "$IMAGE" 2>/dev/null || true
+        docker image prune -f
+
+  # The API image's migration modes, against a throwaway Postgres 18: --migrate-only (the
+  # deploy's one-shot step), Database__MigrateOnStartup=false, and the default startup migration.
+  api-image:
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
+    env:
+      IMAGE: evanbecker-api-pr:${{ github.event.pull_request.head.sha }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Build the API image
+      run: docker build -t "$IMAGE" -f evanbecker-api/Dockerfile .
+    - name: Check its migration modes
+      run: scripts/smoke-api-migrations.sh "$IMAGE"
+    - name: Clean up
+      if: always()
+      run: |
+        docker image rm "$IMAGE" 2>/dev/null || true
+        docker image prune -f
+
+  gitleaks:
+    # Public repo: fork PRs never run on our runner.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, homelab]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Scan this PR's commits for secrets
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      # The official image, pinned. The runner shares the host's Docker socket, so a bind mount
+      # of $PWD would name a host path that doesn't exist: stream the history in instead
+      # (gitleaks git reads only .git), with the config that lists the public values.
+      run: |
+        tar -cf - .git .gitleaks.toml | docker run --rm -i --entrypoint /bin/sh ghcr.io/gitleaks/gitleaks:v8.30.1 -c '
+          set -e
+          mkdir /tmp/repo && tar -xf - -C /tmp/repo
+          git config --global --add safe.directory /tmp/repo
+          gitleaks git /tmp/repo --config /tmp/repo/.gitleaks.toml --redact --verbose --log-opts="$1..$2"
+        ' gitleaks "$BASE_SHA" "$HEAD_SHA"
