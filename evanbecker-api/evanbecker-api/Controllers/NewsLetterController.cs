@@ -18,14 +18,18 @@ public class NewsLetterController(INewsletterList list, IEmailService emailServi
     /// </summary>
     [HttpPost]
     [EnableRateLimiting(RateLimits.Newsletter)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ErrorDto>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Add(NewsLetterEntryDto dto)
     {
         if (!await recaptcha.VerifyAsync(dto.RecaptchaToken ?? ""))
-            return BadRequest(new { error = "reCAPTCHA verification failed. Please try again." });
+            return BadRequest(new ErrorDto("reCAPTCHA verification failed. Please try again."));
 
         var address = NormalizeAddress(dto.EmailAddress);
         if (address.Length is 0 or > 255 || !address.Contains('@'))
-            return BadRequest(new { error = "Enter a valid email address." });
+            return BadRequest(new ErrorDto("Enter a valid email address."));
 
         if (await list.ContainsAsync(address) || !await list.TryAddAsync(address))
             return Conflict();

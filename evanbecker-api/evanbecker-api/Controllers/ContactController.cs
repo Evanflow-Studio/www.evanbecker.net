@@ -1,3 +1,4 @@
+using evanbecker_api.Dto;
 using evanbecker_api.Services;
 using evanbecker_domain;
 using evanbecker_domain.Entities;
@@ -34,11 +35,13 @@ public class ContactController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ErrorDto>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ContactMessage([FromBody] ContactRequest request)
     {
         var isHuman = await _recaptchaService.VerifyAsync(request.RecaptchaToken ?? "");
         if (!isHuman)
-            return BadRequest(new { error = "reCAPTCHA verification failed. Please try again." });
+            return BadRequest(new ErrorDto("reCAPTCHA verification failed. Please try again."));
 
         var message = new ContactMessage
         {

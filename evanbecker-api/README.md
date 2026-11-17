@@ -42,6 +42,23 @@ All under `/api/v1/`:
 
 Swagger docs available at `/swagger` on any running instance.
 
+### Personal data stays in the API
+
+No public endpoint returns personal data, and the tests fail the build if one could:
+
+- `PersonalDataGuardTests` starts the API inside the test and reads every endpoint it maps, with ApiExplorer's
+  description of each. A response may not be an entity from `evanbecker-domain`, and may not have a member named like
+  personal data (email, Auth0 ID, `sub`, role flags, password, token, secret, IP, phone, address). An endpoint whose
+  body can't be read from its types fails too: `object`, an `IActionResult` with no `[ProducesResponseType]`, an
+  anonymous type, or one hidden from ApiExplorer.
+- `AnonymousGetTests` seeds a Postgres with personal data in every table and calls every GET without signing in. Open
+  ones must answer without an email address or a denied key; signed-in ones must refuse.
+- The only exceptions are in `Guard/GuardAllowlist.cs`, each with its reason. Personal data is excused only on an
+  endpoint that needs sign-in (the caller's own email on `user`), and an entry that no longer excuses anything fails.
+
+`AnonymousGetTests` starts its own `postgres:18` with Docker, or uses the connection string in `EBN_GUARD_DATABASE`.
+CI runs it with `scripts/test-api-with-postgres.sh`.
+
 ## Local Development
 
 ### Recommended: Database in Docker, API native
