@@ -15,7 +15,6 @@
     "@auth0/auth0-vue": "^2.3.3",
     "@headlessui/vue": "^1.7.22",
     "@heroicons/vue": "^2.2.0",
-    "@microsoft/signalr": "^10.0.0",
     "@nuxt/content": "^2.13.4",
     "@nuxtjs/sitemap": "^8.0.14",
     "@pinia/nuxt": "^0.11.3",

@@ -34,8 +34,12 @@ jobs:
       run: dotnet build --no-restore
       working-directory: ${{env.working-directory}}
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      # The tests that need Postgres run in the next step. This runner can't reach a container's
+      # published port, so they run on a private network with the database instead.
+      run: dotnet test --no-build --verbosity normal --filter "Category!=Postgres"
       working-directory: ${{env.working-directory}}
+    - name: Test against Postgres (the personal-data guard's anonymous calls)
+      run: scripts/test-api-with-postgres.sh
 
   build-and-test-client:
     # Public repo: fork PRs never run on our runner.

@@ -1,13 +1,12 @@
 # evanbecker-api
 
-REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles comments, contact form submissions, newsletter subscriptions, user management, and real-time comments via SignalR.
+REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles contact form submissions, newsletter subscriptions and user accounts.
 
 ## Tech Stack
 
 - **.NET 10** / ASP.NET Core
 - **Entity Framework Core** with PostgreSQL 18
 - **Auth0** JWT Bearer authentication
-- **SignalR** for real-time comments
 - **SMTP2Go** for email notifications (contact form, newsletter)
 - **Infisical** for secrets management (via `SecretsConfigurationProvider`)
 
@@ -16,15 +15,15 @@ REST API for [www.evanbecker.net](https://www.evanbecker.net) — handles commen
 ```
 evanbecker-api/
 ├── evanbecker-api/              # API project
-│   ├── Controllers/             # REST endpoints (Comment, Contact, Newsletter, User)
+│   ├── Controllers/             # REST endpoints (Contact, Newsletter, User)
 │   ├── Configuration/           # Secrets provider, Auth0/GitHub config models
-│   ├── Services/                # Business logic (Comments, Users, Email, Recaptcha)
+│   ├── Services/                # Business logic (Users, Newsletter, Email, Recaptcha)
 │   ├── Dto/                     # Data transfer objects
 │   ├── Extensions/              # WebApplicationExtensions (auto-migrations)
 │   └── Program.cs               # App startup & DI
 │
 └── evanbecker-domain/           # EF Core data layer
-    ├── Entities/                # Comment, User, ContactMessage, NewsLetterEntry, Reply
+    ├── Entities/                # User, ContactMessage, NewsLetterEntry; Comment and Reply are unused, kept for their tables
     ├── Migrations/              # Database migrations
     └── ApplicationContext.cs    # DbContext
 ```
@@ -35,10 +34,6 @@ All under `/api/v1/`:
 
 | Endpoint | Method | Auth | Purpose |
 |----------|--------|------|---------|
-| `comment/{targetLocation}` | GET | No | Fetch page comments |
-| `comment/{targetLocation}` | POST | Required | Create comment |
-| `comment/{targetLocation}/reply/{commentId}` | POST | Required | Reply to comment |
-| `comment/{id}` | DELETE | Required | Soft-delete comment |
 | `contact` | POST | No | Submit contact form (with reCAPTCHA) |
 | `newsletter` | POST | No | Subscribe to newsletter |
 | `user` | GET | Required | Get authenticated user info |
@@ -46,6 +41,23 @@ All under `/api/v1/`:
 | `user` | PATCH | Required | Update profile (name, avatar) |
 
 Swagger docs available at `/swagger` on any running instance.
+
+### Personal data stays in the API
+
+No public endpoint returns personal data, and the tests fail the build if one could:
+
+- `PersonalDataGuardTests` starts the API inside the test and reads every endpoint it maps, with ApiExplorer's
+  description of each. A response may not be an entity from `evanbecker-domain`, and may not have a member named like
+  personal data (email, Auth0 ID, `sub`, role flags, password, token, secret, IP, phone, address). An endpoint whose
+  body can't be read from its types fails too: `object`, an `IActionResult` with no `[ProducesResponseType]`, an
+  anonymous type, or one hidden from ApiExplorer.
+- `AnonymousGetTests` seeds a Postgres with personal data in every table and calls every GET without signing in. Open
+  ones must answer without an email address or a denied key; signed-in ones must refuse.
+- The only exceptions are in `Guard/GuardAllowlist.cs`, each with its reason. Personal data is excused only on an
+  endpoint that needs sign-in (the caller's own email on `user`), and an entry that no longer excuses anything fails.
+
+`AnonymousGetTests` starts its own `postgres:18` with Docker, or uses the connection string in `EBN_GUARD_DATABASE`.
+CI runs it with `scripts/test-api-with-postgres.sh`.
 
 ## Local Development
 
@@ -60,7 +72,7 @@ cd evanbecker-api/evanbecker-api
 dotnet run
 ```
 
-The connection string in `appsettings.Development.json` points to `localhost:5432` with credentials matching `docker-compose.yaml` (user: `EvanBecker`, password: `P@55W0RD123`, db: `evanbecker-db`). No `.env` file needed.
+The connection string in `appsettings.Development.json` points to `localhost:5432` with the user and database from `docker-compose.yaml` (user: `EvanBecker`, db: `evanbecker-db`) and no password. Set `POSTGRES_PASSWORD` in the root `.env` (copy `.env.example`) for the container, and the same value as `PGPASSWORD` for the API, which Npgsql reads when the connection string has no password. Or set the whole connection string with user secrets, below.
 
 ### Full Stack in Docker
 
@@ -99,7 +111,7 @@ cd evanbecker-api/evanbecker-api
 dotnet user-secrets init  # only needed once
 
 # Required — database
-dotnet user-secrets set "ConnectionStrings:Database" "Host=localhost;Port=5432;Username=EvanBecker;Password=P@55W0RD123;Database=evanbecker-db"
+dotnet user-secrets set "ConnectionStrings:Database" "Host=localhost;Port=5432;Username=EvanBecker;Password=$POSTGRES_PASSWORD;Database=evanbecker-db"
 
 # Required — Auth0
 dotnet user-secrets set "Auth0:Domain" "dev-m3uiopcp.us.auth0.com"

@@ -32,7 +32,7 @@
 
 ## About
 
-This is the monorepo powering [evanbecker.net](https://www.evanbecker.net) — a personal site with blog articles (written in Markdown), an authenticated commenting system, a contact form, newsletter signup, and a projects showcase. The frontend is a Nuxt 3 application and the backend is a .NET API backed by PostgreSQL.
+This is the monorepo powering [evanbecker.net](https://www.evanbecker.net) — a personal site with blog articles (written in Markdown), Auth0 sign-in with an account page, a contact form, newsletter signup, and a projects showcase. The frontend is a Nuxt 3 application and the backend is a .NET API backed by PostgreSQL.
 
 The entire stack is self-hosted on a Proxmox VE homelab with isolated LXC containers, Cloudflare Tunnel for zero-open-port ingress, and Infisical for secrets management.
 
@@ -244,7 +244,7 @@ npm run dev
 
 - **Frontend:** [http://localhost:3000](http://localhost:3000)
 - **API + Swagger:** [http://localhost:5002/swagger](http://localhost:5002/swagger)
-- **PostgreSQL:** `localhost:5432` (user: `EvanBecker`, password: `P@55W0RD123`, db: `evanbecker-db`)
+- **PostgreSQL:** `localhost:5432` (user: `EvanBecker`, db: `evanbecker-db`; the password is `POSTGRES_PASSWORD` from your `.env`, which the API reads as `PGPASSWORD`)
 
 The database credentials are hardcoded in `docker-compose.yaml` and match `appsettings.Development.json`. No `.env` file needed for the database.
 
@@ -286,7 +286,6 @@ See [`infrastructure/README.md`](infrastructure/README.md) for full deployment d
 ## Features
 
 - **Blog** — Markdown-powered articles with syntax-highlighted code blocks via Nuxt Content
-- **Commenting System** — Auth0-authenticated real-time comments via SignalR with nested replies
 - **Contact Form** — Submissions stored in PostgreSQL with SMTP2Go email notifications
 - **Newsletter** — Email subscription with duplicate detection and SMTP2Go notifications
 - **Ray Marcher** — GPU-powered fractal visualizer with 4 scenes, cosine palettes, and post-FX ([docs](evanbecker-client/composables/raymarcher/README.md))
