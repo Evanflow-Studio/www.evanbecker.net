@@ -50,9 +50,10 @@ public class UserSettingsTests
     }
 
     [Fact]
-    public void Comment_payloads_never_carry_the_opt_in()
+    public void The_user_row_never_serializes_the_opt_in()
     {
-        // GET /api/v1/comment is anonymous and serializes each author's User row.
+        // No endpoint returns the User row (PersonalDataGuardTests fails one that does). If one ever did, the
+        // opt-in would still stay out of it: only CurrentUserDto carries it, to the user it belongs to.
         var user = new User { FirstName = "Ada", NewsletterOptIn = true };
 
         Assert.DoesNotContain("newsletterOptIn", JsonSerializer.Serialize(user, JsonSerializerOptions.Web));
