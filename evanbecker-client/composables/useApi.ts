@@ -6,8 +6,8 @@ export interface FetchWithAuthOptions extends RequestInit {
    * an auth error.
    *
    * Defaults to false, which is correct for almost every call site: a public
-   * blog page that quietly tries to load the current user (e.g. the comment
-   * section) must NOT trigger a redirect when the visitor is logged out, or
+   * page that quietly tries to load the current user (e.g. the header on a
+   * blog article) must NOT trigger a redirect when the visitor is logged out, or
    * any visitor reading a public article will be bounced to Auth0 mid-read.
    *
    * Pass `recover: true` only on call sites where the user is on a page

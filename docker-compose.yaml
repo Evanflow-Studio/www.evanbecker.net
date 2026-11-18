@@ -6,8 +6,8 @@
 # Or run the full stack in Docker:
 #   docker compose --profile fullstack up --build
 #
-# Database credentials match appsettings.Development.json:
-#   Host=localhost; Username=EvanBecker; Password=P@55W0RD123; Database=evanbecker-db
+# Database credentials match appsettings.Development.json: user EvanBecker, database evanbecker-db.
+# The password is POSTGRES_PASSWORD from your .env (copy .env.example); the API reads it as PGPASSWORD.
 
 services:
   evanbecker-db:
@@ -16,7 +16,7 @@ services:
     environment:
       POSTGRES_DB: evanbecker-db
       POSTGRES_USER: EvanBecker
-      POSTGRES_PASSWORD: P@55W0RD123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env, see .env.example}
     ports:
       - "5432:5432"
     volumes:

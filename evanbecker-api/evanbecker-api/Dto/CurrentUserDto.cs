@@ -3,21 +3,12 @@ using evanbecker_domain.Entities;
 namespace evanbecker_api.Dto;
 
 /// <summary>
-/// The signed-in user's own profile, as the user endpoints return it: every field the User row
-/// serializes to, plus the private settings that comment payloads must not carry.
+/// The signed-in user's own profile, as the user endpoints return it to that user: what the header and the account
+/// page show, plus the account page's newsletter opt-in. The Auth0 ID, the row's ID and the owner and admin flags
+/// stay in the API.
 /// </summary>
-public record CurrentUserDto(
-    Guid Id,
-    string? Auth0Id,
-    string? Avatar,
-    string? FirstName,
-    string? LastName,
-    string? Email,
-    bool IsOwner,
-    bool IsAdmin,
-    bool NewsletterOptIn)
+public record CurrentUserDto(string? FirstName, string? LastName, string? Avatar, string? Email, bool NewsletterOptIn)
 {
-    public static CurrentUserDto From(User user) => new(
-        user.Id, user.Auth0Id, user.Avatar, user.FirstName, user.LastName, user.Email,
-        user.IsOwner, user.IsAdmin, user.NewsletterOptIn);
+    public static CurrentUserDto From(User user) =>
+        new(user.FirstName, user.LastName, user.Avatar, user.Email, user.NewsletterOptIn);
 }

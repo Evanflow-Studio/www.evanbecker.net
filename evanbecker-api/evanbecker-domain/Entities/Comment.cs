@@ -4,6 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace evanbecker_domain.Entities;
 
+/// <summary>
+/// Comments were removed from the site on 2026-11-17, and nothing in the API reads or writes these any more. The
+/// entities stay so the model still matches the migrations and the Comments and Replies tables keep their rows:
+/// taking them out of the model needs a migration that drops both tables, which waits for Evan's yes.
+/// </summary>
 public class CommentBase
 {
     [Key]

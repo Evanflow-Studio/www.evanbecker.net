@@ -57,21 +57,28 @@ const newsletterEmail = ref('')
 const newsletterSubmitting = ref(false)
 const newsletterDone = ref(false)
 const newsletterError = ref('')
+const recaptcha = useRecaptcha()
 
 async function submitNewsletter() {
   newsletterSubmitting.value = true
   newsletterError.value = ''
   try {
+    const recaptchaToken = await recaptcha.token('newsletter')
     await $fetch(`${apiBase}/api/v1/newsletter`, {
       method: 'POST',
-      body: { emailAddress: newsletterEmail.value },
+      body: { emailAddress: newsletterEmail.value, recaptchaToken },
       ...apiRequestDefaults,
     })
     newsletterDone.value = true
   } catch (err: any) {
-    if (err?.response?.status === 409) {
+    const status = err?.response?.status
+    if (status === 409) {
       newsletterDone.value = true
       newsletterError.value = 'already'
+    } else if (status === 429) {
+      newsletterError.value = 'Too many sign-ups from here. Please try again later.'
+    } else if (status === 400) {
+      newsletterError.value = err?.data?.error || "That didn't go through. Please check the address and try again."
     } else {
       newsletterError.value = 'Something went wrong. Please try again.'
     }

@@ -74,7 +74,7 @@ npm install
 npm run dev
 ```
 
-Opens at [http://localhost:3000](http://localhost:3000). The API should also be running at `localhost:5002` for comments, auth, and Spotify features to work. See the [API README](../evanbecker-api/README.md) for setup.
+Opens at [http://localhost:3000](http://localhost:3000). The API should also be running at `localhost:5002` for sign-in, the account page, and Spotify features to work. See the [API README](../evanbecker-api/README.md) for setup.
 
 For Auth0 login to work locally, create `evanbecker-client/.env`:
 ```
@@ -104,7 +104,7 @@ docker run -p 3000:3000 --env-file env/test.env evanbecker-client   # serves as 
 docker run -p 3000:3000 --env-file env/prod.env evanbecker-client   # serves as www.evanbecker.net
 ```
 
-Every API call goes through `useApiBase()` and `apiRequestDefaults` (`utils/apiBase.ts`), which send `credentials: 'include'`: on test the API sits behind Cloudflare Access, which refuses a cross-origin call without its cookie. SignalR hubs connect with `withCredentials: true`. A unit test fails if a call site skips either.
+Every API call goes through `useApiBase()` and `apiRequestDefaults` (`utils/apiBase.ts`), which send `credentials: 'include'`: on test the API sits behind Cloudflare Access, which refuses a cross-origin call without its cookie. A unit test fails if a call site skips them.
 
 Without the env vars the image serves local-dev defaults and is **not** indexable, so a misconfigured deploy never gets indexed. `scripts/smoke-client-image.sh <image>` runs an image with each env file and checks that every page, `robots.txt`, `sitemap.xml` and `feed.xml` uses that environment's own site URL; the PR checks run it.
 
