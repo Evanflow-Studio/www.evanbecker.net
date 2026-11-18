@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Proves the API image's migration modes against a throwaway Postgres 18:
 #   1. --migrate-only applies every migration and exits 0; a second run changes nothing.
+#      The newsletter opt-in column is there, not null and off by default.
 #   2. --migrate-only exits non-zero when it can't reach the database, without printing
 #      the connection string's password.
 #   3. Database__MigrateOnStartup=false: the API starts, is healthy, and leaves an empty
@@ -57,6 +58,9 @@ if out=$(docker run --rm --network "$net" -e ASPNETCORE_ENVIRONMENT=Test -e "Con
 else
   fail "second run exited non-zero"
 fi
+# Where the account page's newsletter opt-in is saved: off for every row unless the user turns it on.
+optin=$(psql_q ebn "SELECT data_type || ' ' || is_nullable || ' ' || coalesce(column_default, 'none') FROM information_schema.columns WHERE table_name = 'Users' AND column_name = 'NewsletterOptIn'")
+[[ "$optin" == "boolean NO false" ]] && pass "Users.NewsletterOptIn: boolean, not null, default false" || fail "Users.NewsletterOptIn is '${optin:-missing}'"
 
 echo "== --migrate-only, database unreachable"
 if out=$(docker run --rm --network "$net" -e ASPNETCORE_ENVIRONMENT=Test -e "ConnectionStrings__Database=Host=nowhere.invalid;Database=ebn;Username=ebn;Password=$dbpass;Timeout=3" "$image" --migrate-only 2>&1); then

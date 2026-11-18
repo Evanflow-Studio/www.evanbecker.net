@@ -76,6 +76,34 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
   }
 }
 
+// Notifications: the user's email preferences. Only stored for now; nothing sends yet.
+const notificationsSaving = ref(false)
+const notificationsSaved = ref(false)
+const notificationsSaveError = ref(false)
+
+async function onNewsletterChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const optIn = input.checked
+  notificationsSaving.value = true
+  notificationsSaved.value = false
+  notificationsSaveError.value = false
+  try {
+    currentUser.value = await fetchWithAuth('user', {
+      method: 'PATCH',
+      body: JSON.stringify({ newsletterOptIn: optIn }),
+    })
+    notificationsSaved.value = true
+    setTimeout(() => { notificationsSaved.value = false }, 3000)
+  } catch (e) {
+    // Put the box back: the API still has the old value.
+    console.error('Failed to save notification settings:', e)
+    input.checked = !optIn
+    notificationsSaveError.value = true
+  } finally {
+    notificationsSaving.value = false
+  }
+}
+
 </script>
 
 <template>
@@ -142,6 +170,41 @@ async function onProfileSave(payload: { firstName: string; lastName: string; ava
           <div v-else class="flex items-center justify-center py-8">
             <LoadingSpinner size="md" />
           </div>
+        </div>
+
+        <!-- Notifications: email preferences, saved per user -->
+        <div v-if="currentUser" class="rounded-xl border border-slate-200 bg-white/60 p-6 dark:border-slate-700/50 dark:bg-slate-900/50">
+          <div class="mb-1 flex items-center justify-between">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Notifications</h2>
+            <Transition
+              enter-active-class="transition duration-300"
+              enter-from-class="opacity-0 translate-y-1"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition duration-200"
+              leave-from-class="opacity-100"
+              leave-to-class="opacity-0"
+            >
+              <span v-if="notificationsSaved" class="text-xs font-medium text-green-600 dark:text-green-400">Saved!</span>
+              <span v-else-if="notificationsSaveError" class="text-xs font-medium text-red-600 dark:text-red-400">Couldn't save. Sign in again and retry.</span>
+            </Transition>
+          </div>
+          <p class="mb-5 text-xs text-slate-500">
+            What you'd like to get by email. You can change this any time.
+          </p>
+
+          <label class="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              :checked="!!currentUser.newsletterOptIn"
+              :disabled="notificationsSaving"
+              class="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 bg-white text-[#0C65E5] focus:ring-[#0C65E5] focus:ring-offset-0 dark:border-slate-600 dark:bg-slate-800 dark:text-[#2D95FC] dark:focus:ring-[#2D95FC]"
+              @change="onNewsletterChange"
+            />
+            <span>
+              <span class="block text-sm font-medium text-slate-800 dark:text-slate-200">Email me newsletters and updates</span>
+              <span class="block text-xs text-slate-500">New articles and projects. Off unless you turn it on.</span>
+            </span>
+          </label>
         </div>
 
       </div>

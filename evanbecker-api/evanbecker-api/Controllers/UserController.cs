@@ -36,7 +36,7 @@ public class UserController(IUserService userService) : ControllerBase
         return isNew ? Created(string.Empty, body) : body;
     }
 
-    /// <summary>Update the current user's profile (name, avatar).</summary>
+    /// <summary>Update the current user's profile (name, avatar) and settings (newsletter opt-in).</summary>
     [HttpPatch]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

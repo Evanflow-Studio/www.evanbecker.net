@@ -40,7 +40,7 @@ async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
     return
   }
   try {
-    const nameParts = (auth0User?.name || '').split(' ')
+    const { firstName, lastName } = namesFromAuth0Profile(auth0User)
     const res = await fetch(`${apiBase}/api/v1/user`, {
       method: 'POST',
       headers: {
@@ -48,8 +48,8 @@ async function syncUserToApi(auth0User: any, getToken: () => Promise<string>) {
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        firstName: nameParts[0] || null,
-        lastName: nameParts.slice(1).join(' ') || null,
+        firstName,
+        lastName,
         email: auth0User?.email || null,
       }),
       ...apiRequestDefaults,

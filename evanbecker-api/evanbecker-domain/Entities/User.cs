@@ -33,4 +33,12 @@ public class User
 
     [MaxLength(255)]
     public string? LastName { get; set; }
+
+    /// <summary>
+    /// The user asked for newsletter and update emails on the account page. Off until they turn it on;
+    /// nothing sends them yet. Kept out of this entity's JSON, so it can't leave the API through the
+    /// entity: the user reads it through <c>CurrentUserDto</c>.
+    /// </summary>
+    [JsonIgnore]
+    public bool NewsletterOptIn { get; set; }
 }
