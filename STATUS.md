@@ -29,7 +29,7 @@ moved since #58, so none of #60 to #63 is on prod yet.
 ## Checks (2026-11-19)
 - `develop` at `1aafa67`: the test build passed with both image smokes (11-18). `main` plus `develop` merges
   to exactly `develop`'s tree.
-- This branch: client unit tests and `nuxt build` (see the commit), gitleaks over its commits.
+- This branch: client unit tests (13) and `nuxt build` passed. gitleaks runs in the PR's job (local Docker hung).
 
 ## Needs Evan
 1. Yes to push `a3/prod-prep` and open its PR, and to open the promote PR.
