@@ -8,7 +8,7 @@ on:
 # ran, without rebuilding it. That image is the develop commit merged into main (or main itself
 # after a fast-forward), used only when its tree is identical to main's. If no such image exists,
 # for example a hotfix made on main, this builds main once and says so in the summary.
-# Prod on the droplet runs the digest pinned in evanflow-infra (deploy/releases/ebn/prod.yaml);
+# Prod on the droplet runs the digest pinned in evanflow-infra (deploy/releases/ebn/prd.yaml);
 # :prod is the pointer for everything else. Our own runner only (Evan, 2026-10-29).
 permissions:
   contents: read
