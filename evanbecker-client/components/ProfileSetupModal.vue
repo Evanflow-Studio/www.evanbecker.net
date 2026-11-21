@@ -70,7 +70,7 @@ function tryClose() {
           <div class="mb-5">
             <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Complete your profile</h2>
             <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Add your name so others can recognise you in comments.
+              Add the name your account shows.
               <span class="text-red-600 dark:text-red-400">A first name is required to continue.</span>
             </p>
           </div>

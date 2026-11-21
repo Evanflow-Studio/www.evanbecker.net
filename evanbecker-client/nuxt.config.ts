@@ -1,4 +1,11 @@
-const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+// One image serves test and prod: environment-specific public config is read at
+// runtime, never baked in at build. Nuxt overrides each runtimeConfig.public key
+// below from its NUXT_PUBLIC_* env var when the server starts (siteUrl from
+// NUXT_PUBLIC_SITE_URL, indexable from NUXT_PUBLIC_INDEXABLE, ...), and the site
+// config used by the sitemap reads NUXT_PUBLIC_SITE_URL the same way. The values
+// here are local-dev defaults; indexable stays false unless set, so a misconfigured
+// deploy is never indexed. Per-environment values: env/test.env and env/prod.env.
+const siteUrl = 'http://localhost:3000'
 
 export default defineNuxtConfig({
   compatibilityDate: '2024-12-01',
@@ -80,15 +87,19 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // Server-only (NUXT_API_BASE_SERVER): the API's address on the host's own network, for
+    // calls made while rendering on the server. Empty means use the public API URL.
+    apiBaseServer: '',
     public: {
       siteUrl,
-      indexable: process.env.NUXT_PUBLIC_INDEXABLE === 'true',
-      apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:5002/',
-      auth0Domain: process.env.NUXT_PUBLIC_AUTH0_DOMAIN || '',
-      auth0ClientId: process.env.NUXT_PUBLIC_AUTH0_CLIENT_ID || '',
-      auth0Audience: process.env.NUXT_PUBLIC_AUTH0_AUDIENCE || '',
-      auth0RedirectUri: process.env.NUXT_PUBLIC_AUTH0_REDIRECT_URI || 'http://localhost:3000/',
-      recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || '',
+      indexable: false,
+      apiUrl: 'http://localhost:5002/',
+      auth0Domain: '',
+      auth0ClientId: '',
+      auth0Audience: '',
+      auth0RedirectUri: 'http://localhost:3000/',
+      recaptchaSiteKey: '',
+      // The one build-time value: it names the build, so it's the same in every environment.
       appVersion: process.env.NUXT_PUBLIC_APP_VERSION || 'dev',
     },
   },

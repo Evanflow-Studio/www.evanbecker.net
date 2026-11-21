@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import {
-  ChatBubbleLeftRightIcon,
   EnvelopeIcon,
   ComputerDesktopIcon,
 } from '@heroicons/vue/24/outline'
 
-const config = useRuntimeConfig()
+const apiBase = useApiBase()
 
 useSeoMeta({
   title: 'Contact - Evan Becker',
@@ -16,11 +15,7 @@ useSeoMeta({
   twitterDescription: 'Get in touch — email, contact form, or social.',
 })
 
-useHead({
-  script: config.public.recaptchaSiteKey
-    ? [{ src: `https://www.google.com/recaptcha/api.js?render=${config.public.recaptchaSiteKey}`, async: true }]
-    : [],
-})
+const recaptcha = useRecaptcha()
 
 const router = useRouter()
 const form = reactive({
@@ -33,30 +28,16 @@ const form = reactive({
 const loading = ref(false)
 const errorMsg = ref('')
 
-async function getRecaptchaToken(): Promise<string> {
-  const siteKey = config.public.recaptchaSiteKey
-  if (!siteKey) return ''
-  await new Promise<void>((resolve) => {
-    if (window.grecaptcha?.ready) {
-      window.grecaptcha.ready(() => resolve())
-    } else {
-      resolve()
-    }
-  })
-  return window.grecaptcha?.execute(siteKey, { action: 'contact' }) ?? ''
-}
-
 async function submitContact() {
   loading.value = true
   errorMsg.value = ''
   try {
-    const recaptchaToken = await getRecaptchaToken()
-    const apiBase = config.public.apiUrl?.replace(/\/$/, '') || ''
+    const recaptchaToken = await recaptcha.token('contact')
     const res = await fetch(`${apiBase}/api/v1/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, recaptchaToken }),
-      mode: 'cors',
+      ...apiRequestDefaults,
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
@@ -73,12 +54,6 @@ async function submitContact() {
 }
 
 const contactOptions = [
-  {
-    icon: ChatBubbleLeftRightIcon,
-    title: 'Leave Comment',
-    description: 'Register and login using Auth0. Once logged in, you can leave comments on my blog posts.',
-    cta: { label: 'Blog', href: '/articles' },
-  },
   {
     icon: EnvelopeIcon,
     title: 'Send Email',

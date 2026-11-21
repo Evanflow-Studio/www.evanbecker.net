@@ -6,8 +6,8 @@ export interface FetchWithAuthOptions extends RequestInit {
    * an auth error.
    *
    * Defaults to false, which is correct for almost every call site: a public
-   * blog page that quietly tries to load the current user (e.g. the comment
-   * section) must NOT trigger a redirect when the visitor is logged out, or
+   * page that quietly tries to load the current user (e.g. the header on a
+   * blog article) must NOT trigger a redirect when the visitor is logged out, or
    * any visitor reading a public article will be bounced to Auth0 mid-read.
    *
    * Pass `recover: true` only on call sites where the user is on a page
@@ -18,9 +18,19 @@ export interface FetchWithAuthOptions extends RequestInit {
   recover?: boolean
 }
 
-export function useApi() {
+/**
+ * The API's base URL for this side of the render: NUXT_API_BASE_SERVER on the server when
+ * it's set (the host's own network, not through Cloudflare Access), NUXT_PUBLIC_API_URL
+ * otherwise. The private value is read only on the server; the browser never sees it.
+ */
+export function useApiBase(): string {
   const config = useRuntimeConfig()
-  const baseUrl = config.public.apiUrl?.replace(/\/$/, '') || ''
+  const serverUrl = import.meta.server ? (config.apiBaseServer as string) : undefined
+  return resolveApiBase(config.public.apiUrl as string, serverUrl)
+}
+
+export function useApi() {
+  const baseUrl = useApiBase()
 
   // Auth0 is a client-only plugin — useAuth0() must not be called during SSR.
   // import.meta.client is statically false in the server bundle so this block
@@ -64,7 +74,7 @@ export function useApi() {
     const response = await fetch(`${baseUrl}/api/v1/${path}`, {
       ...fetchOptions,
       headers,
-      mode: 'cors',
+      ...apiRequestDefaults,
     })
 
     if (!response.ok) {
@@ -81,7 +91,7 @@ export function useApi() {
         'Content-Type': 'application/json',
         ...(options.headers as Record<string, string> || {}),
       },
-      mode: 'cors',
+      ...apiRequestDefaults,
     })
 
     if (!response.ok) {

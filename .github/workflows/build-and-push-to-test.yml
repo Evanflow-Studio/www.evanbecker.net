@@ -4,45 +4,89 @@ on:
   push:
     branches: [ "develop" ]
 
+# Builds each image once per commit, on our own runner (Evan, 2026-10-29), and pushes it to
+# GHCR as :<full sha>, then moves the :test pointer to it. Prod later promotes that same image
+# (build-and-push-to-prod.yml); prod on the droplet runs the digest pinned in evanflow-infra.
+# The images hold no secrets and no environment-specific config: each host supplies both at
+# runtime (evanbecker-client/env/*.env for the client, Section__Key env vars for the API).
+permissions:
+  contents: read
+  packages: write
+
+# One build at a time, in push order, so :test never moves backwards.
+concurrency:
+  group: images-develop
+  cancel-in-progress: false
+
 env:
-  REGISTRY: 192.168.0.168:5000
+  REGISTRY: ghcr.io/evanflow-studio
+  SOURCE: https://github.com/${{ github.repository }}
 
 jobs:
   build_and_push:
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, homelab]
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Generate version
         id: version
-        run: echo "version=$(date +%Y.%m.%d)-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+        run: echo "version=$(date +%Y.%m.%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build images
         run: |
           docker build \
-            -t ${{ env.REGISTRY }}/evanbecker-api:test \
-            -t ${{ env.REGISTRY }}/evanbecker-api:test-${{ github.sha }} \
+            --label "org.opencontainers.image.source=$SOURCE" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            -t "$REGISTRY/evanbecker-api:$GITHUB_SHA" \
             -f evanbecker-api/Dockerfile .
           docker build \
-            --build-arg NUXT_PUBLIC_SITE_URL=https://test.evanbecker.net \
-            --build-arg NUXT_PUBLIC_API_URL=https://api-test.evanbecker.net \
-            --build-arg NUXT_PUBLIC_AUTH0_DOMAIN=dev-m3uiopcp.us.auth0.com \
-            --build-arg NUXT_PUBLIC_AUTH0_CLIENT_ID=2evqEjBNUmBVt6fNwcGkicfjNNrYsjV0 \
-            --build-arg NUXT_PUBLIC_AUTH0_AUDIENCE=evanbecker.api \
-            --build-arg NUXT_PUBLIC_AUTH0_REDIRECT_URI=https://test.evanbecker.net \
-            --build-arg NUXT_PUBLIC_RECAPTCHA_SITE_KEY=6Lfb5pksAAAAAHnzNOV1DxBqF_EYU9UPVimOR6WZ \
             --build-arg NUXT_PUBLIC_APP_VERSION=${{ steps.version.outputs.version }} \
-            -t ${{ env.REGISTRY }}/evanbecker-client:test \
-            -t ${{ env.REGISTRY }}/evanbecker-client:test-${{ github.sha }} \
+            --label "org.opencontainers.image.source=$SOURCE" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            -t "$REGISTRY/evanbecker-client:$GITHUB_SHA" \
             evanbecker-client
 
-      - name: Push to local registry
+      # The same client image must serve test and prod from runtime env alone, and the API
+      # image must migrate as the deploy expects (--migrate-only, or at startup by default).
+      - name: Smoke-test the images
         run: |
-          docker push ${{ env.REGISTRY }}/evanbecker-api:test
-          docker push ${{ env.REGISTRY }}/evanbecker-api:test-${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/evanbecker-client:test
-          docker push ${{ env.REGISTRY }}/evanbecker-client:test-${{ github.sha }}
+          scripts/smoke-client-image.sh "$REGISTRY/evanbecker-client:$GITHUB_SHA"
+          scripts/smoke-api-migrations.sh "$REGISTRY/evanbecker-api:$GITHUB_SHA"
 
-      - name: Clean up old images
-        run: docker image prune -f
+      - name: Push to GHCR and move :test
+        run: |
+          for image in evanbecker-api evanbecker-client; do
+            docker push "$REGISTRY/$image:$GITHUB_SHA"
+            docker tag "$REGISTRY/$image:$GITHUB_SHA" "$REGISTRY/$image:test"
+            docker push "$REGISTRY/$image:test"
+          done
+
+      - name: Record the digests
+        run: |
+          {
+            echo "### Images for \`${GITHUB_SHA}\`"
+            echo
+            for image in evanbecker-api evanbecker-client; do
+              digest=$(docker buildx imagetools inspect "$REGISTRY/$image:$GITHUB_SHA" --format '{{json .Manifest.Digest}}' | tr -d '"')
+              echo "- \`$REGISTRY/$image@$digest\` (also \`:test\`)"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Self-hosted runners keep state between jobs: drop the registry login and
+      # this build's images so neither the token nor the disk outlives the job.
+      - name: Log out and clean up
+        if: always()
+        run: |
+          docker logout ghcr.io || true
+          for image in evanbecker-api evanbecker-client; do
+            docker image rm "$REGISTRY/$image:$GITHUB_SHA" "$REGISTRY/$image:test" 2>/dev/null || true
+          done
+          docker image prune -f

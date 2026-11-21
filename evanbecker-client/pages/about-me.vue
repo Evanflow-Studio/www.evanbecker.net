@@ -52,26 +52,33 @@ const resume = [
 // Only falls back to initials if the image actually fails to load.
 const logoLoaded = ref<Record<string, boolean | undefined>>({})
 
-const config = useRuntimeConfig()
+const apiBase = useApiBase()
 const newsletterEmail = ref('')
 const newsletterSubmitting = ref(false)
 const newsletterDone = ref(false)
 const newsletterError = ref('')
+const recaptcha = useRecaptcha()
 
 async function submitNewsletter() {
   newsletterSubmitting.value = true
   newsletterError.value = ''
   try {
-    const apiUrl = (config.public.apiUrl as string).replace(/\/$/, '')
-    await $fetch(`${apiUrl}/api/v1/newsletter`, {
+    const recaptchaToken = await recaptcha.token('newsletter')
+    await $fetch(`${apiBase}/api/v1/newsletter`, {
       method: 'POST',
-      body: { emailAddress: newsletterEmail.value },
+      body: { emailAddress: newsletterEmail.value, recaptchaToken },
+      ...apiRequestDefaults,
     })
     newsletterDone.value = true
   } catch (err: any) {
-    if (err?.response?.status === 409) {
+    const status = err?.response?.status
+    if (status === 409) {
       newsletterDone.value = true
       newsletterError.value = 'already'
+    } else if (status === 429) {
+      newsletterError.value = 'Too many sign-ups from here. Please try again later.'
+    } else if (status === 400) {
+      newsletterError.value = err?.data?.error || "That didn't go through. Please check the address and try again."
     } else {
       newsletterError.value = 'Something went wrong. Please try again.'
     }

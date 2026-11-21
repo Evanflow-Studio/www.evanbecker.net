@@ -198,28 +198,25 @@ vec2 latticeScene(vec3 p) {
     p = rp + animCenter;
   }
 
-  // Domain repetition — audio-reactive spacing
-  float cellSize = mix(4.0, 10.0, u_cellSpacing) + u_bass * 1.5;
+  // Domain repetition
+  float cellSize = mix(4.0, 10.0, u_cellSpacing);
   vec3 cellId = floor((p + cellSize * 0.5) / cellSize);
   vec3 q = mod(p + cellSize * 0.5, cellSize) - cellSize * 0.5;
 
-  // Wall thickness modulation: mid frequencies pulse walls thinner/thicker
-  float modWall = u_wallThickness * (1.0 + u_mid * 0.3);
-
   // Geometry dispatch (pass both cell-local q and world-space p for gyroid)
-  float d = evalGeometry(q, p, cellId, modWall, u_time, u_geoPreset);
+  float d = evalGeometry(q, p, cellId, u_wallThickness, u_time, u_geoPreset);
 
-  // Breathing center sphere (all presets) — audio-reactive pulse
-  float center = sdSphere(q, 0.15 + 0.05 * sin(u_time * 0.8 + 1.0) + u_mid * 0.15);
-  d = opSmoothUnion(d, center, 0.1 + u_treble * 0.05);
+  // Breathing center sphere (all presets)
+  float center = sdSphere(q, 0.15 + 0.05 * sin(u_time * 0.8 + 1.0));
+  d = opSmoothUnion(d, center, 0.1);
 
   // Lipschitz correction for space-warping animations
   // When warpSeverity < 1.0, reduce step size to prevent overshooting
   float warpSeverity = getWarpSeverity(u_animation);
   d *= mix(1.0, warpSeverity * u_warpCorrection, step(0.5, 1.0 - warpSeverity));
 
-  // Color from cell position — amplitude shifts the color space
-  float colorT = fract(dot(cellId, vec3(0.123, 0.456, 0.789)) + u_amplitude * 0.3);
+  // Color from cell position
+  float colorT = fract(dot(cellId, vec3(0.123, 0.456, 0.789)));
   return vec2(d, colorT);
 }
 `
