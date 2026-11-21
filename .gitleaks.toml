@@ -1,0 +1,31 @@
+# gitleaks config for the PR check (.github/workflows/dotnet-pull_request.yml).
+# Every default rule applies. The only exceptions are the exact public values below.
+title = "www.evanbecker.net"
+
+[extend]
+useDefault = true
+
+# Public identifiers, not secrets: each is served to every browser in the page payload
+# (evanbecker-client/env/*.env). Listed exactly, so nothing else is let through.
+# Add a value here only if it's public by design; a real secret goes to the vault.
+[[allowlists]]
+description = "Public Auth0 SPA client IDs and the reCAPTCHA site key"
+regexes = [
+  '''^JOV7J3Qv3XzFD3xyQjDEW03PtaU8bpqc$''',  # Auth0 client, prod tenant
+  '''^2evqEjBNUmBVt6fNwcGkicfjNNrYsjV0$''',  # Auth0 client, dev tenant (test)
+  '''^6Lfb5pksAAAAAHnzNOV1DxBqF_EYU9UPVimOR6WZ$''',  # reCAPTCHA site key
+]
+
+# A password written into a doc, an example or a compose file. The default rules look for
+# Password= in code and miss prose such as "password: `...`" in a README. A value that starts
+# with $, <, {, ? or - is a reference or a placeholder (${VAR}, ${VAR:?...}, <...>), and an obvious
+# placeholder word (your-..., change-me, xxxx) passes too.
+[[rules]]
+id = "password-in-docs"
+description = "A password value written into a doc, example or compose file"
+path = '''(?i)(\.md|\.ya?ml|\.env\.example|\.txt)$'''
+regex = '''(?i)password[`'"*]*\s*[:=]\s*[`'"]?([^\s`'";,)<>${}?\-][^\s`'";,)]{3,})'''
+secretGroup = 1
+keywords = ["password"]
+[[rules.allowlists]]
+regexes = ['''(?i)^(your|change|example|placeholder|redacted|x{3,}|\*{3,})''']

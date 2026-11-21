@@ -96,17 +96,19 @@ The first build will take several minutes (downloading base images, npm install,
 
 After the stack is running, configure public hostname routes in the **Cloudflare Zero Trust dashboard**:
 
-**Networks → Tunnels → your tunnel → Public Hostname → Add**
+**Networks → Tunnels → website-tunnel → Routes → Add route**
 
-| Public hostname | Service | Notes |
+| Public hostname | Service | Routes to |
 |---|---|---|
-| `www.evanbecker.net` | `http://cloudflared:80` | Traefik routes to Nuxt 3 |
-| `evanbecker.net` | `http://cloudflared:80` | Traefik routes to Nuxt 3 |
-| `api.evanbecker.net` | `http://cloudflared:80` | Traefik routes to .NET API |
-| `test.evanbecker.net` | `http://cloudflared:80` | Traefik routes to test Nuxt 3 |
-| `api-test.evanbecker.net` | `http://cloudflared:80` | Traefik routes to test .NET API |
+| `www.evanbecker.net` | `http://traefik:80` | Nuxt 3 client (prod) |
+| `evanbecker.net` | `http://traefik:80` | Nuxt 3 client (prod, apex redirect) |
+| `api.evanbecker.net` | `http://traefik:80` | .NET API (prod) |
+| `test.evanbecker.net` | `http://traefik:80` | Nuxt 3 client (test) |
+| `api-test.evanbecker.net` | `http://traefik:80` | .NET API (test) |
+| `health.evanbecker.net` | `http://traefik:80` | Uptime Kuma public status page |
+| `monitoring.evanbecker.net` | `http://traefik:80` | Uptime Kuma admin dashboard (gated by Cloudflare Access) |
 
-> Since cloudflared and Traefik are on the same Docker network, routes point to Traefik's container. Use `http://traefik:80` or the LXC's internal IP. Traefik handles hostname-based routing to the correct backend.
+> Since cloudflared and Traefik run in the same Docker network on LXC 109, every route's Service field points at `http://traefik:80`. Docker DNS resolves `traefik` to the Traefik container. Traefik then handles hostname-based routing to the correct backend container.
 
 ### 7. Add LXC 109 to the database firewall
 
@@ -158,34 +160,50 @@ Then: **Datacenter → Firewall → IPSet → db-prod-clients → Add** the IP.
 
 ## Cloudflare Access (SSO Gate for Private Services)
 
-Cloudflare Access lets you expose internal services through the tunnel with authentication — no VPN needed.
+Cloudflare Access sits on top of the tunnel and adds an SSO gate in front of any tunneled hostname. The Cloudflare edge enforces the policy before requests reach the tunnel, so unauthenticated traffic never touches the origin service.
 
-### Setting Up Auth0 as Identity Provider
+### Identity Provider: One-time PIN
 
-1. Go to [Cloudflare Zero Trust dashboard](https://one.dash.cloudflare.com/)
-2. Navigate to **Settings → Authentication → Login methods**
-3. Click **Add new** and select **Auth0**
-4. Enter your Auth0 domain, client ID, and client secret
-5. Save
+We use Cloudflare's built-in **One-time PIN** as the identity provider. It emails a six-digit code on each new session, requires no external IdP setup, and is included on the Zero Trust free tier.
 
-### Creating Access Policies
+To enable (only needed once per Cloudflare account):
+
+1. Go to the [Cloudflare Zero Trust dashboard](https://one.dash.cloudflare.com/).
+2. Navigate to **Integrations → Identity providers**.
+3. Click **Add new identity provider** and select **One-time PIN**.
+4. Save.
+
+Other IdPs (Auth0, Google, GitHub, Okta, etc.) are supported and can be added the same way later if needed.
+
+### Currently Protected Services
+
+| Service | Hostname | Tunnel | Policy |
+|---|---|---|---|
+| Infisical UI | `secrets.evanbecker.net` | infisical-tunnel (LXC 107) | Allow → Emails → me@evanbecker.net |
+| Uptime Kuma admin | `monitoring.evanbecker.net` | website-tunnel (LXC 109) | Allow → Emails → me@evanbecker.net |
+
+Session duration: **1 week** for both. Override per-application in the Access dashboard if needed.
+
+### Intentionally Not Protected
+
+- `www.evanbecker.net`, `evanbecker.net`, `api.evanbecker.net`, `test.evanbecker.net`, `api-test.evanbecker.net`, `health.evanbecker.net` — public by design.
+- `proxmox.evanbecker.net` — **does not exist as a public hostname.** The Proxmox UI is intentionally LAN-only. Manage the host from a machine actually on `192.168.0.0/24`.
+- PostgreSQL on LXC 105/106 — LAN-only, no DNS, no tunnel (see [ADR-006](adr/006-self-hosted-runner-with-registry.md) for why CI keeps direct LAN access instead).
+
+### Adding a New Access Application
 
 For each private service you want to protect:
 
-1. Add a public hostname to the tunnel (e.g., `secrets.evanbecker.net → http://192.168.0.107:8080`)
-2. Go to **Access → Applications → Add an application**
-3. Choose **Self-hosted**
-4. Set the application domain (e.g., `secrets.evanbecker.net`)
-5. Add a policy: **Allow** → **Include** → **Emails** → `your-email@example.com`
+1. Add a public hostname to the appropriate tunnel pointing at the service's internal address (**Networks → Tunnels → your tunnel → Public Hostname**).
+2. In the Zero Trust dashboard, navigate to **Access controls → Applications**.
+3. Click **Add an application** and choose **Self-hosted**.
+4. Set the public hostname (e.g. `secrets.evanbecker.net`).
+5. Pick a session duration (we use 1 week).
+6. Under **Authentication**, select **One-time PIN** as the identity provider.
+7. Add a policy: **Action: Allow → Include: Emails → `your-email@example.com`**.
+8. Click **Create**. (Don't forget this step — saving the policy alone doesn't bind it to the Application.)
 
-### Example Private Services
-
-| Service | Hostname | Origin | Notes |
-|---|---|---|---|
-| Infisical | `secrets.evanbecker.net` | `http://192.168.0.107:8080` | Secrets management UI |
-| Proxmox UI | `proxmox.evanbecker.net` | `https://192.168.0.47:8006` | Enable "No TLS Verify" (self-signed cert) |
-
-> Private service routes point directly to the LXC IP since cloudflared can reach any host on the `192.168.0.x` network from inside LXC 109.
+Test from an incognito window. The first hit should land on a Cloudflare-hosted email-input page, not the origin service. If you see the origin's own login screen directly, the IdP isn't attached to the Application or the public hostname doesn't match.
 
 ---
 

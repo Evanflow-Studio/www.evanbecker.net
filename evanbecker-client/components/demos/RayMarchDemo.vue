@@ -3,18 +3,6 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRayMarcherStore } from '~/stores/raymarcher'
 import { useRayMarchEngine } from '~/composables/raymarcher/useRayMarchEngine'
 
-// NOTE: `useSessionHub` and `useVisualizationEngine` are NOT imported here.
-// They pull in @microsoft/signalr / meyda / essentia and are only reached via
-// <LazyRayMarchLabLayer>, which Nuxt lazy-loads as a separate chunk. Keep it
-// that way — any static import of the audio layer from this file would drag
-// those libraries back into the core bundle.
-
-const props = defineProps<{
-  /** Enables audio visualizer + multiplayer session UI. Gated at the page
-   *  level on `isAuthenticated && experiments.rayMarcherLab`. */
-  labMode?: boolean
-}>()
-
 const store = useRayMarcherStore()
 
 // Canvas
@@ -23,10 +11,6 @@ const containerRef = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 const shareTooltip = ref('')
 let shareTimeout: ReturnType<typeof setTimeout> | null = null
-
-// Audio/session overlay state — only used when labMode is on.
-const showAudioPlayer = ref(false)
-const showSessionPanel = ref(false)
 
 function onShare() {
   store.exportToUrl()
@@ -40,12 +24,7 @@ const engine = useRayMarchEngine(canvasRef)
 
 // Watchers
 watch(() => store.render.quality, (q) => store.applyQualityFX(q))
-// Only apply scene defaults when NOT driven by the visualization engine
-// (the engine manages camera/params itself — defaults would fight it).
-// When labMode is off, isCapturing is always false so defaults always apply.
-watch(() => store.scene.index, (s) => {
-  if (!store.audio.isCapturing) store.applySceneDefaults(s)
-})
+watch(() => store.scene.index, (s) => store.applySceneDefaults(s))
 
 // Fullscreen
 function toggleFullscreen() {
@@ -136,25 +115,6 @@ onUnmounted(() => {
             {{ shareTooltip }}
           </div>
         </div>
-        <!-- Lab-only HUD buttons -->
-        <button
-          v-if="props.labMode"
-          class="rounded-md bg-black/60 px-2 py-1 text-xs transition-colors"
-          :class="showAudioPlayer ? 'text-[#2D95FC]' : 'text-slate-300 hover:text-white'"
-          title="Music Player"
-          @click="showAudioPlayer = !showAudioPlayer"
-        >
-          ♫
-        </button>
-        <button
-          v-if="props.labMode"
-          class="rounded-md bg-black/60 px-2 py-1 text-xs transition-colors"
-          :class="showSessionPanel ? 'text-[#2D95FC]' : 'text-slate-300 hover:text-white'"
-          title="Jam Session"
-          @click="showSessionPanel = !showSessionPanel"
-        >
-          👥
-        </button>
         <button class="rounded-md bg-black/60 px-2 py-1 text-xs text-slate-300 hover:text-white transition-colors" @click="toggleFullscreen">
           {{ isFullscreen ? '✕' : '⛶' }}
         </button>
@@ -180,20 +140,8 @@ onUnmounted(() => {
 
       <!-- Controls -->
       <RayMarchControls
-        :lab-mode="props.labMode"
         @screenshot="engine.captureScreenshot"
         @fullscreen="toggleFullscreen"
-      />
-
-      <!-- Experimental audio/session layer. Heavy deps (@microsoft/signalr,
-           meyda, essentia) ride in here and are only fetched when labMode
-           flips on. Uses Nuxt's Lazy prefix so the chunk is async. -->
-      <LazyRayMarchLabLayer
-        v-if="props.labMode"
-        v-model:show-audio-player="showAudioPlayer"
-        v-model:show-session-panel="showSessionPanel"
-        :engine-gl="engine.gl"
-        :canvas-el="canvasRef"
       />
     </div>
   </div>

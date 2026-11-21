@@ -32,7 +32,7 @@
 
 ## About
 
-This is the monorepo powering [evanbecker.net](https://www.evanbecker.net) — a personal site with blog articles (written in Markdown), an authenticated commenting system, a contact form, newsletter signup, and a projects showcase. The frontend is a Nuxt 3 application and the backend is a .NET API backed by PostgreSQL.
+This is the monorepo powering [evanbecker.net](https://www.evanbecker.net) — a personal site with blog articles (written in Markdown), Auth0 sign-in with an account page, a contact form, newsletter signup, and a projects showcase. The frontend is a Nuxt 3 application and the backend is a .NET API backed by PostgreSQL.
 
 The entire stack is self-hosted on a Proxmox VE homelab with isolated LXC containers, Cloudflare Tunnel for zero-open-port ingress, and Infisical for secrets management.
 
@@ -142,8 +142,10 @@ For deployment internals (image build → registry → Watchtower rotation), see
 
 | Branch | Environment | Deploys To | Image Tag | Workflow |
 |--------|-------------|------------|-----------|----------|
-| `develop` | Test | test.evanbecker.net · api-test.evanbecker.net | `:test` | `.github/workflows/build-and-push-to-test.yml` |
-| `main` | Production | www.evanbecker.net · api.evanbecker.net | `:latest` | `.github/workflows/build-and-push-to-prod.yml` |
+| `develop` | Test | test.evanbecker.net · api-test.evanbecker.net | `:<sha>`, moves `:test` | `.github/workflows/build-and-push-to-test.yml` |
+| `main` | Production | www.evanbecker.net · api.evanbecker.net | moves `:prod` to the image test ran | `.github/workflows/build-and-push-to-prod.yml` |
+
+Images are built **once per commit** on our own runner and pushed to GHCR (`ghcr.io/evanflow-studio/evanbecker-api` and `evanbecker-client`). A merge to `main` promotes the image test already ran instead of rebuilding it, and the same client image serves test and prod because its public config is read at runtime (`evanbecker-client/env/*.env`). A merge builds and promotes images there but doesn't redeploy the homelab, which keeps the images it runs today until the cutover.
 
 **Flow:**
 
@@ -204,7 +206,7 @@ Each sub-project has its own README with detailed structure, setup, and configur
 - **[`evanbecker-client/README.md`](evanbecker-client/README.md)** — Frontend development, demos, environment variables
 - **[`evanbecker-api/README.md`](evanbecker-api/README.md)** — API endpoints, secrets architecture, database setup
 - **[`infrastructure/README.md`](infrastructure/README.md)** — LXC containers, deployment, security
-- **[`evanbecker-client/composables/raymarcher/README.md`](evanbecker-client/composables/raymarcher/README.md)** — Ray marcher architecture, audio pipeline, jam sessions
+- **[`evanbecker-client/composables/raymarcher/README.md`](evanbecker-client/composables/raymarcher/README.md)** — Ray marcher architecture and scenes
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -242,7 +244,7 @@ npm run dev
 
 - **Frontend:** [http://localhost:3000](http://localhost:3000)
 - **API + Swagger:** [http://localhost:5002/swagger](http://localhost:5002/swagger)
-- **PostgreSQL:** `localhost:5432` (user: `EvanBecker`, password: `P@55W0RD123`, db: `evanbecker-db`)
+- **PostgreSQL:** `localhost:5432` (user: `EvanBecker`, db: `evanbecker-db`; the password is `POSTGRES_PASSWORD` from your `.env`, which the API reads as `PGPASSWORD`)
 
 The database credentials are hardcoded in `docker-compose.yaml` and match `appsettings.Development.json`. No `.env` file needed for the database.
 
@@ -284,12 +286,9 @@ See [`infrastructure/README.md`](infrastructure/README.md) for full deployment d
 ## Features
 
 - **Blog** — Markdown-powered articles with syntax-highlighted code blocks via Nuxt Content
-- **Commenting System** — Auth0-authenticated real-time comments via SignalR with nested replies
 - **Contact Form** — Submissions stored in PostgreSQL with SMTP2Go email notifications
 - **Newsletter** — Email subscription with duplicate detection and SMTP2Go notifications
 - **Ray Marcher** — GPU-powered fractal visualizer with 4 scenes, cosine palettes, and post-FX ([docs](evanbecker-client/composables/raymarcher/README.md))
-- **Audio-Reactive Visualizer** — YouTube playback + tab audio capture → Meyda/Essentia analysis → real-time visual parameter mapping
-- **Jam Sessions** — Multiplayer shared visualizer via SignalR with host authority, ready-up flow, and playback sync
 - **Projects Showcase** — Portfolio of work
 - **Dark/Light Mode** — Theme toggle via @nuxtjs/color-mode
 - **RSS Feed** — Auto-generated at `/feed.xml`

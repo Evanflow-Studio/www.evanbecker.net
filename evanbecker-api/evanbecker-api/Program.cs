@@ -1,6 +1,5 @@
 using evanbecker_api.Configuration;
 using evanbecker_api.Extensions;
-using evanbecker_api.Hubs;
 using evanbecker_api.Services;
 using evanbecker_domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,13 +8,20 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 
-var builder = WebApplication.CreateBuilder(args);
+// --migrate-only: apply the EF migrations and exit (the deploy's one-shot migrate step).
+var migrateOnly = DatabaseMigrations.IsMigrateOnly(args);
+var builder = WebApplication.CreateBuilder(DatabaseMigrations.HostArguments(args));
 
 builder.Services.AddControllers();
 // In Development, secrets come from .NET User Secrets (dotnet user-secrets).
-// In Production/Test, secrets come from Infisical via SecretsConfigurationProvider.
+// In Production/Test, secrets come from Infisical via SecretsConfigurationProvider,
+// or from Key Vault as Section__Key environment variables (scripts/run-with-keyvault.sh).
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddSecrets();
+
+// EF's design-time tools build this host too; they don't need runtime secrets.
+if (!EF.IsDesignTime)
+    RequiredConfiguration.Validate(builder.Configuration, migrateOnly);
 
 var environmentName = builder.Environment.EnvironmentName;
 Console.WriteLine($"Starting API with Environment: {environmentName}");
@@ -28,8 +34,9 @@ var auth0Settings = new Auth0Configuration();
 auth0Section.Bind(auth0Settings);
 builder.Services.Configure<Auth0Configuration>(auth0Section);
 
-builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<INewsletterList, EfNewsletterList>();
+builder.Services.AddRateLimiter(RateLimits.Configure);
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddHttpClient<IEmailService, EmailService>();
@@ -37,15 +44,6 @@ builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.Configure<RecaptchaSettings>(builder.Configuration.GetSection("Recaptcha"));
 builder.Services.AddHttpClient<IRecaptchaService, RecaptchaService>();
 
-builder.Services.Configure<YouTubeConfiguration>(builder.Configuration.GetSection("YouTube"));
-builder.Services.AddHttpClient<IYouTubeService, YouTubeService>();
-
-builder.Services.AddSingleton<ISessionManager, SessionManager>();
-builder.Services.AddHostedService<SessionCleanupService>();
-
-builder.Services.AddMemoryCache();
-
-builder.Services.AddSignalR();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -118,24 +116,12 @@ builder.Services.AddAuthentication(options =>
 {
     options.Authority = $"https://{auth0Settings.Domain}/";
     options.Audience = auth0Settings.Audience;
-
-    // SignalR sends the JWT as a query parameter for WebSocket connections
-    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            var accessToken = context.Request.Query["access_token"];
-            var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/session"))
-            {
-                context.Token = accessToken;
-            }
-            return Task.CompletedTask;
-        }
-    };
 });
 
 var app = builder.Build();
+
+if (migrateOnly)
+    return await DatabaseMigrations.MigrateOnlyAsync(app.Services);
 
 app.UseSwagger();
 app.UseSwaggerUI(o =>
@@ -151,9 +137,8 @@ app.UseSwaggerUI(o =>
 app.UseCors("cors");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
-app.MapHub<CommentHub>("/hubs/comments").RequireCors("cors");
-app.MapHub<SessionHub>("/hubs/session").RequireCors("cors");
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResultStatusCodes =
@@ -164,6 +149,12 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
-await app.UseLocalDockerMigrationsAsync(environmentName);
+// On by default, as the homelab deploy expects. A deploy that runs --migrate-only first sets
+// Database__MigrateOnStartup=false.
+if (DatabaseMigrations.MigrateOnStartup(app.Configuration))
+    await app.UseLocalDockerMigrationsAsync(environmentName);
+else
+    Console.WriteLine("Database:MigrateOnStartup is false: not migrating at startup.");
 
 app.Run();
+return 0;

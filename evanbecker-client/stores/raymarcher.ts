@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import { LATTICE_PRESETS } from '~/utils/shaders/lattice-presets'
+import { LATTICE_PRESETS, type LatticePreset } from '~/utils/shaders/lattice-presets'
 import { CAMERA_DEFAULTS } from '~/utils/shaders/constants'
-import type { AudioState, CameraState, SceneState, LatticeState, RenderState, TimeState, QualityPreset, SceneDefault } from '~/types/raymarcher'
+import type { CameraState, SceneState, LatticeState, RenderState, TimeState, QualityPreset, SceneDefault } from '~/types/raymarcher'
 
 const DEFAULT_PRESET = LATTICE_PRESETS[0]
 
@@ -55,27 +55,6 @@ export const useRayMarcherStore = defineStore('raymarcher', {
       speed: 1.0,
     } as TimeState,
 
-    // Audio reactivity
-    audio: {
-      bass: 0,
-      mid: 0,
-      treble: 0,
-      amplitude: 0,
-      isCapturing: false,
-      youtubeUrl: '',
-      brightness: 0,
-      percussiveness: 0,
-      moodEnergy: 0,
-      moodValence: 0,
-      bpm: 0,
-      moodCategory: null,
-      essentiaReady: false,
-      isOnBeat: false,
-      trackTitle: '',
-      trackArtist: '',
-      trackGenres: [],
-    } as AudioState,
-
     // Custom palette (IQ cosine)
     customPalette: {
       a: [0.5, 0.5, 0.5] as [number, number, number],
@@ -104,7 +83,7 @@ export const useRayMarcherStore = defineStore('raymarcher', {
     currentQualityPreset(): QualityPreset {
       return QUALITY_PRESETS[this.render.quality]
     },
-    currentLatticePreset() {
+    currentLatticePreset(): LatticePreset | undefined {
       return LATTICE_PRESETS[this.lattice.presetIndex]
     },
     /** Effective steps: manual override if set, otherwise from quality preset */
